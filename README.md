@@ -196,7 +196,7 @@ docker exec -it greener-backend npm run test
 | **Luka Gomes** | Developer | [@LukaGomes](https://github.com/LukaGomes) |
 | **Gustavo Zago de Lima** | Developer | [@Gustavo-Zago](https://github.com/Gustavo-Zago) |
 | **Isabelly Marinho** | Oracle Developer | [@isabellymarinho20](https://github.com/isabellymarinho20) |
-| **Ronaldo** | Developer | - |
+| **Ronaldo** | Developer | [@RonaldoAvilaa](https://github.com/RonaldoAvilaa) |
 
 ---
 
