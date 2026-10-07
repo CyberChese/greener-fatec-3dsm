@@ -32,12 +32,16 @@ services:
     working_dir: /usr/src/app
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
       - PORT=3001 
     volumes:
       - ./greener/backend:/usr/src/app
       - /usr/src/app/node_modules
+    depends_on:
+      - greener-postgres
 
 volumes:
   postgres_data:
