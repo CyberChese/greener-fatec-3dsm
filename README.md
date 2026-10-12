@@ -14,6 +14,9 @@ O **GreenER** é uma plataforma web desenvolvida para monitorar aplicações de 
 
 O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Projetos (ABP)** do 3º semestre do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Jacareí** (período 2026-2), em parceria com a **UniLaunch**.
 
+## 🎨 Design System e Wireframes (Figma)
+- **Link do Figma:** [Acessar Projeto no Figma] https://www.figma.com/design/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?t=tYh6VE9B1sWn0zzj-1
+
 ### 🎯 Problema & Solução
 * **Problema:** Empresas operam dezenas ou centenas de microsserviços em nuvem. As métricas tradicionais de telemetria medem desempenho e disponibilidade, mas não oferecem visibilidade sobre o custo ambiental e a pegada de carbono da infraestrutura.
 * **Solução:** O **GreenER** descobre dinamicamente os serviços ativos, realiza coletas periódicas do endpoint `/metrics/{id_servico}` e integra dados com o **Serviço de Intensidade de Carbono** por região geográfica, consolidando rankings de impacto, histórico e visualizações geográficas em um dashboard operacional responsivo.
