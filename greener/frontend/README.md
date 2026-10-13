@@ -1,75 +1,84 @@
-# React + TypeScript + Vite
+# GreenER — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação web do GreenER, construída com **React + TypeScript**, **Vite** e **Tailwind CSS**.
+Ela consome apenas o backend NestJS do projeto; nunca chama diretamente as APIs da UniLaunch.
 
-Currently, two official plugins are available:
+## Como rodar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+O jeito oficial é pelo Docker, na raiz do repositório:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+docker compose up --build
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+O frontend fica em <http://localhost:3000> (porta 3000 do computador, 5173 dentro do container).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+> Ao instalar um pacote novo (`npm install <pacote>`), o `node_modules` do container pode ficar
+> desatualizado. Suba novamente com `docker compose up --build -V` (o `-V` renova os volumes).
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Sem Docker (apenas para desenvolvimento local):
+
+```bash
+cd greener/frontend
+npm install
+npm run dev
+```
+
+## Scripts
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento com hot reload |
+| `npm run build` | Checa os tipos (`tsc -b`) e gera a versão de produção |
+| `npm run lint` | Executa o ESLint |
+| `npm run preview` | Serve a versão de produção localmente |
+
+Para checar só os tipos use `npx tsc -p tsconfig.app.json --noEmit`.
+O `tsconfig.json` da raiz apenas referencia os demais, então `npx tsc --noEmit` sozinho não verifica nada.
+
+## Estrutura de pastas
 
 ```
+src/
+├── components/   # Peças reutilizáveis de interface (StatusBadge, cartões, tabelas...)
+├── pages/        # Telas completas, uma por rota (HomePage, Login, Configuração...)
+├── services/     # Comunicação com o backend (cliente Axios e funções de API)
+├── hooks/        # Hooks reutilizáveis (ex.: usePolling, useServices)
+├── contexts/     # Contexts do React (autenticação, serviço/região/período selecionado)
+├── providers/    # AppProviders: junta todos os contexts num único ponto
+├── types/        # Tipos TypeScript compartilhados (ex.: ServiceState)
+├── styles/       # CSS global e tokens de tema (index.css)
+├── App.tsx       # Composição das páginas e rotas
+└── main.tsx      # Ponto de entrada
+```
+
+Convenções:
+
+- Componentes e páginas em `PascalCase.tsx`; hooks em `useAlgo.ts`; serviços e tipos em `camelCase.ts`.
+- Uma página só compõe componentes e chama hooks; a comunicação com a API fica em `services/`.
+- Estado compartilhado entre telas fica em `contexts/` e é registrado em `providers/AppProviders.tsx`.
+- Evite `any`. Tipos dos dados da API ficam em `types/`.
+
+## Tema (Tailwind)
+
+Os tokens ficam em `src/styles/index.css`, dentro de `@theme`. Cada `--color-*` vira utilitário
+(por exemplo `--color-brand` gera `text-brand`, `bg-brand` e `border-brand`).
+Os valores atuais são provisórios e devem ser alinhados ao protótipo do Figma.
+
+| Token | Uso |
+|---|---|
+| `canvas`, `surface`, `surface-2`, `line` | Fundo, cartões e bordas |
+| `ink`, `ink-muted` | Texto principal e secundário |
+| `brand`, `cta`, `on-cta` | Marca e botão de ação (`on-cta` é a cor do texto sobre `cta`) |
+| `state-ok`, `state-warn`, `state-down`, `state-removed` | Estados dos serviços |
+
+## Acessibilidade da informação (RNF02)
+
+Os estados dos serviços **nunca dependem só da cor**. O `StatusBadge` combina cor, forma e texto:
+círculo (Ativo), losango (Sem métricas), triângulo (Indisponível) e quadrado (Removido).
+Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
+
+## O que ainda vem
+
+- Rotas (React Router) e cliente Axios com `VITE_API_URL`: TASK-009.
+- Tela de login e estado de autenticação: TASK-012.
