@@ -32,8 +32,9 @@ export class Service {
   @Column({
     type: 'varchar',
     length: 255,
+    nullable: true,
   })
-  endpoint: string;
+  endpoint: string | null;
 
   @Column({
     type: 'enum',
