@@ -144,10 +144,40 @@ JWT_EXPIRATION=1d
 
 # APIs Auxiliares UniLaunch
 METRICS_AGGREGATOR_URL=https://metrics.unilaunch.org
+METRICS_COLLECTION_INTERVAL_SECONDS=30
 CARBON_INTENSITY_URL=https://carbon.unilaunch.org
 ```
 
 ---
+
+### Coleta periódica de métricas
+
+O backend usa `METRICS_COLLECTION_INTERVAL_SECONDS`, configurado no `.env` e validado na
+inicialização. O padrão do projeto é **30 segundos**; esse intervalo é aguardado após o término de
+cada ciclo antes de iniciar o próximo, evitando sobreposição.
+
+O coletor consulta somente serviços `ACTIVE`, usando o `external_id` persistido para chamar
+`GET {METRICS_AGGREGATOR_URL}/metrics/{service_id}`. O contrato atual do Agregador documenta:
+
+| Campo do Agregador | Campo persistido | Unidade |
+| --- | --- | --- |
+| `cpu_percent` | `cpu_usage` | percentual |
+| `memory_gb` | `memory_usage` | GB |
+| `disk_gb` | `storage_usage` | GB |
+| `network_gb` | `network_io` | GB |
+
+O instante em que a chamada de coleta é iniciada fica salvo em `timestamp`. O histórico pode ser
+consultado por UUID interno do serviço em
+`GET /services/:id/history?from=<ISO-8601>&to=<ISO-8601>` (os limites são inclusivos).
+`GET /metrics/collection-config` retorna o intervalo efetivo e o horário global da última
+coleta registrada; a tela inicial atualiza essas informações automaticamente.
+
+Depois de iniciar o PostgreSQL pela primeira vez, aplique as migrações (incluindo a alteração de
+precisão dos campos de métricas) com `docker compose exec greener-backend npm run migration:run`.
+
+O Agregador descreve esses campos em seu [contrato OpenAPI](https://metrics.unilaunch.org/openapi.json).
+Este coletor depende de os serviços terem sido cadastrados na tabela `services`; a descoberta e
+sincronização automática (TASK-014) ainda é uma etapa separada.
 
 ## 🔌 Documentação dos Endpoints da API
 
@@ -159,7 +189,8 @@ CARBON_INTENSITY_URL=https://carbon.unilaunch.org
 | `GET` | `/api/metrics/summary` | Retorna indicadores consolidados (Consumo Total kWh, Emissão Total $\text{CO}_2\text{e}$, Total de Serviços). |
 | `GET` | `/api/metrics/ranking` | Retorna o ranking de serviços ordenados por maior consumo de energia ou emissão de $\text{CO}_2\text{e}$. |
 | `GET` | `/api/metrics/compare` | Compara dois ou mais serviços em um período específico. |
-| `GET` | `/api/services/:id/history` | Retorna o histórico temporal de coletas do serviço. |
+| `GET` | `/services/:id/history` | Retorna o histórico temporal de coletas do serviço. |
+| `GET` | `/metrics/collection-config` | Informa o intervalo efetivo de coleta em segundos. |
 
 ### 🔐 Rotas Autenticadas (Requer JWT Header `Authorization: Bearer <token>`)
 
