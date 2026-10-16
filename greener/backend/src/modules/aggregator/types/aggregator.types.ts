@@ -27,3 +27,8 @@ export interface InternalDiscoveredService {
         lng?: number;
     };
 }
+
+export interface DiscoveryResult {
+  services: InternalDiscoveredService[];
+  isComplete: boolean;
+}
