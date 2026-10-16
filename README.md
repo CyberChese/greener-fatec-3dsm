@@ -187,6 +187,48 @@ Para executar os testes unitários dentro do container backend:
 ```bash
 docker exec -it greener-backend npm run test
 ```
+---
+## 📘 API e Swagger
+
+O backend usa o prefixo `/api` nas rotas. Atualmente, o projeto **ainda não configura a interface Swagger**. A URL prevista para a interface é:
+
+[http://localhost:3001/api/docs](http://localhost:3001/api/docs)
+
+Esse endereço só ficará disponível depois que o Swagger for configurado no backend.
+
+Quando a interface Swagger estiver habilitada:
+
+1. Abra a URL da documentação no navegador.
+2. Expanda a rota que deseja consultar.
+3. Clique em **Try it out**.
+4. Preencha os parâmetros ou o corpo da requisição.
+5. Clique em **Execute** para enviar a chamada.
+6. Para rotas protegidas, obtenha um JWT pelo endpoint de login e use a opção **Authorize**, se a autenticação Bearer estiver configurada na documentação.
+
+### Rotas implementadas atualmente
+
+| Método | Rota | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/api` | Público | Retorna a resposta inicial da API |
+| `GET` | `/api/services` | Público | Consulta os serviços cadastrados |
+| `POST` | `/api/auth/login` | Público | Autentica o usuário e retorna um JWT |
+| `GET` | `/api/auth/profile` | JWT | Retorna os dados do usuário autenticado |
+
+O login recebe `email` e `password`. A resposta de autenticação contém o token no campo `access_token`.
+
+## Autenticação
+
+As rotas protegidas usam o cabeçalho:
+
+```http
+Authorization: Bearer <token>
+```
+
+O token é obtido pela rota `POST /api/auth/login`. Para autenticar, o usuário precisa existir no banco de dados e ter uma senha cadastrada.
+
+## Documentação adicional
+
+A documentação do projeto está na pasta [`greener/docs`](greener/docs), incluindo os documentos de arquitetura, API e planejamento das sprints.
 
 ---
 
