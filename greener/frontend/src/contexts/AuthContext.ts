@@ -1,11 +1,19 @@
 import { createContext } from 'react'
 
+/** Dados da sessão administrativa, lidos do token apenas para exibição. */
+export type Session = {
+  email: string | null
+  role: string | null
+  expiresAt: Date | null
+}
+
 export type AuthContextValue = {
   /** Há uma sessão administrativa ativa. */
   isAuthenticated: boolean
-  /** A sessão caiu por um 401 em chamada protegida (a tela de login usa isso para avisar). */
+  session: Session | null
+  /** A sessão caiu (401 em chamada protegida ou token vencido); a tela de login avisa. */
   sessionExpired: boolean
-  login: (token: string) => void
+  login: (token: string, fallbackEmail?: string) => void
   logout: () => void
 }
 
