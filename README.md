@@ -148,7 +148,10 @@ AGGREGATOR_SERVICES_PATH=/services
 AGGREGATOR_TIMEOUT=5000
 METRICS_COLLECTION_INTERVAL_SECONDS=30
 CARBON_INTENSITY_URL=https://carbon.unilaunch.org
+FRONTEND_ORIGIN=http://localhost:3000
 ```
+
+`FRONTEND_ORIGIN` define a origem permitida para chamadas do navegador ao backend.
 
 ---
 
