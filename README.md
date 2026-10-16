@@ -143,7 +143,9 @@ JWT_SECRET=sua_chave_secreta_jwt_super_segura
 JWT_EXPIRATION=1d
 
 # APIs Auxiliares UniLaunch
-METRICS_AGGREGATOR_URL=https://metrics.unilaunch.org
+AGGREGATOR_API_URL=https://metrics.unilaunch.org
+AGGREGATOR_SERVICES_PATH=/services
+AGGREGATOR_TIMEOUT=5000
 METRICS_COLLECTION_INTERVAL_SECONDS=30
 CARBON_INTENSITY_URL=https://carbon.unilaunch.org
 ```
@@ -156,8 +158,9 @@ O backend usa `METRICS_COLLECTION_INTERVAL_SECONDS`, configurado no `.env` e val
 inicialização. O padrão do projeto é **30 segundos**; esse intervalo é aguardado após o término de
 cada ciclo antes de iniciar o próximo, evitando sobreposição.
 
-O coletor consulta somente serviços `ACTIVE`, usando o `external_id` persistido para chamar
-`GET {METRICS_AGGREGATOR_URL}/metrics/{service_id}`. O contrato atual do Agregador documenta:
+O coletor consulta somente serviços `ACTIVE` com endpoint configurado, usando o `metrics_path`
+persistido pela sincronização da TASK-014 para chamar `GET {AGGREGATOR_API_URL}{metrics_path}`.
+Serviços sem endpoint ainda não são elegíveis para coleta. O contrato atual do Agregador documenta:
 
 | Campo do Agregador | Campo persistido | Unidade |
 | --- | --- | --- |
@@ -166,7 +169,7 @@ O coletor consulta somente serviços `ACTIVE`, usando o `external_id` persistido
 | `disk_gb` | `storage_usage` | GB |
 | `network_gb` | `network_io` | GB |
 
-O instante em que a chamada de coleta é iniciada fica salvo em `timestamp`. O histórico pode ser
+O instante em que a resposta da coleta é recebida fica salvo em `timestamp`. O histórico pode ser
 consultado por UUID interno do serviço em
 `GET /services/:id/history?from=<ISO-8601>&to=<ISO-8601>` (os limites são inclusivos).
 `GET /metrics/collection-config` retorna o intervalo efetivo e o horário global da última
@@ -176,8 +179,7 @@ Depois de iniciar o PostgreSQL pela primeira vez, aplique as migrações (inclui
 precisão dos campos de métricas) com `docker compose exec greener-backend npm run migration:run`.
 
 O Agregador descreve esses campos em seu [contrato OpenAPI](https://metrics.unilaunch.org/openapi.json).
-Este coletor depende de os serviços terem sido cadastrados na tabela `services`; a descoberta e
-sincronização automática (TASK-014) ainda é uma etapa separada.
+A descoberta e sincronização da TASK-014 cadastra e atualiza os serviços antes das coletas.
 
 ## 🔌 Documentação dos Endpoints da API
 

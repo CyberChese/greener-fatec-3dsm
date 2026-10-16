@@ -17,11 +17,10 @@ import {
 } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
+import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
 
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
-const DEFAULT_AGGREGATOR_URL = 'https://metrics.unilaunch.org';
-const REQUEST_TIMEOUT_MS = 10_000;
 
 interface AggregatorMetrics {
   cpu_percent: number;
@@ -91,7 +90,6 @@ function parseDateParameter(value: string | undefined, name: string): Date | und
 export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
   private readonly collectionIntervalSeconds: number;
-  private readonly aggregatorUrl: URL;
   private timer: NodeJS.Timeout | undefined;
   private stopped = false;
 
@@ -101,6 +99,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     @InjectRepository(MetricCollection)
     private readonly collectionRepository: Repository<MetricCollection>,
     configService: ConfigService,
+    private readonly aggregatorClient: AggregatorClientService,
   ) {
     const configuredInterval = configService.get<string>(
       'METRICS_COLLECTION_INTERVAL_SECONDS',
@@ -109,19 +108,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       configuredInterval === undefined
         ? DEFAULT_COLLECTION_INTERVAL_SECONDS
         : this.parseInterval(configuredInterval);
-
-    const configuredAggregatorUrl =
-      configService.get<string>('METRICS_AGGREGATOR_URL') ?? DEFAULT_AGGREGATOR_URL;
-    this.aggregatorUrl = new URL(configuredAggregatorUrl);
-    if (
-      !['http:', 'https:'].includes(this.aggregatorUrl.protocol) ||
-      this.aggregatorUrl.username ||
-      this.aggregatorUrl.password ||
-      this.aggregatorUrl.search ||
-      this.aggregatorUrl.hash
-    ) {
-      throw new Error('METRICS_AGGREGATOR_URL must be an HTTP(S) base URL without credentials or query.');
-    }
   }
 
   onModuleInit(): void {
@@ -158,8 +144,15 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     });
 
     for (const service of activeServices) {
+      if (!service.endpoint) {
+        this.logger.warn(
+          `Metric collection skipped for service "${service.external_id}": no metrics endpoint is configured.`,
+        );
+        continue;
+      }
+
       try {
-        await this.collectService(service);
+        await this.collectService(service, service.endpoint);
       } catch (error) {
         const detail = error instanceof Error ? error.stack : String(error);
         this.logger.error(
@@ -239,23 +232,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async collectService(service: Service): Promise<void> {
-    const metricsUrl = new URL(
-      `/metrics/${encodeURIComponent(service.external_id)}`,
-      this.aggregatorUrl,
+  private async collectService(service: Service, metricsPath: string): Promise<void> {
+    const metricsResponse = parseMetricsResponse(
+      await this.aggregatorClient.fetchMetrics(metricsPath),
     );
-    const timestamp = new Date();
-    const response = await fetch(metricsUrl, {
-      headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Metrics Aggregator returned HTTP ${response.status}.`);
-    }
-
-    const metricsResponse = parseMetricsResponse(await response.json());
     const { metrics } = metricsResponse;
+    const timestamp = new Date();
 
     await this.collectionRepository.save(
       this.collectionRepository.create({

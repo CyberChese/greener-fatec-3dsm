@@ -2,11 +2,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service } from '../entities/service.entity';
+import { AggregatorModule } from '../modules/aggregator/aggregator.module';
 import { MetricsController, ServiceMetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Service, MetricCollection])],
+  imports: [
+    TypeOrmModule.forFeature([Service, MetricCollection]),
+    AggregatorModule,
+  ],
   controllers: [MetricsController, ServiceMetricsController],
   providers: [MetricsService],
   exports: [MetricsService],

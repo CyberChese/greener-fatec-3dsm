@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { ServicesModule } from './services/services.module';
 import { AuthModule } from './auth/auth.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { AggregatorModule } from './modules/aggregator/aggregator.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MetricsModule } from './metrics/metrics.module';
     ServicesModule,
     AuthModule,
     MetricsModule,
+    AggregatorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ services:
       - "3000:5173"
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3001/api}
     volumes:
       - ./greener/frontend:/usr/src/app
       - /usr/src/app/node_modules

@@ -30,9 +30,10 @@ npm run dev
 |---|---|---|
 | `VITE_API_URL` | Endereço do backend, acessado pelo **navegador** | `http://localhost:3001` |
 
-O Vite só expõe ao código as variáveis que começam com `VITE_`. O endereço deve ser o que o navegador
-enxerga (`localhost`), e não o nome do container. No Docker, o valor vem do `compose.yaml`, que lê o `.env`
-da raiz do repositório (veja o `.env.example`).
+O Vite só expõe ao código as variáveis que começam com `VITE_`, e **tudo o que começa com `VITE_` fica
+visível no navegador**. Nunca coloque senha, chave ou segredo em variável `VITE_`.
+O endereço deve ser o que o navegador enxerga (`localhost`), e não o nome do container. No Docker, o valor
+vem do `compose.yaml`, que lê o `.env` da raiz do repositório (veja o `.env.example`).
 
 ## Scripts
 
@@ -50,10 +51,10 @@ O `tsconfig.json` da raiz apenas referencia os demais, então `npx tsc --noEmit`
 
 ```
 src/
-├── components/   # Peças reutilizáveis (AppLayout, ProtectedRoute, StatusBadge...)
-├── pages/        # Telas completas, uma por rota (HomePage, ComparePage, LoginPage...)
-├── services/     # Comunicação com o backend (http.ts, apiError.ts, session.ts)
-├── hooks/        # Hooks reutilizáveis (useAuth; depois usePolling, useServices...)
+├── components/   # Peças reutilizáveis (AppLayout, LoginModal, SessionCard, StatusBadge...)
+├── pages/        # Telas completas, uma por rota (HomePage, AdminPage, ComparePage...)
+├── services/     # Comunicação com o backend (http, apiError, session, authApi, jwt)
+├── hooks/        # Hooks reutilizáveis (useAuth, useLogout, useLoginRedirect...)
 ├── contexts/     # Contexts do React (AuthContext)
 ├── providers/    # AppProviders: roteador + todos os contexts num único ponto
 ├── types/        # Tipos TypeScript compartilhados (ex.: ServiceState)
@@ -73,14 +74,16 @@ Convenções:
 
 | Rota | Acesso | Tela |
 |---|---|---|
-| `/` | Pública | Visão geral |
-| `/comparar` | Pública | Comparação de serviços |
-| `/login` | Pública | Entrar (formulário real na TASK-012) |
-| `/config` | **Protegida** | Configuração do monitoramento |
+| `/` | Pública | Observatório |
+| `/comparar` | Pública | Comparação de serviços (ainda sem link no menu) |
+| `/login` | Pública | **Modal** de login, aberto sobre o Observatório |
+| `/config` | **Protegida** | Área do Administrador |
 | qualquer outra | Pública | Página não encontrada |
 
 A consulta ao dashboard é pública. A rota protegida (`ProtectedRoute`) só controla a **navegação na
 interface**: quem barra de verdade é o backend, que valida o JWT em cada rota protegida.
+
+Abrir `/config` sem sessão leva a `/login`; depois do login a pessoa volta para a tela que tentou abrir.
 
 ## Chamadas HTTP (Axios)
 
@@ -89,7 +92,7 @@ interface**: quem barra de verdade é o backend, que valida o JWT em cada rota p
 | Instância | Uso | Token | Em caso de 401 |
 |---|---|---|---|
 | `publicApi` | Dashboard público e login | **Nunca** é enviado | Não encerra a sessão |
-| `privateApi` | Área de configuração | Envia `Authorization: Bearer <token>` | Encerra a sessão e leva ao login |
+| `privateApi` | Área do administrador | Envia `Authorization: Bearer <token>` | Encerra a sessão e leva ao login |
 
 Regras:
 
@@ -98,33 +101,54 @@ Regras:
 - Toda falha vira um `ApiError` (`src/services/apiError.ts`) com `kind`: `network` (sem resposta), `timeout`,
   `unauthorized` (401), `client` (outros 4xx) ou `server` (5xx). A interface escolhe a mensagem pelo `kind`.
 
-### Sessão
+## Autenticação
 
-O token fica apenas em memória (`src/services/session.ts`): recarregar a página encerra a sessão.
-O `AuthProvider` expõe `isAuthenticated`, `sessionExpired`, `login` e `logout` pelo hook `useAuth()`.
-A decisão definitiva de armazenamento do token será registrada na TASK-012.
+Contrato esperado do backend (`src/services/authApi.ts`, o único arquivo a ajustar se ele mudar):
+
+```
+POST /auth/login   { "email": "...", "password": "..." }
+  200  { "accessToken": "<jwt>" }     (também aceita "access_token")
+  401  { "message": "..." }
+```
+
+Como funciona:
+
+- O login é um **modal** (`<dialog>` nativo: foco preso, Esc fecha, fundo inerte), com validação dos campos,
+  indicador de envio e mensagens por tipo de falha: credencial inválida ("E-mail ou senha incorretos.",
+  genérica de propósito) é diferente de servidor fora do ar ("Serviço indisponível...").
+- O token fica **só em memória** (`src/services/session.ts`): recarregar a página encerra a sessão.
+  Não é guardado em `localStorage` nem em `sessionStorage`.
+- A Área do Administrador mostra e-mail, papel e expiração **lidos do token apenas para exibição**
+  (`src/services/jwt.ts`). O token em si nunca aparece na tela, e a validade real é decidida pelo backend.
+- A sessão termina por: **Sair**, resposta 401 de uma chamada protegida, ou vencimento do token.
+  Nos dois últimos casos, o modal avisa "Sua sessão expirou".
+- **Sair** volta ao Observatório e só então encerra a sessão (`useLogout`).
+
+O hook `useAuth()` expõe `isAuthenticated`, `session`, `sessionExpired`, `login` e `logout`.
 
 ## Tema (Tailwind)
 
 Os tokens ficam em `src/styles/index.css`, dentro de `@theme`. Cada `--color-*` vira utilitário
 (por exemplo `--color-brand` gera `text-brand`, `bg-brand` e `border-brand`).
-Os valores atuais são provisórios e devem ser alinhados ao protótipo do Figma.
+Os valores foram **estimados a partir dos esboços do Figma** e devem ser conferidos com o design system.
 
 | Token | Uso |
 |---|---|
 | `canvas`, `surface`, `surface-2`, `line` | Fundo, cartões e bordas |
-| `ink`, `ink-muted` | Texto principal e secundário |
-| `brand`, `cta`, `on-cta` | Marca e botão de ação (`on-cta` é a cor do texto sobre `cta`) |
+| `ink`, `ink-muted`, `ink-subtle` | Texto principal, secundário e de apoio (placeholders) |
+| `brand`, `on-brand` | Verde-limão da marca e a cor do texto sobre ele |
 | `state-ok`, `state-warn`, `state-down`, `state-removed` | Estados dos serviços |
 
 ## Acessibilidade da informação (RNF02)
 
 Os estados dos serviços **nunca dependem só da cor**. O `StatusBadge` combina cor, forma e texto:
 círculo (Ativo), losango (Sem métricas), triângulo (Indisponível) e quadrado (Removido).
+Erros de formulário aparecem como texto (e o campo recebe `aria-invalid`), e o aviso do login usa `role="alert"`.
 Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
 
 ## O que ainda vem
 
-- Tela de login e estado de autenticação completos: TASK-012 (o botão "Simular login" aparece só em
-  desenvolvimento e será removido).
-- Testes automatizados do interceptor e das rotas: quando houver um executor de testes no frontend.
+- Parâmetros de coleta (RF16) e histórico de coletas (RF10) na Área do Administrador: dependem das rotas
+  protegidas do backend.
+- A barra de status do topo (agregador operacional, última atualização, intervalo, pausar) e o Observatório completo.
+- Testes automatizados do frontend, quando houver um executor de testes configurado.
