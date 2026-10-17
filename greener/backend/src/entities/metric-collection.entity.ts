@@ -37,28 +37,32 @@ export class MetricCollection {
 
   @Column({
     type: 'numeric',
-    precision: 5,
-    scale: 2,
+    precision: 20,
+    scale: 6,
     nullable: true,
   })
   cpu_usage: string | null;
 
   @Column({
     type: 'numeric',
-    precision: 5,
-    scale: 2,
+    precision: 20,
+    scale: 6,
     nullable: true,
   })
   memory_usage: string | null;
 
   @Column({
-    type: 'bigint',
+    type: 'numeric',
+    precision: 20,
+    scale: 6,
     nullable: true,
   })
   storage_usage: string | null;
 
   @Column({
-    type: 'bigint',
+    type: 'numeric',
+    precision: 20,
+    scale: 6,
     nullable: true,
   })
   network_io: string | null;
