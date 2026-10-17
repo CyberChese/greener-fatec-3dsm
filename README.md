@@ -143,11 +143,46 @@ JWT_SECRET=sua_chave_secreta_jwt_super_segura
 JWT_EXPIRATION=1d
 
 # APIs Auxiliares UniLaunch
-METRICS_AGGREGATOR_URL=https://metrics.unilaunch.org
+AGGREGATOR_API_URL=https://metrics.unilaunch.org
+AGGREGATOR_SERVICES_PATH=/services
+AGGREGATOR_TIMEOUT=5000
+METRICS_COLLECTION_INTERVAL_SECONDS=30
 CARBON_INTENSITY_URL=https://carbon.unilaunch.org
+FRONTEND_ORIGIN=http://localhost:3000
 ```
 
+`FRONTEND_ORIGIN` define a origem permitida para chamadas do navegador ao backend.
+
 ---
+
+### Coleta periódica de métricas
+
+O backend usa `METRICS_COLLECTION_INTERVAL_SECONDS`, configurado no `.env` e validado na
+inicialização. O padrão do projeto é **30 segundos**; esse intervalo é aguardado após o término de
+cada ciclo antes de iniciar o próximo, evitando sobreposição.
+
+O coletor consulta somente serviços `ACTIVE` com endpoint configurado, usando o `metrics_path`
+persistido pela sincronização da TASK-014 para chamar `GET {AGGREGATOR_API_URL}{metrics_path}`.
+Serviços sem endpoint ainda não são elegíveis para coleta. O contrato atual do Agregador documenta:
+
+| Campo do Agregador | Campo persistido | Unidade |
+| --- | --- | --- |
+| `cpu_percent` | `cpu_usage` | percentual |
+| `memory_gb` | `memory_usage` | GB |
+| `disk_gb` | `storage_usage` | GB |
+| `network_gb` | `network_io` | GB |
+
+O instante em que a resposta da coleta é recebida fica salvo em `timestamp`. O histórico pode ser
+consultado por UUID interno do serviço em
+`GET /services/:id/history?from=<ISO-8601>&to=<ISO-8601>` (os limites são inclusivos).
+`GET /metrics/collection-config` retorna o intervalo efetivo e o horário global da última
+coleta registrada; a tela inicial atualiza essas informações automaticamente.
+
+Depois de iniciar o PostgreSQL pela primeira vez, aplique as migrações (incluindo a alteração de
+precisão dos campos de métricas) com `docker compose exec greener-backend npm run migration:run`.
+
+O Agregador descreve esses campos em seu [contrato OpenAPI](https://metrics.unilaunch.org/openapi.json).
+A descoberta e sincronização da TASK-014 cadastra e atualiza os serviços antes das coletas.
 
 ## 🔌 Documentação dos Endpoints da API
 
@@ -159,7 +194,8 @@ CARBON_INTENSITY_URL=https://carbon.unilaunch.org
 | `GET` | `/api/metrics/summary` | Retorna indicadores consolidados (Consumo Total kWh, Emissão Total $\text{CO}_2\text{e}$, Total de Serviços). |
 | `GET` | `/api/metrics/ranking` | Retorna o ranking de serviços ordenados por maior consumo de energia ou emissão de $\text{CO}_2\text{e}$. |
 | `GET` | `/api/metrics/compare` | Compara dois ou mais serviços em um período específico. |
-| `GET` | `/api/services/:id/history` | Retorna o histórico temporal de coletas do serviço. |
+| `GET` | `/services/:id/history` | Retorna o histórico temporal de coletas do serviço. |
+| `GET` | `/metrics/collection-config` | Informa o intervalo efetivo de coleta em segundos. |
 
 ### 🔐 Rotas Autenticadas (Requer JWT Header `Authorization: Bearer <token>`)
 

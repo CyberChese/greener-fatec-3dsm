@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import {
     AggregatorClientError,
     AggregatorConfigError,
+    AggregatorContractError,
     AggregatorHttpError,
     AggregatorTimeoutError,
     AggregatorUnavailableError,
@@ -29,18 +30,7 @@ export class AggregatorClientService {
         const url = this.buildUrl();
         const timeoutMs = this.timeoutMs;
 
-        let data: unknown;
-        try {
-            const res = await firstValueFrom(
-                this.httpService.get<unknown>(url, {
-                    signal: AbortSignal.timeout(timeoutMs),
-                    headers: { Accept: 'application/json' },
-                }),
-            );
-            data = res.data;
-        } catch (e) {
-            throw this.toClientError(e, url, timeoutMs);
-        }
+        const data = await this.fetchJson(url, timeoutMs);
 
         try {
             const { services, invalidCount } = mapDiscoveryResponse(data);
@@ -67,7 +57,52 @@ export class AggregatorClientService {
         }
     }
 
+    async fetchMetrics(metricsPath: string): Promise<unknown> {
+        const baseUrl = this.buildBaseUrl();
+        if (
+            !metricsPath.startsWith('/') ||
+            metricsPath.startsWith('//') ||
+            /[?#]/.test(metricsPath)
+        ) {
+            throw new AggregatorContractError(
+                'Caminho de métricas fora do contrato: esperado um caminho relativo.',
+            );
+        }
+
+        const url = new URL(metricsPath, baseUrl);
+        if (url.origin !== baseUrl.origin) {
+            throw new AggregatorContractError(
+                'Caminho de métricas fora do contrato: a origem não pode ser alterada.',
+            );
+        }
+
+        return this.fetchJson(url.toString(), this.timeoutMs);
+    }
+
+    private async fetchJson(url: string, timeoutMs: number): Promise<unknown> {
+        try {
+            const response = await firstValueFrom(
+                this.httpService.get<unknown>(url, {
+                    signal: AbortSignal.timeout(timeoutMs),
+                    headers: { Accept: 'application/json' },
+                }),
+            );
+            return response.data;
+        } catch (error) {
+            throw this.toClientError(error, url, timeoutMs);
+        }
+    }
+
     private buildUrl(): string {
+        const base = this.buildBaseUrl().toString().replace(/\/+$/, '');
+        const path = this.configService.get<string>(
+            'AGGREGATOR_SERVICES_PATH',
+            '/services',
+        );
+        return `${base}/${path.replace(/^\/+/, '')}`;
+    }
+
+    private buildBaseUrl(): URL {
         const base = this.configService.get<string>('AGGREGATOR_API_URL');
         if (!base) {
             const err = new AggregatorConfigError(
@@ -77,11 +112,32 @@ export class AggregatorClientService {
             throw err;
         }
 
-        const path = this.configService.get<string>(
-            'AGGREGATOR_SERVICES_PATH',
-            '/services',
-        );
-        return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+        let url: URL;
+        try {
+            url = new URL(base);
+        } catch {
+            const err = new AggregatorConfigError(
+                'AGGREGATOR_API_URL deve ser uma URL HTTP(S) válida.',
+            );
+            this.logger.error(err.message);
+            throw err;
+        }
+
+        if (
+            !['http:', 'https:'].includes(url.protocol) ||
+            url.username ||
+            url.password ||
+            url.search ||
+            url.hash
+        ) {
+            const err = new AggregatorConfigError(
+                'AGGREGATOR_API_URL deve ser uma URL HTTP(S) sem credenciais, query ou fragmento.',
+            );
+            this.logger.error(err.message);
+            throw err;
+        }
+
+        return url;
     }
 
     private get timeoutMs(): number {
