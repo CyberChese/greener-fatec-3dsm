@@ -23,7 +23,8 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
     "migration:show": "npm run typeorm -- migration:show -d src/data-source.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts"
+    "migration:revert": "npm run typeorm -- migration:revert -d src/data-source.ts",
+    "seed": "ts-node -r tsconfig-paths/register src/seeds/user.seed.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^12.0.1",
@@ -43,7 +44,7 @@
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^1.1.1"
+    "typeorm": "^1.1.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.0",
