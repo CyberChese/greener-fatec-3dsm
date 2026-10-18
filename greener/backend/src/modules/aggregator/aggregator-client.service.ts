@@ -47,7 +47,7 @@ export class AggregatorClientService {
 
             return {
                 services,
-                isComplete: false,
+                isComplete: invalidCount === 0,
             };
         } catch (e) {
             if (e instanceof AggregatorClientError) {
@@ -166,7 +166,9 @@ export class AggregatorClientService {
                     url,
                     e.response.status,
                 );
-                this.logger.error(`${err.name}: ${err.message} (${url})`);
+                if (e.response.status !== 404) {
+                    this.logger.error(`${err.name}: ${err.message} (${url})`);
+                }
                 return err;
             }
         }

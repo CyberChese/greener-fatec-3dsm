@@ -39,7 +39,7 @@ export class ServiceDiscoveryService implements OnModuleInit {
         external_id: discovered.externalId,
         nameServices: discovered.name,
         endpoint: discovered.metricsPath ?? previous?.endpoint ?? null,
-        status: ServiceStatus.ACTIVE,
+        status: previous?.status ?? ServiceStatus.NO_METRICS,
         country: discovered.location.country ?? previous?.country ?? null,
         region: discovered.location.region ?? previous?.region ?? null,
         city: discovered.location.city ?? previous?.city ?? null,

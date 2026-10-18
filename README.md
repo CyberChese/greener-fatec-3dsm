@@ -161,9 +161,17 @@ O backend usa `METRICS_COLLECTION_INTERVAL_SECONDS`, configurado no `.env` e val
 inicialização. O padrão do projeto é **30 segundos**; esse intervalo é aguardado após o término de
 cada ciclo antes de iniciar o próximo, evitando sobreposição.
 
-O coletor consulta somente serviços `ACTIVE` com endpoint configurado, usando o `metrics_path`
+O coletor tenta todos os serviços conhecidos com endpoint configurado, usando o `metrics_path`
 persistido pela sincronização da TASK-014 para chamar `GET {AGGREGATOR_API_URL}{metrics_path}`.
-Serviços sem endpoint ainda não são elegíveis para coleta. O contrato atual do Agregador documenta:
+Isso permite que serviços `UNAVAILABLE` e `NO_METRICS` sejam reavaliados nos ciclos seguintes;
+serviços sem endpoint ficam em `NO_METRICS` até a descoberta fornecer um. Timeout, falha de
+conexão, HTTP 500 ou HTTP 404 define `UNAVAILABLE` (404 significa que o serviço foi removido
+ou não tem métricas, conforme a OpenAPI); o 404 é registrado como aviso, sem stack trace. Uma
+resposta sem métricas válidas define `NO_METRICS`; só uma resposta válida cujas métricas foram
+persistidas define `ACTIVE` — a descoberta sozinha não ativa o serviço. Essas transições não
+apagam o histórico. Uma omissão na descoberta só define `UNAVAILABLE` quando a resposta é válida
+e completa; respostas parciais ou falhas da API não contam como remoção.
+O contrato atual do Agregador documenta:
 
 | Campo do Agregador | Campo persistido | Unidade |
 | --- | --- | --- |

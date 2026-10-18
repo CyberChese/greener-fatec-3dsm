@@ -53,6 +53,7 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 
 ## Regras do cliente
 - Item sem `id` ou `name` é descartado e contado em log (nenhum valor é inventado).
+- Uma lista em que todos os itens são válidos é considerada uma descoberta completa; itens descartados tornam a resposta incompleta, portanto omissões não indicam remoção.
 - `location` e `metrics_path` são opcionais: ausência de coordenadas não impede o serviço (RF13).
 - Resposta que não é array → `AggregatorContractError`.
 - Falhas viram erros tipados (`AggregatorTimeoutError`, `AggregatorHttpError`, `AggregatorUnavailableError`, `AggregatorConfigError`, `AggregatorContractError`), todas registradas em log. Quem chama deve capturar (RNF05).
@@ -63,4 +64,5 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 - **Mapeamento persistido:** `cpu_percent` → `cpu_usage` (**percentual**); `memory_gb` → `memory_usage` (**GB**); `disk_gb` → `storage_usage` (**GB**); `network_gb` → `network_io` (**GB**).
 - `collection_interval_seconds` é o intervalo informado pelo agregador e não substitui o intervalo de agendamento local.
 - O coletor persiste o instante da resposta em `MetricCollection.timestamp`. Serviços ativos sem `metrics_path` não são coletados até que tenham um endpoint configurado.
+- Timeout, falha de conexão, HTTP 500 ou HTTP 404 atualiza o serviço para `UNAVAILABLE`; pela OpenAPI, 404 significa que o serviço foi removido ou não tem métricas. O 404 é registrado como aviso, sem stack trace, e a coleta tenta novamente no ciclo seguinte para permitir recuperação. Uma resposta sem métricas válidas atualiza para `NO_METRICS`. Descobrir um serviço não o ativa por si só: somente uma resposta válida e persistida atualiza para `ACTIVE`. O histórico de coletas não é removido por essas transições.
 - A especificação foi conferida em `GET /openapi.json` e com `GET /metrics/billing-api` em 16/10/2026.
