@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
+  In,
   LessThanOrEqual,
   MoreThanOrEqual,
   Repository,
@@ -18,6 +19,11 @@ import {
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
+import {
+  AggregatorHttpError,
+  AggregatorTimeoutError,
+  AggregatorUnavailableError,
+} from '../modules/aggregator/aggregator.errors';
 
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
@@ -34,6 +40,13 @@ interface AggregatorMetricsResponse {
   metrics: AggregatorMetrics;
 }
 
+class MetricsContractError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = MetricsContractError.name;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -44,7 +57,9 @@ function isNonNegativeNumber(value: unknown): value is number {
 
 function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
   if (!isRecord(value) || !isRecord(value.metrics)) {
-    throw new Error('Metrics Aggregator returned an invalid metrics response.');
+    throw new MetricsContractError(
+      'Metrics Aggregator returned an invalid metrics response.',
+    );
   }
 
   const collectionIntervalSeconds = value.collection_interval_seconds;
@@ -60,7 +75,9 @@ function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
     !isNonNegativeNumber(disk_gb) ||
     !isNonNegativeNumber(network_gb)
   ) {
-    throw new Error('Metrics Aggregator returned metrics outside the documented contract.');
+    throw new MetricsContractError(
+      'Metrics Aggregator returned metrics outside the documented contract.',
+    );
   }
 
   return {
@@ -140,11 +157,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
 
   async collectCycle(): Promise<void> {
     const activeServices = await this.serviceRepository.find({
-      where: { status: ServiceStatus.ACTIVE },
+      where: { status: In(Object.values(ServiceStatus)) },
     });
 
     for (const service of activeServices) {
       if (!service.endpoint) {
+        await this.updateServiceStatus(service, ServiceStatus.NO_METRICS);
         this.logger.warn(
           `Metric collection skipped for service "${service.external_id}": no metrics endpoint is configured.`,
         );
@@ -154,6 +172,13 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.collectService(service, service.endpoint);
       } catch (error) {
+        if (error instanceof AggregatorHttpError && error.statusCode === 404) {
+          this.logger.warn(
+            `Metrics endpoint for service "${service.external_id}" returned HTTP 404; service remains unavailable and will be retried.`,
+          );
+          continue;
+        }
+
         const detail = error instanceof Error ? error.stack : String(error);
         this.logger.error(
           `Metric collection failed for service "${service.external_id}".`,
@@ -233,9 +258,24 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async collectService(service: Service, metricsPath: string): Promise<void> {
-    const metricsResponse = parseMetricsResponse(
-      await this.aggregatorClient.fetchMetrics(metricsPath),
-    );
+    let metricsResponse: AggregatorMetricsResponse;
+    try {
+      metricsResponse = parseMetricsResponse(
+        await this.aggregatorClient.fetchMetrics(metricsPath),
+      );
+    } catch (error) {
+      if (error instanceof MetricsContractError) {
+        await this.updateServiceStatus(service, ServiceStatus.NO_METRICS);
+      } else if (
+        error instanceof AggregatorHttpError ||
+        error instanceof AggregatorTimeoutError ||
+        error instanceof AggregatorUnavailableError
+      ) {
+        await this.updateServiceStatus(service, ServiceStatus.UNAVAILABLE);
+      }
+      throw error;
+    }
+
     const { metrics } = metricsResponse;
     const timestamp = new Date();
 
@@ -250,5 +290,21 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         timestamp,
       }),
     );
+    await this.updateServiceStatus(service, ServiceStatus.ACTIVE);
+  }
+
+  private async updateServiceStatus(
+    service: Service,
+    status: ServiceStatus,
+  ): Promise<void> {
+    if (service.status === status) {
+      return;
+    }
+
+    await this.serviceRepository.update(
+      { idServices: service.idServices },
+      { status },
+    );
+    service.status = status;
   }
 }

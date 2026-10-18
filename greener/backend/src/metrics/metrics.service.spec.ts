@@ -1,9 +1,13 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
+import {
+  AggregatorHttpError,
+  AggregatorTimeoutError,
+} from '../modules/aggregator/aggregator.errors';
 import { MetricsService } from './metrics.service';
 
 describe('MetricsService', () => {
@@ -16,6 +20,7 @@ describe('MetricsService', () => {
   let services: {
     find: jest.Mock;
     findOneBy: jest.Mock;
+    update: jest.Mock;
   };
   let collections: {
     create: jest.Mock;
@@ -28,9 +33,11 @@ describe('MetricsService', () => {
   };
 
   beforeEach(() => {
+    service.status = ServiceStatus.ACTIVE;
     services = {
       find: jest.fn().mockResolvedValue([service]),
       findOneBy: jest.fn().mockResolvedValue(service),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     collections = {
       create: jest.fn((value: object) => value as MetricCollection),
@@ -76,7 +83,7 @@ describe('MetricsService', () => {
     await metricsService.collectCycle();
 
     expect(services.find).toHaveBeenCalledWith({
-      where: { status: ServiceStatus.ACTIVE },
+      where: { status: In(Object.values(ServiceStatus)) },
     });
     expect(aggregatorClient.fetchMetrics).toHaveBeenCalledWith(
       '/metrics/billing-api',
@@ -108,6 +115,10 @@ describe('MetricsService', () => {
     await metricsService.collectCycle();
 
     expect(collections.save).not.toHaveBeenCalled();
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
     expect(loggerError).toHaveBeenCalledWith(
       expect.stringContaining('billing-api'),
       expect.any(String),
@@ -122,7 +133,88 @@ describe('MetricsService', () => {
 
     expect(aggregatorClient.fetchMetrics).not.toHaveBeenCalled();
     expect(collections.save).not.toHaveBeenCalled();
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
   });
+
+  it.each([
+    ['a timeout', new AggregatorTimeoutError('Request timed out', '/metrics')],
+    ['an HTTP failure', new AggregatorHttpError('HTTP 500', '/metrics', 500)],
+    ['an absent service response', new AggregatorHttpError('HTTP 404', '/metrics', 404)],
+  ])('marks a service unavailable after %s and continues the cycle', async (_, error) => {
+    const secondService = {
+      ...service,
+      idServices: 'efc7aa92-c05f-4971-b711-5ad006752b3b',
+      external_id: 'catalog-api',
+    } as Service;
+    services.find.mockResolvedValue([service, secondService]);
+    aggregatorClient.fetchMetrics.mockRejectedValueOnce(error);
+
+    await metricsService.collectCycle();
+
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.UNAVAILABLE },
+    );
+    expect(collections.save).toHaveBeenCalledWith(
+      expect.objectContaining({ service_id: secondService.idServices }),
+    );
+  });
+
+  it('reports a 404 endpoint as a warning without logging an exception stack', async () => {
+    aggregatorClient.fetchMetrics.mockRejectedValue(
+      new AggregatorHttpError('HTTP 404', '/metrics', 404),
+    );
+    const loggerWarn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+    await metricsService.collectCycle();
+
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.UNAVAILABLE },
+    );
+    expect(loggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining('returned HTTP 404'),
+    );
+    expect(loggerError).not.toHaveBeenCalled();
+  });
+
+  it('marks a valid response without all required metrics as NO_METRICS', async () => {
+    aggregatorClient.fetchMetrics.mockResolvedValue({
+      collection_interval_seconds: 27,
+      metrics: {
+        cpu_percent: 62.67,
+        memory_gb: 3.17,
+        disk_gb: 19.26,
+      },
+    });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).not.toHaveBeenCalled();
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
+  });
+
+  it.each([ServiceStatus.UNAVAILABLE, ServiceStatus.NO_METRICS])(
+    'reactivates a service in %s after receiving valid metrics',
+    async (status) => {
+      service.status = status;
+
+      await metricsService.collectCycle();
+
+      expect(collections.save).toHaveBeenCalled();
+      expect(services.update).toHaveBeenCalledWith(
+        { idServices: service.idServices },
+        { status: ServiceStatus.ACTIVE },
+      );
+    },
+  );
 
   it('filters a service history by inclusive dates', async () => {
     const from = '2026-10-01T00:00:00.000Z';
