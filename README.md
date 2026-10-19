@@ -14,14 +14,50 @@ O **GreenER** é uma plataforma web desenvolvida para monitorar aplicações de 
 
 O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Projetos (ABP)** do 3º semestre do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Jacareí** (período 2026-2), em parceria com a **UniLaunch**.
 
-## 🎨 Design System e Wireframes (Figma)
-- **Link do Figma:** [Acessar Projeto no Figma](https://www.figma.com/design/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE)
+---
 
 ### 🎯 Problema & Solução
 * **Problema:** Empresas operam dezenas ou centenas de microsserviços em nuvem. As métricas tradicionais de telemetria medem desempenho e disponibilidade, mas não oferecem visibilidade sobre o custo ambiental e a pegada de carbono da infraestrutura.
 * **Solução:** O **GreenER** descobre dinamicamente os serviços ativos, realiza coletas periódicas do endpoint `/metrics/{id_servico}` e integra dados com o **Serviço de Intensidade de Carbono** por região geográfica, consolidando rankings de impacto, histórico e visualizações geográficas em um dashboard operacional responsivo.
 
 ---
+## 🎨 Design System e Wireframes (Figma)
+- **Link do Figma:** [Acessar Projeto no Figma](https://www.figma.com/design/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=4-3&t=uQXMxQQpH5LZaIfk-1)
+
+- **🔗 Protótipo interativo (navegável):** [Abrir protótipo](https://www.figma.com/proto/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=10-41&t=QK9tYfSXJ4x1c5a1-0&scaling=min-zoom&content-scaling=fixed&page-id=4%3A3&starting-point-node-id=10%3A41&show-proto-sidebar=1)
+
+
+### Fluxo mapeado
+
+```
+Dashboard · Visão geográfica
+   │  aba "Área do Administrador"
+   ▼
+Login · modal
+   │  "Entrar" ─────────► Área do Administrador · autenticada
+   │  "✕" ─► volta ao Dashboard          │  aba "Observatório" / "Sair"
+   ▼                                      ▼
+                              Dashboard · Visão geográfica
+```
+
+| # | Origem | Gatilho | Ação | Destino |
+|---|---|---|---|---|
+| 1 | Dashboard · aba "Área do Administrador" | Ao clicar | Navegar para | Login · modal |
+| 2 | Login · "Entrar" | Ao clicar | Navegar para | Área do Administrador autenticada |
+| 3 | Login · "✕" | Ao clicar | Navegar para | Dashboard |
+| 4 | Área do Administrador · aba "Observatório" | Ao clicar | Navegar para | Dashboard |
+| 5 | Área do Administrador · "Sair" | Ao clicar | Navegar para | Dashboard |
+| 6 | Dashboard · "Tabela" / "Cartões" | Ao clicar | Rolar até | Detalhes dos serviços / Grade de cartões |
+
+### Teste de usabilidade (IHC)
+
+Teste empírico com 2 participantes (Luka Gomes e Isabelly Marinho), com observação direta e coleta de feedback.
+
+- **Resultado:** ambos aprovaram a navegação, as cores e o design, e consideraram que o protótipo atende às especificações do projeto.
+- **Encaminhamento:** os dois destacaram que o feedback do cliente é o mais importante para sugerir mudanças de cores, design e elementos; a equipe apresentará o protótipo ao cliente para essa validação.
+- **Pontos de fricção e ajustes de IHC** (contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma): detalhados no relatório.
+
+📄 **Relatório completo:** [`greener/docs/ihc/relatorio-usabilidade.md`](greener/docs/ihc/relatorio-usabilidade.md)
 
 ## 🏗️ Arquitetura e Fluxo de Dados
 
