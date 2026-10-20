@@ -3,7 +3,7 @@
 **Task:** `[FIGMA]` · Módulo Design · Prioridade Média · 3 pts · Requisitos **RNF01 · RP09**
 **Dependência:** TASK-006 (Design System e telas de alta fidelidade)
 **Protótipo navegável:** [Abrir protótipo](https://www.figma.com/proto/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=10-41&t=QK9tYfSXJ4x1c5a1-0&scaling=min-zoom&content-scaling=fixed&page-id=4%3A3&starting-point-node-id=10%3A41&show-proto-sidebar=1)
-**Data dos testes:** [16/10/2026]
+**Data dos testes:** 16/10/2026
 
 ---
 
@@ -28,17 +28,21 @@ Verificar se o protótipo navegável do GreenER permite percorrer o fluxo **Dash
 
 ## 3. Participantes
 
-| Código | Participante | Perfil |
-|---|---|---|
-| P1 | Luka Gomes | Colega (usuário de teste) |
-| P2 | Isabelly Marinho | Colega (usuária de teste) |
+| Código | Perfil |
+|---|---|
+| P1 | Estudante de DSM, integrante da equipe |
+| P2 | Estudante de DSM, integrante da equipe |
+
+Os participantes são identificados apenas por código, para preservar seus dados pessoais.
+
+> **Limitação:** os dois participantes fazem parte da equipe de desenvolvimento e, portanto, não são usuários representativos do GreenER (ver perfis em [`interface.md`](../interface.md#11-perfis-de-usuários)). Esta avaliação serviu como validação inicial do fluxo do protótipo. A avaliação com usuários representativos está prevista para a Sprint 3 (critério IHC05).
 
 ## 4. Feedbacks recebidos
 
 | Participante | Feedback |
 |---|---|
-| P1 — Luka Gomes | Gostou da navegação, das cores e do design. |
-| P2 — Isabelly Marinho | Gostou da navegação, das cores e do design. |
+| P1 | Gostou da navegação, das cores e do design. |
+| P2 | Gostou da navegação, das cores e do design. |
 | P1 e P2 | Ambos apontaram que o mais importante é o **feedback do cliente** para sugerir melhorias (mudança de cores, design, elementos etc.), pois a validação dele é a que mais pesa. Na avaliação dos dois, o design atual já atende aos critérios e às especificações do projeto. |
 
 **Síntese:** os dois participantes aprovaram navegação, paleta e design, e recomendaram validar o protótipo com o cliente antes de mudanças visuais maiores. A equipe adotou isso como encaminhamento: o protótipo será apresentado ao cliente e o retorno dele orientará eventuais alterações de cores, design e elementos.
@@ -77,6 +81,10 @@ Além do feedback dos participantes, a equipe analisou as telas e os tokens do D
 | F9 | Marcadores/estilo de linha distintos e tooltip no gráfico | ☐ |
 | F10 | Reescrever o texto do intervalo e criar o estado "Retomar" | ☐ |
 
-## 7. Conclusão
+## 7. Situação dos ajustes na implementação
 
-Os participantes Luka Gomes e Isabelly Marinho avaliaram positivamente a navegação, as cores e o design do protótipo e consideraram que ele atende às especificações do projeto. Ambos destacaram que a validação do cliente é a mais relevante para decidir mudanças de cores, design e elementos, o que ficou como próximo passo da equipe. A inspeção heurística apontou ajustes de usabilidade e acessibilidade pontuais (contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma), listados na seção 6 e independentes de preferência estética.
+Os ajustes da seção 6 se referem ao protótipo no Figma. Na implementação da Sprint 1, os pontos **F2** (estados de erro e carregamento no login) e **F4** (token não exibido na tela) já foram atendidos no código do frontend, conforme [`interface.md`](../interface.md#5-melhorias-decorrentes-da-avaliação). Os demais serão acompanhados por issues nas Sprints 2 e 3.
+
+## 8. Conclusão
+
+Os participantes P1 e P2 avaliaram positivamente a navegação, as cores e o design do protótipo e consideraram que ele atende às especificações do projeto. Ambos destacaram que a validação do cliente é a mais relevante para decidir mudanças de cores, design e elementos, o que ficou como próximo passo da equipe. A inspeção heurística apontou ajustes de usabilidade e acessibilidade pontuais (contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma), listados na seção 6 e independentes de preferência estética.
