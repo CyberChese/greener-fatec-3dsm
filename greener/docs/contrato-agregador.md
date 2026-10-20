@@ -42,7 +42,7 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 | `id` | string | Identificador estável do serviço (obrigatório) | `externalId` → `Service.external_id` |
 | `name` | string | Nome do serviço (obrigatório) | `name` |
 | `metrics_path` | string | Caminho **relativo** do endpoint de métricas do serviço | `Service.endpoint` (TASK-014) e usado pelo coletor |
-| `location.region_code` | string | Código da região de nuvem | `location.regionCode` |
+| `location.region_code` | string | Código da região de nuvem | `location.regionCode` (lido, mas ainda não gravado no banco; previsto para a Sprint 2) |
 | `location.country` | string | País | `location.country` |
 | `location.region` | string | Região/Estado | `location.region` |
 | `location.city` | string | Cidade | `location.city` |
