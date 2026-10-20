@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de tema do GreenER (tema escuro, grafite com verde-limão).
+ * Cada --color-* vira utilitário do Tailwind: --color-canvas => bg-canvas, text-canvas...
+ * Os valores foram estimados a partir dos esboços do Figma e devem ser conferidos
+ * com o design system do projeto.
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Base */
+  --color-canvas: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-2: #1c1c1c;
+  --color-line: #2a2a2a;
+  --color-ink: #f5f5f5;
+  --color-ink-muted: #a3a3a3;
+  --color-ink-subtle: #8a8a8a;
+
+  /* Marca e ação */
+  --color-brand: #a3e635;
+  --color-on-brand: #0a0a0a;
+
+  /* Estados dos serviços (sempre acompanhar de ícone e texto: RNF02) */
+  --color-state-ok: #4ade80; /* disponível */
+  --color-state-warn: #fbbf24; /* sem métricas */
+  --color-state-down: #f87171; /* indisponível */
+  --color-state-removed: #94a3b8; /* removido */
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Foco visível para navegação por teclado */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
