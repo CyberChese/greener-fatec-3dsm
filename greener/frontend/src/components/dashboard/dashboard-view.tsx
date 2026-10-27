@@ -5,6 +5,7 @@ import type { UseMetricsResult } from '@/hooks/use-metrics'
 import { aggregateSnapshots, haversineKm, totalsByService } from '@/lib/calculations'
 import type { PeriodTotals } from '@/lib/calculations'
 import { IS_SIMULATED } from '@/lib/dataSource'
+import { CollectionStatusPanel } from './collection-status-panel'
 import type { DashboardFilters, Period, RankingMetric, ServiceSnapshot } from '@/lib/types'
 import { ComparisonPanel } from './comparison-panel'
 import { CardHeading, GlassCard } from './glass-card'
@@ -125,6 +126,8 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
           </p>
         </div>
       ) : null}
+
+      {!IS_SIMULATED ? <CollectionStatusPanel /> : null}
 
       {apiErrors.length > 0 ? (
         <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 px-4 py-3 text-sm text-orange-200">

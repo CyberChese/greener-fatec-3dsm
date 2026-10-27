@@ -41,8 +41,8 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 |---|---|---|---|
 | `id` | string | Identificador estável do serviço (obrigatório) | `externalId` → `Service.external_id` |
 | `name` | string | Nome do serviço (obrigatório) | `name` |
-| `metrics_path` | string | Caminho **relativo** do endpoint de métricas do serviço | `metricsPath` (TASK-014 decide como gravar em `Service.endpoint`) |
-| `location.region_code` | string | Código da região de nuvem | `location.regionCode` |
+| `metrics_path` | string | Caminho **relativo** do endpoint de métricas do serviço | `Service.endpoint` (TASK-014) e usado pelo coletor |
+| `location.region_code` | string | Código da região de nuvem | `location.regionCode` (lido, mas ainda não gravado no banco; previsto para a Sprint 2) |
 | `location.country` | string | País | `location.country` |
 | `location.region` | string | Região/Estado | `location.region` |
 | `location.city` | string | Cidade | `location.city` |
@@ -53,10 +53,16 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 
 ## Regras do cliente
 - Item sem `id` ou `name` é descartado e contado em log (nenhum valor é inventado).
+- Uma lista em que todos os itens são válidos é considerada uma descoberta completa; itens descartados tornam a resposta incompleta, portanto omissões não indicam remoção.
 - `location` e `metrics_path` são opcionais: ausência de coordenadas não impede o serviço (RF13).
 - Resposta que não é array → `AggregatorContractError`.
 - Falhas viram erros tipados (`AggregatorTimeoutError`, `AggregatorHttpError`, `AggregatorUnavailableError`, `AggregatorConfigError`, `AggregatorContractError`), todas registradas em log. Quem chama deve capturar (RNF05).
 
-## Pendências a confirmar
-- Formato real de `GET /metrics/{id}` (campos, unidades, `network_io` em bytes ou MB?). **Não foi verificado**: confira antes da TASK de coleta.
-- Existe campo de estado do serviço na descoberta? Nas respostas observadas, não.
+## Coleta de métricas (RF03/RF04/RF10)
+- **Método e rota:** `GET {metrics_path}` retornado pela descoberta (ex.: `/metrics/billing-api`).
+- **Formato:** objeto com `collection_interval_seconds` e `metrics`.
+- **Mapeamento persistido:** `cpu_percent` → `cpu_usage` (**percentual**); `memory_gb` → `memory_usage` (**GB**); `disk_gb` → `storage_usage` (**GB**); `network_gb` → `network_io` (**GB**).
+- `collection_interval_seconds` é o intervalo informado pelo agregador e não substitui o intervalo de agendamento local.
+- O coletor persiste o instante da resposta em `MetricCollection.timestamp`. Serviços ativos sem `metrics_path` não são coletados até que tenham um endpoint configurado.
+- Timeout, falha de conexão, HTTP 500 ou HTTP 404 atualiza o serviço para `UNAVAILABLE`; pela OpenAPI, 404 significa que o serviço foi removido ou não tem métricas. O 404 é registrado como aviso, sem stack trace, e a coleta tenta novamente no ciclo seguinte para permitir recuperação. Uma resposta sem métricas válidas atualiza para `NO_METRICS`. Descobrir um serviço não o ativa por si só: somente uma resposta válida e persistida atualiza para `ACTIVE`. O histórico de coletas não é removido por essas transições.
+- A especificação foi conferida em `GET /openapi.json` e com `GET /metrics/billing-api` em 16/10/2026.

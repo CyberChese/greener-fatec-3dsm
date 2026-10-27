@@ -103,13 +103,16 @@ Regras:
 
 ## Autenticação
 
-Contrato esperado do backend (`src/services/authApi.ts`, o único arquivo a ajustar se ele mudar):
+Contrato do backend (`src/services/authApi.ts`, o único arquivo a ajustar se ele mudar). O caminho é relativo a `VITE_API_URL`, que já termina em `/api`:
 
 ```
 POST /auth/login   { "email": "...", "password": "..." }
-  200  { "accessToken": "<jwt>" }     (também aceita "access_token")
-  401  { "message": "..." }
+  200  { "access_token": "<jwt>", "user": { "id", "email", "name" } }   (também aceita "accessToken")
+  400  { "message": ["..."] }   dados inválidos
+  401  { "message": "Credenciais inválidas." }
 ```
+
+Documentação completa da API em [`docs/api.md`](../docs/api.md).
 
 Como funciona:
 
@@ -147,6 +150,9 @@ Erros de formulário aparecem como texto (e o campo recebe `aria-invalid`), e o 
 Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
 
 ## O que ainda vem
+
+- Alinhar `src/types/service.ts` aos estados do backend (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`) quando o dashboard passar a consumir `GET /api/services`. Hoje a tela inicial mostra apenas a legenda dos estados.
+- O campo "Papel" da sessão aparece como "—", porque o JWT do backend ainda não inclui o papel do usuário.
 
 - Parâmetros de coleta (RF16) e histórico de coletas (RF10) na Área do Administrador: dependem das rotas
   protegidas do backend.
