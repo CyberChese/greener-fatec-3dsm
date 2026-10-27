@@ -20,7 +20,7 @@ export function FormField({ id, label, error, className, ...inputProps }: FormFi
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
         className={`h-13 rounded-xl border bg-canvas px-4 text-ink placeholder:text-ink-subtle ${
-          error ? 'border-state-down' : 'border-line'
+          error ? 'border-state-down' : 'border-edge'
         } ${className ?? ''}`}
         {...inputProps}
       />

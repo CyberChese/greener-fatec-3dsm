@@ -35,9 +35,9 @@ function Kpi({
         <p className="text-sm text-zinc-400">{label}</p>
         <p className="mt-0.5 flex items-baseline gap-1.5">
           <span className="font-mono text-2xl font-semibold tabular-nums text-zinc-50">{value}</span>
-          <span className="text-xs text-zinc-500">{unit}</span>
+          <span className="text-xs text-ink-subtle">{unit}</span>
         </p>
-        <p className="mt-1 truncate text-xs text-zinc-500">{hint}</p>
+        <p className="mt-1 truncate text-xs text-ink-subtle">{hint}</p>
       </div>
     </GlassCard>
   )
@@ -91,18 +91,18 @@ export function KpiCards({ periodLabel, periodEnergyKwh, periodCo2eKg, current }
           <p className="text-sm text-zinc-400">Serviços ativos vs indisponíveis</p>
           <p className="mt-0.5 font-mono text-2xl font-semibold tabular-nums text-zinc-50">
             {current.active}
-            <span className="text-base text-zinc-500"> / {current.total}</span>
+            <span className="text-base text-ink-subtle"> / {current.total}</span>
           </p>
           <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
-            <li className="inline-flex items-center gap-1 text-emerald-300">
+            <li className="inline-flex items-center gap-1 text-state-ok">
               <CircleCheck className="size-3.5" aria-hidden="true" />
               {current.active} ativos
             </li>
-            <li className="inline-flex items-center gap-1 text-rose-300">
+            <li className="inline-flex items-center gap-1 text-state-down">
               <TriangleAlert className="size-3.5" aria-hidden="true" />
               {current.unavailable} indisponíveis
             </li>
-            <li className="inline-flex items-center gap-1 text-amber-300">
+            <li className="inline-flex items-center gap-1 text-state-warn">
               <CircleDashed className="size-3.5" aria-hidden="true" />
               {current.noMetrics} sem métricas
             </li>

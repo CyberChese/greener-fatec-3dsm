@@ -11,7 +11,7 @@ interface FiltersPanelProps {
 }
 
 const inputClass =
-  'h-10 w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/20'
+  'h-10 w-full rounded-lg border border-edge bg-zinc-950/60 px-3 text-sm text-zinc-100 placeholder:text-ink-subtle outline-none transition-colors focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/20'
 
 const labelClass = 'mb-1.5 block text-xs font-medium text-zinc-400'
 
@@ -44,7 +44,7 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
           Buscar serviço
         </label>
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
           <input
             id="filter-search"
             type="search"
@@ -78,7 +78,7 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
           <Crosshair className="size-3.5" aria-hidden="true" />
           Ponto de consulta
         </legend>
-        <p className="mb-3 text-xs text-zinc-500">Clique em um país ou serviço no mapa para preencher.</p>
+        <p className="mb-3 text-xs text-ink-subtle">Clique em um país ou serviço no mapa para preencher.</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="filter-lat" className={labelClass}>
@@ -148,7 +148,7 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
       <button
         type="button"
         onClick={onClear}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 text-sm font-medium text-zinc-300 transition-colors hover:border-lime-400/40 hover:text-zinc-50"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-edge text-sm font-medium text-zinc-300 transition-colors hover:border-lime-400/40 hover:text-zinc-50"
       >
         <X className="size-4" aria-hidden="true" />
         Limpar filtros

@@ -1,5 +1,5 @@
 import { Cloud, MapPinOff, Zap } from 'lucide-react'
-import { formatGb, formatIntensity, formatKg, formatKwh, formatPercent, formatWatts } from '@/lib/format'
+import { formatGb, formatIntensity, formatKg, formatKwh, formatPercent, formatTime, formatWatts } from '@/lib/format'
 import type { ServiceSnapshot } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { StatusBadge } from './status-badge'
@@ -27,7 +27,7 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
       data-status={s.status}
       className={cn(
         'flex h-full flex-col gap-4 rounded-2xl border border-white/[0.08] bg-zinc-900/40 p-4 transition-colors',
-        s.status === 'unavailable' && 'border-rose-400/20',
+        s.status === 'unavailable' && 'border-state-down/30',
         selected && 'border-lime-400/30 bg-lime-400/[0.04]',
         highlighted && 'ring-1 ring-lime-400/50',
       )}
@@ -35,7 +35,7 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
       <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-zinc-100">{s.name}</h3>
-          <p className="truncate font-mono text-xs text-zinc-500">{s.id}</p>
+          <p className="truncate font-mono text-xs text-ink-subtle">{s.id}</p>
         </div>
         <label className="flex shrink-0 items-center gap-2 text-xs text-zinc-400">
           <input type="checkbox" className="size-4 accent-lime-400" checked={selected} onChange={() => onToggle(s.id)} />
@@ -46,20 +46,20 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
       <div className="flex flex-col gap-1.5">
         <StatusBadge status={s.status} className="self-start" />
         <p className="text-xs text-zinc-400">{meta.description}</p>
-        {s.errorMessage ? <p className="text-xs break-words text-zinc-500">{s.errorMessage}</p> : null}
+        {s.errorMessage ? <p className="text-xs break-words text-ink-subtle">{s.errorMessage}</p> : null}
       </div>
 
       <div className="text-sm text-zinc-300">
         <p>{s.location.country || 'País não informado'}</p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-ink-subtle">
           {s.location.region || 'Região não informada'}
           {s.location.city ? ` · ${s.location.city}` : ' · cidade não informada'}
         </p>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-xs text-ink-subtle">
           Nuvem: <span className="font-mono text-zinc-300">{s.location.region_code || 'não informada'}</span>
         </p>
         {!hasCoords ? (
-          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-zinc-500">
+          <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-subtle">
             <MapPinOff className="size-3" aria-hidden="true" /> sem coordenadas
           </p>
         ) : null}
@@ -67,7 +67,8 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
 
       <div>
         <p className="mb-1.5 text-xs font-medium text-zinc-400">
-          Consumo atual: <span className="font-mono text-zinc-100">{formatWatts(s.powerWatts)}</span>
+          Consumo atual
+          {s.metricsAt ? <span className="font-normal text-ink-subtle"> · coleta das {formatTime(s.metricsAt)}</span> : null}
         </p>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
           <Metric label="CPU" value={formatPercent(s.metrics?.cpu_percent ?? null)} />
@@ -75,6 +76,9 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
           <Metric label="Disco" value={formatGb(s.metrics?.disk_gb ?? null)} />
           <Metric label="Rede" value={formatGb(s.metrics?.network_gb ?? null)} />
         </dl>
+        <p className="mt-1.5 text-xs text-ink-subtle">
+          Potência estimada: <span className="font-mono text-zinc-300">{formatWatts(s.powerWatts)}</span>
+        </p>
       </div>
 
       <div className="mt-auto grid grid-cols-2 gap-2">
@@ -95,7 +99,7 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
           </p>
         </div>
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-ink-subtle">
         Intensidade da região: <span className="font-mono text-zinc-300">{formatIntensity(s.intensity)}</span> gCO₂e/kWh
       </p>
     </article>
@@ -105,7 +109,7 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <dt className="text-zinc-500">{label}</dt>
+      <dt className="text-ink-subtle">{label}</dt>
       <dd className="font-mono tabular-nums text-zinc-200">{value}</dd>
     </div>
   )

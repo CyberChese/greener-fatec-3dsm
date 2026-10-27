@@ -43,7 +43,7 @@ export function ServicesTable({
           title="Detalhes dos serviços monitorados"
           id="table-title"
           aside={
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-ink-subtle">
               {selectedIds.length} selecionado(s) para comparação · totais: {periodLabel}
             </span>
           }
@@ -53,7 +53,7 @@ export function ServicesTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1040px] text-left text-sm">
           <caption className="sr-only">Estado, localização, métricas e impacto ambiental de cada serviço</caption>
-          <thead className="border-y border-white/[0.06] bg-zinc-950/40 text-xs text-zinc-500">
+          <thead className="border-y border-white/[0.06] bg-zinc-950/40 text-xs text-ink-subtle">
             <tr>
               <th scope="col" className="py-3 pr-2 pl-5">
                 <input
@@ -79,7 +79,7 @@ export function ServicesTable({
           <tbody>
             {services.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-5 py-10 text-center text-zinc-500">
+                <td colSpan={11} className="px-5 py-10 text-center text-ink-subtle">
                   Nenhum serviço corresponde aos filtros aplicados.
                 </td>
               </tr>
@@ -108,16 +108,16 @@ export function ServicesTable({
                     </td>
                     <th scope="row" className="px-3 py-3 font-medium text-zinc-100">
                       {s.name}
-                      <span className="block font-mono text-xs font-normal text-zinc-500">{s.id}</span>
+                      <span className="block font-mono text-xs font-normal text-ink-subtle">{s.id}</span>
                     </th>
                     <td className="px-3 py-3 text-zinc-300">
                       <span className="block">{s.location.country}</span>
-                      <span className="block text-xs text-zinc-500">
+                      <span className="block text-xs text-ink-subtle">
                         {s.location.region}
                         {s.location.city ? ` · ${s.location.city}` : ' · cidade não informada'} · {s.location.region_code}
                       </span>
                       {!hasCoords ? (
-                        <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-zinc-500">
+                        <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-subtle">
                           <MapPinOff className="size-3" aria-hidden="true" /> sem coordenadas
                         </span>
                       ) : null}
@@ -139,7 +139,7 @@ export function ServicesTable({
           </tbody>
         </table>
       </div>
-      <p className="px-5 py-3 text-xs text-zinc-500">
+      <p className="px-5 py-3 text-xs text-ink-subtle">
         Métricas exibidas são da última coleta; ausência de métricas (—) não equivale a zero.
       </p>
     </GlassCard>

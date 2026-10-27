@@ -6,8 +6,8 @@ import { CardHeading, GlassCard } from './glass-card'
 const EVENT_META: Record<EnvironmentEventKind, { icon: LucideIcon; className: string; label: string }> = {
   added: { icon: CirclePlus, className: 'text-sky-300', label: 'Novo' },
   removed: { icon: CircleMinus, className: 'text-zinc-400', label: 'Removido' },
-  recovered: { icon: CircleCheck, className: 'text-emerald-300', label: 'Recuperado' },
-  down: { icon: TriangleAlert, className: 'text-rose-300', label: 'Alerta' },
+  recovered: { icon: CircleCheck, className: 'text-state-ok', label: 'Recuperado' },
+  down: { icon: TriangleAlert, className: 'text-state-down', label: 'Alerta' },
   api_error: { icon: ServerCrash, className: 'text-orange-300', label: 'Falha de API' },
 }
 
@@ -16,7 +16,7 @@ export function EventsFeed({ events }: { events: EnvironmentEvent[] }) {
     <GlassCard aria-labelledby="events-title">
       <CardHeading eyebrow="Monitoramento dinâmico" title="Eventos do ambiente" id="events-title" />
       {events.length === 0 ? (
-        <p className="text-sm text-zinc-500">Nenhuma mudança detectada até agora.</p>
+        <p className="text-sm text-ink-subtle">Nenhuma mudança detectada até agora.</p>
       ) : (
         <ul className="flex flex-col gap-2.5" aria-live="polite">
           {events.map((event) => {
@@ -30,7 +30,7 @@ export function EventsFeed({ events }: { events: EnvironmentEvent[] }) {
                     <span className={`mr-1.5 text-xs font-semibold ${meta.className}`}>{meta.label}:</span>
                     {event.message}
                   </p>
-                  <p className="font-mono text-xs text-zinc-500">{formatSimulatedClock(event.simulatedAt)}</p>
+                  <p className="font-mono text-xs text-ink-subtle">{formatSimulatedClock(event.simulatedAt)}</p>
                 </div>
               </li>
             )

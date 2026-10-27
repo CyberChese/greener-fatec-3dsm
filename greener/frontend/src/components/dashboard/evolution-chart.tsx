@@ -25,7 +25,7 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
         <span>Emissão</span>
         <span className="font-mono">{formatNumber(point.co2eKg, 4)} kgCO₂e</span>
       </p>
-      <p className="mt-1.5 text-zinc-500">
+      <p className="mt-1.5 text-ink-subtle">
         {point.active} ativos · {point.unavailable} indisp. · {point.noMetrics} sem métricas
       </p>
     </div>
@@ -39,11 +39,11 @@ export function EvolutionChart({ series }: { series: SeriesPoint[] }) {
         eyebrow="Evolução temporal"
         title="Energia e emissões por coleta"
         id="evolution-title"
-        aside={<span className="text-xs text-zinc-500">Últimas {series.length} coletas · {IS_SIMULATED ? 'horário simulado' : 'horário real'}</span>}
+        aside={<span className="text-xs text-ink-subtle">Últimas {series.length} coletas · {IS_SIMULATED ? 'horário simulado' : 'horário real'}</span>}
       />
       <div className="h-72">
         {series.length < 2 ? (
-          <div className="grid h-full place-items-center text-sm text-zinc-500">Aguardando coletas suficientes…</div>
+          <div className="grid h-full place-items-center text-sm text-ink-subtle">Aguardando coletas suficientes…</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={series} margin={{ top: 8, right: 4, left: -8, bottom: 0 }}>

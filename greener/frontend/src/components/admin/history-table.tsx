@@ -15,7 +15,7 @@ const LIMIT_OPTIONS = [
 const PAGE_SIZE = 10
 
 const selectClass =
-  'h-10 rounded-lg border border-white/10 bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60'
+  'h-10 rounded-lg border border-edge bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60'
 
 interface HistoryTableProps {
   history: CollectionRecord[]
@@ -67,7 +67,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
           eyebrow="RF10 · Histórico de coletas"
           title="Registros mais recentes"
           id="history-title"
-          aside={<span className="font-mono text-xs text-zinc-500">{history.length} registros armazenados</span>}
+          aside={<span className="font-mono text-xs text-ink-subtle">{history.length} registros armazenados</span>}
         />
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <label className="sr-only" htmlFor="history-service">Filtrar por serviço</label>
@@ -122,7 +122,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
             type="button"
             onClick={exportCsv}
             disabled={filtered.length === 0}
-            className="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-lime-400/40 disabled:opacity-40"
+            className="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-edge px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-lime-400/40 disabled:opacity-40"
           >
             <Download className="size-4" aria-hidden="true" />
             Exportar CSV
@@ -133,7 +133,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
               onClear()
               setPage(0)
             }}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-400/30 px-3 text-sm font-medium text-rose-300 transition-colors hover:bg-rose-400/10"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-400/30 px-3 text-sm font-medium text-state-down transition-colors hover:bg-rose-400/10"
           >
             <Trash2 className="size-4" aria-hidden="true" />
             Limpar histórico
@@ -144,7 +144,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-left text-sm">
           <caption className="sr-only">Histórico paginado das coletas de métricas</caption>
-          <thead className="border-y border-white/[0.06] bg-zinc-950/40 text-xs text-zinc-500">
+          <thead className="border-y border-white/[0.06] bg-zinc-950/40 text-xs text-ink-subtle">
             <tr>
               <th scope="col" className="py-3 pr-3 pl-5 font-medium">Coleta</th>
               <th scope="col" className="px-3 py-3 font-medium">{IS_SIMULATED ? 'Horário simulado' : 'Horário da coleta'}</th>
@@ -160,19 +160,19 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-5 py-10 text-center text-zinc-500">
+                <td colSpan={9} className="px-5 py-10 text-center text-ink-subtle">
                   Nenhum registro encontrado. Novas coletas aparecem a cada {intervalSeconds} segundos.
                 </td>
               </tr>
             ) : (
               rows.map((r) => (
                 <tr key={r.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
-                  <td className="py-2.5 pr-3 pl-5 font-mono text-xs text-zinc-500">#{r.tick}</td>
+                  <td className="py-2.5 pr-3 pl-5 font-mono text-xs text-ink-subtle">#{r.tick}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-zinc-300">{formatSimulatedClock(r.simulatedAt)}</td>
-                  <td className="px-3 py-2.5 font-mono text-xs text-zinc-500">{formatTime(r.collectedAt)}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs text-ink-subtle">{formatTime(r.collectedAt)}</td>
                   <td className="px-3 py-2.5 text-zinc-200">
                     {r.serviceName}
-                    <span className="block font-mono text-xs text-zinc-500">{r.regionCode}</span>
+                    <span className="block font-mono text-xs text-ink-subtle">{r.regionCode}</span>
                   </td>
                   <td className="px-3 py-2.5">
                     <StatusBadge status={r.status} />
@@ -189,7 +189,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
       </div>
 
       <nav aria-label="Paginação do histórico" className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-ink-subtle">
           Página {safePage + 1} de {pageCount} · {recent.length} de {filtered.length} registros filtrados
         </p>
         <div className="flex items-center gap-1">
@@ -198,7 +198,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
             onClick={() => setPage(Math.max(0, safePage - 1))}
             disabled={safePage === 0}
             aria-label="Página anterior"
-            className="grid size-9 place-items-center rounded-lg border border-white/10 text-zinc-300 hover:border-lime-400/40 disabled:opacity-40"
+            className="grid size-9 place-items-center rounded-lg border border-edge text-zinc-300 hover:border-lime-400/40 disabled:opacity-40"
           >
             <ChevronLeft className="size-4" aria-hidden="true" />
           </button>
@@ -209,7 +209,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
               onClick={() => setPage(i)}
               aria-current={i === safePage ? 'page' : undefined}
               className={`grid size-9 place-items-center rounded-lg font-mono text-xs ${
-                i === safePage ? 'bg-lime-400 text-zinc-950' : 'border border-white/10 text-zinc-300 hover:border-lime-400/40'
+                i === safePage ? 'bg-lime-400 text-zinc-950' : 'border border-edge text-zinc-300 hover:border-lime-400/40'
               }`}
             >
               {i + 1}
@@ -220,7 +220,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
             onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
             disabled={safePage >= pageCount - 1}
             aria-label="Próxima página"
-            className="grid size-9 place-items-center rounded-lg border border-white/10 text-zinc-300 hover:border-lime-400/40 disabled:opacity-40"
+            className="grid size-9 place-items-center rounded-lg border border-edge text-zinc-300 hover:border-lime-400/40 disabled:opacity-40"
           >
             <ChevronRight className="size-4" aria-hidden="true" />
           </button>

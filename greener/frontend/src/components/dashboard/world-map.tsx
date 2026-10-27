@@ -156,7 +156,7 @@ export function WorldMap({ services, periodTotals, point, selectedId, onPickPoin
         title="Mapa de impacto ambiental"
         id="map-title"
         aside={
-          <div className="flex rounded-lg border border-white/10 p-0.5 text-xs" role="group" aria-label="Camada do mapa">
+          <div className="flex rounded-lg border border-edge p-0.5 text-xs" role="group" aria-label="Camada do mapa">
             {(
               [
                 ['energy', 'Energia (kWh)'],
@@ -292,26 +292,26 @@ export function WorldMap({ services, periodTotals, point, selectedId, onPickPoin
         {hovered ? (
           <div className="pointer-events-none absolute top-3 left-3 w-56 rounded-xl border border-white/10 bg-zinc-950/90 p-3 text-xs backdrop-blur-md">
             <p className="font-semibold text-zinc-100">{hovered.name}</p>
-            <p className="text-zinc-500">
+            <p className="text-ink-subtle">
               {[hovered.location.city, hovered.location.region, hovered.location.country].filter(Boolean).join(' · ')}
             </p>
             <p className="mt-1.5 inline-flex items-center gap-1" style={{ color: STATUS_META[hovered.status].hex }}>
               {STATUS_META[hovered.status].label}
             </p>
             <dl className="mt-1.5 grid grid-cols-2 gap-1 font-mono text-zinc-300">
-              <dt className="text-zinc-500">kWh</dt>
+              <dt className="text-ink-subtle">kWh</dt>
               <dd className="text-right">{formatKwh(periodTotals.get(hovered.id)?.energyKwh ?? null)}</dd>
-              <dt className="text-zinc-500">kgCO₂e</dt>
+              <dt className="text-ink-subtle">kgCO₂e</dt>
               <dd className="text-right">{formatKg(periodTotals.get(hovered.id)?.co2eKg ?? null)}</dd>
             </dl>
           </div>
         ) : null}
 
-        <div className="absolute right-3 bottom-3 flex flex-col overflow-hidden rounded-lg border border-white/10 bg-zinc-950/80 backdrop-blur">
+        <div className="absolute right-3 bottom-3 flex flex-col overflow-hidden rounded-lg border border-edge bg-zinc-950/80 backdrop-blur">
           <button type="button" aria-label="Aproximar" onClick={() => setZoom((z) => clampZoom(z * 1.5))} className="grid size-9 place-items-center text-zinc-300 hover:bg-white/5 hover:text-lime-300">
             <Plus className="size-4" aria-hidden="true" />
           </button>
-          <button type="button" aria-label="Afastar" onClick={() => setZoom((z) => clampZoom(z / 1.5))} className="grid size-9 place-items-center border-y border-white/10 text-zinc-300 hover:bg-white/5 hover:text-lime-300">
+          <button type="button" aria-label="Afastar" onClick={() => setZoom((z) => clampZoom(z / 1.5))} className="grid size-9 place-items-center border-y border-edge text-zinc-300 hover:bg-white/5 hover:text-lime-300">
             <Minus className="size-4" aria-hidden="true" />
           </button>
           <button
@@ -344,7 +344,7 @@ export function WorldMap({ services, periodTotals, point, selectedId, onPickPoin
           baixa → alta
         </span>
         {withoutCoordinates > 0 ? (
-          <span className="inline-flex items-center gap-1.5 text-zinc-500">
+          <span className="inline-flex items-center gap-1.5 text-ink-subtle">
             <MapPinOff className="size-3.5" aria-hidden="true" />
             {withoutCoordinates} serviço(s) sem coordenadas — visíveis apenas na tabela
           </span>

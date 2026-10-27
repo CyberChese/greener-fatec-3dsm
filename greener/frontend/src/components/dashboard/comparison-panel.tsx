@@ -51,20 +51,20 @@ export function ComparisonPanel({ services, periodTotals, periodLabel, onRemove,
           <button
             type="button"
             onClick={onClear}
-            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-lime-400/40 hover:text-zinc-50"
+            className="rounded-lg border border-edge px-3 py-1.5 text-xs font-medium text-zinc-300 hover:border-lime-400/40 hover:text-zinc-50"
           >
             Limpar seleção
           </button>
         }
       />
-      <p className="-mt-2 mb-4 text-xs text-zinc-500">Período: {periodLabel}. As barras são relativas ao maior valor entre os selecionados.</p>
+      <p className="-mt-2 mb-4 text-xs text-ink-subtle">Período: {periodLabel}. As barras são relativas ao maior valor entre os selecionados.</p>
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))` }}>
         {services.map((s) => (
           <article key={s.id} className="rounded-xl border border-white/[0.08] bg-zinc-950/40 p-4">
             <header className="mb-3 flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="truncate font-semibold text-zinc-100">{s.name}</h3>
-                <p className="truncate text-xs text-zinc-500">
+                <p className="truncate text-xs text-ink-subtle">
                   {[s.location.city, s.location.country].filter(Boolean).join(', ')} · {s.location.region_code}
                 </p>
               </div>
@@ -72,7 +72,7 @@ export function ComparisonPanel({ services, periodTotals, periodLabel, onRemove,
                 type="button"
                 onClick={() => onRemove(s.id)}
                 aria-label={`Remover ${s.name} da comparação`}
-                className="grid size-7 shrink-0 place-items-center rounded-md text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
+                className="grid size-7 shrink-0 place-items-center rounded-md text-ink-subtle hover:bg-white/5 hover:text-zinc-200"
               >
                 <X className="size-4" aria-hidden="true" />
               </button>

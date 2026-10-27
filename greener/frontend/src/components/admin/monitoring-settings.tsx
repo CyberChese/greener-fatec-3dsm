@@ -8,7 +8,7 @@ import { INTERVAL_LIMITS, validateSettings, type SettingsErrors } from '@/lib/se
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 const fieldClass =
-  'h-11 w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none transition-colors focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/20 aria-[invalid=true]:border-rose-400/60'
+  'h-11 w-full rounded-lg border border-edge bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none transition-colors focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/20 aria-[invalid=true]:border-rose-400/60'
 
 /** RF16: parâmetros do monitoramento (somente com sessão autenticada). */
 export function MonitoringSettings() {
@@ -75,7 +75,7 @@ export function MonitoringSettings() {
           />
           <p
             id="cfg-interval-help"
-            className={errors.intervalSeconds ? 'mt-1 text-xs text-rose-300' : 'mt-1 text-xs text-zinc-500'}
+            className={errors.intervalSeconds ? 'mt-1 text-xs text-state-down' : 'mt-1 text-xs text-ink-subtle'}
           >
             {errors.intervalSeconds ?? `Entre ${INTERVAL_LIMITS.min} e ${INTERVAL_LIMITS.max} s.${IS_SIMULATED ? ' Cada coleta equivale a 15 min simulados.' : ''}`}
           </p>
@@ -99,7 +99,7 @@ export function MonitoringSettings() {
             <option value="last10">Últimas 10 coletas</option>
             <option value="session">Sessão inteira</option>
           </select>
-          <p id="cfg-period-help" className={errors.defaultPeriod ? 'mt-1 text-xs text-rose-300' : 'mt-1 text-xs text-zinc-500'}>
+          <p id="cfg-period-help" className={errors.defaultPeriod ? 'mt-1 text-xs text-state-down' : 'mt-1 text-xs text-ink-subtle'}>
             {errors.defaultPeriod ?? 'Usado ao abrir o painel; você ainda pode trocar no próprio painel.'}
           </p>
         </div>
@@ -118,18 +118,18 @@ export function MonitoringSettings() {
             {status === 'saving' ? 'Salvando…' : 'Salvar configurações'}
           </button>
           {status === 'saved' ? (
-            <p role="status" className="inline-flex items-center gap-2 text-sm text-emerald-300">
+            <p role="status" className="inline-flex items-center gap-2 text-sm text-state-ok">
               <CircleCheck className="size-4" aria-hidden="true" /> Configurações salvas. A coleta já usa o novo intervalo.
             </p>
           ) : null}
           {status === 'error' && failure ? (
-            <p role="alert" className="inline-flex items-center gap-2 text-sm text-rose-300">
+            <p role="alert" className="inline-flex items-center gap-2 text-sm text-state-down">
               <TriangleAlert className="size-4" aria-hidden="true" /> {failure}
             </p>
           ) : null}
         </div>
       </form>
-      <p className="mt-4 text-xs text-zinc-500">
+      <p className="mt-4 text-xs text-ink-subtle">
         Simulação visual: as configurações ficam neste navegador. No sistema final a alteração é uma rota protegida por JWT e validada
         no backend (RP07).
       </p>

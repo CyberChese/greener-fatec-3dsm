@@ -12,6 +12,12 @@ export function AppLayout() {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_10%_-10%,rgba(163,230,53,0.08),transparent),radial-gradient(ellipse_60%_40%_at_100%_10%,rgba(167,139,250,0.07),transparent)]"
       />
+      <a
+        href="#conteudo"
+        className="sr-only z-30 rounded-lg bg-lime-400 px-4 py-2 font-medium text-zinc-950 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Pular para o conteúdo
+      </a>
       <AppHeader
         lastUpdated={metrics.lastUpdated}
         simulatedNow={metrics.simulatedNow}
@@ -20,9 +26,9 @@ export function AppLayout() {
         onTogglePause={() => metrics.setPaused(!metrics.paused)}
         tick={metrics.tick}
       />
-      <main className="relative mx-auto max-w-[1600px] px-4 py-6 md:px-6">
+      <main id="conteudo" tabIndex={-1} className="relative mx-auto outline-none max-w-[1600px] px-4 py-6 md:px-6">
         <Outlet />
-        <footer className="mt-8 border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-zinc-500 text-pretty">
+        <footer className="mt-8 border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-ink-subtle text-pretty">
           {IS_SIMULATED ? (
             <>
               Dados simulados no navegador (modo de demonstração) no formato das APIs UniLaunch. Coleta a cada{' '}
@@ -31,8 +37,9 @@ export function AppLayout() {
             </>
           ) : (
             <>
-              Serviços e estados vindos do backend do GreenER, consultados a cada {metrics.intervalMs / 1000} s. Energia,
-              CO₂e e histórico de consumo aparecem como “—” enquanto o backend não calcular e expor esses valores.
+              Serviços, estados e métricas vindos do backend do GreenER, consultados a cada {metrics.intervalMs / 1000} s (o
+              worker coleta em intervalo próprio). Energia e CO₂e aparecem como “—” enquanto o backend não calcular e expor
+              esses valores.
             </>
           )}
         </footer>

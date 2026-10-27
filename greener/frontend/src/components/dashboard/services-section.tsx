@@ -41,10 +41,10 @@ export function ServicesSection(props: ServicesTableProps) {
           id="services-title"
           aside={
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-ink-subtle">
                 {props.selectedIds.length} selecionado(s) para comparação · totais: {props.periodLabel}
               </span>
-              <div className="flex rounded-lg border border-white/10 p-0.5 text-xs" role="group" aria-label="Modo de exibição">
+              <div className="flex rounded-lg border border-edge p-0.5 text-xs" role="group" aria-label="Modo de exibição">
                 {MODES.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
