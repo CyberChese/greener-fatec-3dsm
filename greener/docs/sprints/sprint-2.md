@@ -1,43 +1,45 @@
-# Sprint 2 — Motor Ambiental, Dashboard e Qualidade de Entrega
+# 🌱 GreenER — Sprint 2: Estimativas Ambientais e Dashboard
 
-**Período planejado:** 21/10/2026 a 11/11/2026 · **Status:** Em andamento  
-**Backlog revisado:** 20 tasks, 82 pontos estimados (45 originais + 37 adicionados a partir do feedback do cliente). O time deve validar a capacidade e negociar escopo no planning.
+> **Situação:** 🟡 Planejada — a sprint ainda não começou. O Sprint Backlog detalhado (tasks, responsáveis, pontos e critérios de aceite) será registrado aqui no início da sprint.
 
-## Objetivo
+## 🎯 Objetivo previsto
 
-Completar o caminho da telemetria até ao Observatório: persistir o código regional do serviço, estimar energia e emissões com premissas documentadas, expor indicadores públicos e construir dashboard responsivo com cards, mapa e atualização automática. Fortalecer acessibilidade, testes, segurança, CI e revisão técnica por PR.
+Converter as métricas coletadas em estimativas de consumo de energia (kWh) e emissões (CO₂e), usando a intensidade de carbono por região, e apresentar esses dados no dashboard operacional.
 
-## Escopo funcional
+## 📦 Entregas previstas
 
-- Motor determinístico de energia, com fórmula, unidades, fonte das premissas, duração do intervalo e exemplos reproduzíveis.
-- Integração com intensidade de carbono por `region_code`, timeout e fallback configurável/auditável.
-- Emissões por coleta persistidas com precisão documentada e reprocessamento idempotente.
-- `GET /api/metrics/summary` público para o Observatório; rotas administrativas permanecem protegidas por JWT.
-- Grid de serviços e mapa usando metadados e coordenadas existentes; não inventar localização quando estiver ausente.
-- Polling sem flicker, sem requisições sobrepostas e com recuperação após falha temporária.
+Conforme o [plano de entregas](../plano-de-entregas.md#sprint-2--planejamento-previsto):
 
-## Qualidade, acessibilidade e processo
+- Integração com o serviço de intensidade de carbono da UniLaunch (DW02).
+- Cálculo de energia e CO₂e documentado em [`calculos.md`](../calculos.md) e coberto por testes unitários (TP04).
+- Dashboard com serviços, estados, localização e indicadores (DW05, IHC03, IHC04).
+- Rotas administrativas protegidas por JWT (DW06).
+- Swagger em `/api/docs` (DW07).
 
-- Corrigir o tratamento de HTTP 404/500 conforme o contrato oficial do Agregador.
-- Validar contraste, tokens do Figma e responsividade em 390 px, tablet e desktop; registrar capturas.
-- Adicionar CI para build/lint/testes, alinhar Node/engines/container e testar dentro das imagens oficiais.
-- Remover segredos padrão, restringir seed a ambiente local e limitar tentativas de login.
-- Usar PRs pequenos, review técnico substantivo, checks e evidências de burndown/review.
+## 📌 Pendências herdadas da Sprint 1
 
-## Decisões de implementação
+| Pendência | Critério |
+|---|---|
+| Executar a descoberta de serviços periodicamente | DW02 |
+| Persistir o `region_code` dos serviços | DW02 |
+| Atualizar a imagem do backend para Node 24 e rodar os testes no container | DW07, TP04 |
+| Criar a camada de repositories e separar responsabilidades do `MetricsService` | DW03, TP01 |
+| Remover código sem uso | TP03 |
 
-1. Não assumir fórmula, parâmetro físico, endpoint de carbono ou schema externo sem fonte e validação documentadas.
-2. GB de tráfego/armazenamento só entram no cálculo com dimensão temporal e interpretação definidas.
-3. Dashboard e resumo são públicos, conforme o fluxo de Observatório do projeto; configuração administrativa exige autenticação.
-4. Revisar os índices existentes antes de propor duplicatas; justificar mudanças com consulta e plano de execução observados.
-5. Critérios de aceite indicam evidência verificável. Configurações que dependam de permissão do GitHub devem registrar responsável/evidência, não alegar que já estão ativas.
+## 🔁 Ações de melhoria vindas da retrospectiva da Sprint 1
 
-## Documentos de tasks
+Ver [Retrospectiva da Sprint 1](sprint-1.md#-retrospectiva). A aplicação de cada ação será registrada nesta seção durante a sprint.
 
-- Tabela: [`../../../../tasks_sprint2_tabela-v2.md`](../../../../tasks_sprint2_tabela-v2.md)
-- Contratos detalhados: [`../../../../descricoes_tasks_sprint2-v2.md`](../../../../descricoes_tasks_sprint2-v2.md)
-- Resumo da sprint: [`../../../../sprint2README_GreenER-v2.md`](../../../../sprint2README_GreenER-v2.md)
+| Ação | Como será aplicada | Situação |
+|---|---|---|
+| Atualizar a documentação junto com cada PR | Item do checklist da Definition of Done | A iniciar |
+| Revisar critérios de aceite quando a implementação mudar | Registrar a alteração e a justificativa na própria história | A iniciar |
+| Rodar os testes no mesmo ambiente documentado no README | Ajuste da imagem Docker | A iniciar |
 
-## Fora do escopo funcional
+## Seções a preencher durante a sprint
 
-Ranking ambiental, comparação temporal, filtros de período e exportação de relatórios seguem planejados para Sprint 3, salvo renegociação explícita.
+- Tabela de tasks e responsáveis, com capacidade da equipe
+- User Stories e critérios de aceite
+- Acompanhamento e impedimentos
+- Definition of Done aplicada
+- Sprint Review, retrospectiva e ações de melhoria

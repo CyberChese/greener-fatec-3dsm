@@ -6,208 +6,229 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
+> **Versão atual:** Sprint 1 (tag `sprint-1`) — fundação, autenticação, descoberta de serviços e coleta de métricas.
+
 ---
 
 ## 📌 Visão Geral do Projeto
 
-O **GreenER** é uma plataforma web desenvolvida para monitorar aplicações de software distribuídas e transformar métricas técnicas de infraestrutura (CPU, memória, rede e armazenamento) em **indicadores ambientais** reais, estimando o **consumo energético (kWh)** e a **emissão de dióxido de carbono equivalente ($\text{CO}_2\text{e}$)** em tempo real.
+O **GreenER** é uma plataforma web para monitorar aplicações de software distribuídas e transformar métricas técnicas de infraestrutura (CPU, memória, armazenamento e rede) em **indicadores ambientais**, estimando o **consumo energético (kWh)** e a **emissão de dióxido de carbono equivalente (CO₂e)**.
 
 O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Projetos (ABP)** do 3º semestre do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Jacareí** (período 2026-2), em parceria com a **UniLaunch**.
 
----
-
 ### 🎯 Problema & Solução
-* **Problema:** Empresas operam dezenas ou centenas de microsserviços em nuvem. As métricas tradicionais de telemetria medem desempenho e disponibilidade, mas não oferecem visibilidade sobre o custo ambiental e a pegada de carbono da infraestrutura.
-* **Solução:** O **GreenER** descobre dinamicamente os serviços ativos, realiza coletas periódicas do endpoint `/metrics/{id_servico}` e integra dados com o **Serviço de Intensidade de Carbono** por região geográfica, consolidando rankings de impacto, histórico e visualizações geográficas em um dashboard operacional responsivo.
+
+* **Problema:** empresas operam dezenas ou centenas de microsserviços em nuvem. As métricas tradicionais de telemetria medem desempenho e disponibilidade, mas não oferecem visibilidade sobre o custo ambiental e a pegada de carbono da infraestrutura.
+* **Solução:** o GreenER descobre dinamicamente os serviços ativos no Agregador de Métricas da UniLaunch, coleta periodicamente as métricas de cada serviço e, a partir da intensidade de carbono de cada região, estima o consumo de energia e as emissões, apresentando rankings, histórico e visualização geográfica em um dashboard.
 
 ---
-## 🎨 Design System e Wireframes (Figma)
-- **Link do Figma:** [Acessar Projeto no Figma](https://www.figma.com/design/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=4-3&t=uQXMxQQpH5LZaIfk-1)
 
+## ✅ Funcionalidades
+
+### Implementadas (Sprint 1)
+
+- Ambiente completo com Docker Compose: frontend, backend e PostgreSQL.
+- Esquema do banco (`users`, `services`, `metric_collections`) criado por migrações TypeORM.
+- Login administrativo com e-mail e senha, senha com hash bcrypt e emissão de JWT.
+- Rota protegida por JWT (`GET /api/auth/profile`).
+- Descoberta de serviços no Agregador de Métricas da UniLaunch, com gravação da localização (país, região, cidade e coordenadas).
+- Coleta periódica de métricas de CPU, memória, armazenamento e rede, com histórico consultável por período.
+- Tratamento de falhas: serviços inalcançáveis ficam `UNAVAILABLE`, serviços sem métricas válidas ficam `NO_METRICS`, e a falha de um serviço não interrompe a coleta dos demais.
+- Frontend com Observatório público (intervalo e última coleta), modal de login e Área do Administrador protegida.
+- 20 testes unitários (coletor, descoberta, cliente do Agregador e autenticação).
+
+### Previstas
+
+| Funcionalidade | Sprint |
+|---|---|
+| Descoberta periódica de serviços | 2 |
+| Integração com o serviço de intensidade de carbono | 2 |
+| Cálculo de energia (kWh) e CO₂e | 2 |
+| Dashboard com mapa, cartões e tabela de serviços | 2 |
+| Configuração do intervalo de coleta pela Área do Administrador | 2 |
+| Swagger em `/api/docs` | 2 |
+| Ranking e comparação entre serviços | 3 |
+
+Distribuição completa no [plano de entregas](greener/docs/plano-de-entregas.md).
+
+---
+
+## 🎨 Design System e Wireframes (Figma)
+
+- **Projeto no Figma:** [Acessar Projeto no Figma](https://www.figma.com/design/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=4-3&t=uQXMxQQpH5LZaIfk-1)
 - **🔗 Protótipo interativo (navegável):** [Abrir protótipo](https://www.figma.com/proto/xfX1ubXK9GIpWeV8TNYL1q/greenER---ABP-3%C2%BASEMESTRE?node-id=10-41&t=QK9tYfSXJ4x1c5a1-0&scaling=min-zoom&content-scaling=fixed&page-id=4%3A3&starting-point-node-id=10%3A41&show-proto-sidebar=1)
 
-
-### Fluxo mapeado
-
-```
-Dashboard · Visão geográfica
-   │  aba "Área do Administrador"
-   ▼
-Login · modal
-   │  "Entrar" ─────────► Área do Administrador · autenticada
-   │  "✕" ─► volta ao Dashboard          │  aba "Observatório" / "Sair"
-   ▼                                      ▼
-                              Dashboard · Visão geográfica
-```
-
-| # | Origem | Gatilho | Ação | Destino |
-|---|---|---|---|---|
-| 1 | Dashboard · aba "Área do Administrador" | Ao clicar | Navegar para | Login · modal |
-| 2 | Login · "Entrar" | Ao clicar | Navegar para | Área do Administrador autenticada |
-| 3 | Login · "✕" | Ao clicar | Navegar para | Dashboard |
-| 4 | Área do Administrador · aba "Observatório" | Ao clicar | Navegar para | Dashboard |
-| 5 | Área do Administrador · "Sair" | Ao clicar | Navegar para | Dashboard |
-| 6 | Dashboard · "Tabela" / "Cartões" | Ao clicar | Rolar até | Detalhes dos serviços / Grade de cartões |
+Usuários, tarefas, fluxo de navegação e decisões de interface: [`greener/docs/interface.md`](greener/docs/interface.md).
 
 ### Teste de usabilidade (IHC)
 
-Teste empírico com 2 participantes (Luka Gomes e Isabelly Marinho), com observação direta e coleta de feedback.
+Avaliação inicial do protótipo com 2 participantes, com roteiro de tarefas, observação direta e inspeção heurística (Nielsen e WCAG 2.1).
 
-- **Resultado:** ambos aprovaram a navegação, as cores e o design, e consideraram que o protótipo atende às especificações do projeto.
-- **Encaminhamento:** os dois destacaram que o feedback do cliente é o mais importante para sugerir mudanças de cores, design e elementos; a equipe apresentará o protótipo ao cliente para essa validação.
-- **Pontos de fricção e ajustes de IHC** (contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma): detalhados no relatório.
+- **Resultado:** os participantes aprovaram a navegação, as cores e o design.
+- **Pontos de fricção e ajustes:** contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma.
+- **Próximo passo:** avaliação com usuários representativos na Sprint 3.
 
 📄 **Relatório completo:** [`greener/docs/ihc/relatorio-usabilidade.md`](greener/docs/ihc/relatorio-usabilidade.md)
 
+---
+
 ## 🏗️ Arquitetura e Fluxo de Dados
 
-A solução adota uma arquitetura descentralizada containerizada. O backend em **NestJS** atua como orquestrador de telemetria, persiste o histórico no **PostgreSQL** e alimenta a interface em **React**.
+O backend em **NestJS** consulta o Agregador de Métricas da UniLaunch, persiste o histórico no **PostgreSQL** e alimenta a interface em **React**. O frontend nunca chama as APIs da UniLaunch diretamente.
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│                    Frontend (React)                     │
-│         Dashboard, Mapa, Rankings e Filtros             │
+│               Frontend (React + Vite)                   │
+│        Observatório · Login · Área do Administrador     │
 └────────────────────────────┬────────────────────────────┘
-                             │ HTTP / REST
+                             │ HTTP / REST  (/api)
                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    Backend (NestJS)                     │
-│  Controllers  │  Services (Cálculo/Regras)  │  DTOs/JWT  │
+│     auth  ·  services  ·  metrics  ·  aggregator        │
 └──────────────┬────────────────────────────┬─────────────┘
-               │                            │
+               │ TypeORM                    │ HTTP (timeout 5 s)
                ▼                            ▼
 ┌──────────────────────────┐    ┌─────────────────────────┐
-│   Banco PostgreSQL       │    │   APIs Auxiliares       │
-│ - Histórico de Coletas   │    │   (UniLaunch)           │
-│ - Cadastro de Serviços   │    │ - Metrics Aggregator    │
-│ - Usuários / Configs     │    │ - Carbon Intensity API  │
+│   Banco PostgreSQL       │    │   APIs UniLaunch        │
+│ - users                  │    │ - Metrics Aggregator    │
+│ - services               │    │ - Carbon Intensity API  │
+│ - metric_collections     │    │   (Sprint 2)            │
 └──────────────────────────┘    └─────────────────────────┘
 ```
+
+Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](greener/docs/arquitetura.md).
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-| Camada | Tecnologia | Descrição |
+| Camada | Tecnologia | Uso no projeto |
 | :--- | :--- | :--- |
-| **Frontend** | React + TypeScript | Interface web responsiva, acessível e dinâmica. |
-| **Backend** | NestJS + TypeScript | Framework escalável estruturado em Módulos, Controllers e Services. |
-| **Banco de Dados** | PostgreSQL + ORM | Persistência do histórico de coletas e parâmetros de monitoramento. |
-| **Autenticação** | JWT (JSON Web Token) | Proteção de rotas administrativas e alteração de parâmetros. |
-| **Containerização** | Docker & Docker Compose | Orquestração unificada de todos os serviços da aplicação. |
+| **Frontend** | React 19 + TypeScript, Vite, Tailwind CSS, Axios, React Router | Interface web |
+| **Backend** | NestJS 12 + TypeScript | API REST organizada em módulos, controllers e services |
+| **Banco de Dados** | PostgreSQL 15 + TypeORM | Persistência com migrações versionadas |
+| **Autenticação** | JWT (Passport) + bcrypt | Proteção das rotas administrativas |
+| **Testes** | Jest | Testes unitários do backend |
+| **Containerização** | Docker & Docker Compose | Execução unificada dos três serviços |
 
 ---
 
 ## 📂 Estrutura do Repositório
 
 ```text
-greener/
-├── .github/
-│   └── ISSUE_TEMPLATE/        # Templates para HUs, Épicos e Bugs
-├── frontend/                  # Aplicação React com TypeScript
-│   ├── src/
-│   ├── Dockerfile
-│   └── package.json
-├── backend/                   # Aplicação NestJS com TypeScript
-│   ├── src/
-│   │   ├── modules/           # Módulos da aplicação (Auth, Metrics, Services, Carbon)
-│   │   ├── controllers/       # Roteamento e recebimento de DTOs
-│   │   ├── services/          # Regras de cálculo e chamadas HTTP externas
-│   │   └── entities/          # Mapeamento do banco via ORM
-│   ├── Dockerfile
-│   └── package.json
+.
+├── README.md                  # Este arquivo
+├── compose.yaml               # Orquestração de frontend, backend e PostgreSQL
 ├── .env.example               # Modelo de variáveis de ambiente (sem segredos)
-├── .gitignore                 # Arquivos e pastas ignorados pelo Git
-├── docker-compose.yml         # Orquestração de Frontend, Backend e PostgreSQL
-└── README.md                  # Documentação técnica do projeto
+└── greener/
+    ├── frontend/              # React + TypeScript (ver frontend/README.md)
+    │   ├── Dockerfile
+    │   └── src/               # pages, components, services, hooks, contexts, providers
+    ├── backend/               # NestJS + TypeScript (ver backend/README.md)
+    │   ├── Dockerfile
+    │   └── src/
+    │       ├── auth/          # Login, JWT, bcrypt e guard
+    │       ├── services/      # Consulta de serviços
+    │       ├── metrics/       # Coleta periódica e histórico
+    │       ├── modules/aggregator/  # Cliente e descoberta no Agregador
+    │       ├── entities/      # Entidades TypeORM
+    │       ├── migrations/    # Migrações do banco
+    │       └── seeds/         # Usuário de teste
+    └── docs/                  # Documentação do projeto (ver docs/README.md)
 ```
 
 ---
 
-## ⚡ Pré-requisitos e Execução via Docker
+## ⚡ Execução com Docker
 
-Para rodar a plataforma completa em ambiente local, é necessário ter instalado:
+### Pré-requisitos
+
 * [Git](https://git-scm.com/)
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (com Docker Compose habilitado)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) com Docker Compose
 
-### 🚀 Passo a Passo para Iniciar
+### 🚀 Passo a passo
 
 1. **Clonar o repositório:**
    ```bash
-   git clone https://github.com/seu-usuario/greener.git
-   cd greener
+   git clone https://github.com/CyberChese/greener-fatec-3dsm.git
+   cd greener-fatec-3dsm
    ```
 
-2. **Configurar as Variáveis de Ambiente:**
-   Copie o arquivo de exemplo `.env.example` criando o arquivo `.env`:
+2. **Criar o arquivo de variáveis de ambiente** a partir do modelo (troque `POSTGRES_PASSWORD` e `JWT_SECRET`):
    ```bash
    cp .env.example .env
    ```
 
-3. **Subir a aplicação com Docker Compose:**
+3. **Subir os containers:**
    ```bash
-   docker-compose up --build -d
+   docker compose up --build -d
    ```
 
-4. **Acessar as aplicações:**
-   * **Frontend Dashboard:** `http://localhost:3000`
-   * **Backend API Documentation (Swagger):** `http://localhost:3001/api/docs`
-   * **PostgreSQL Database:** `localhost:5432`
-
-5. **Encerrar a execução:**
+4. **Criar as tabelas no banco** (necessário na primeira execução e após novas migrações):
    ```bash
-   docker-compose down
+   docker compose exec greener-backend npm run migration:run
    ```
+
+5. **Criar o usuário de teste** para o login:
+   ```bash
+   docker compose exec greener-backend npm run seed
+   ```
+   Credenciais criadas: `teste@greener.com` / `senha123` (somente para desenvolvimento).
+
+6. **Acessar:**
+
+   | Serviço | Endereço |
+   |---|---|
+   | Frontend | <http://localhost:3000> |
+   | API | <http://localhost:3001/api> |
+   | PostgreSQL | `localhost:5432` |
+
+7. **Encerrar:**
+   ```bash
+   docker compose down
+   ```
+   Para apagar também os dados do banco: `docker compose down -v`.
+
+### ✔️ Como verificar a versão entregue
+
+| Verificação | Resultado esperado |
+|---|---|
+| Abrir <http://localhost:3000> | Observatório com o intervalo de coleta e a última coleta registrada |
+| Clicar em "Área do Administrador" e entrar com o usuário de teste | Acesso à Área do Administrador com a sessão autenticada |
+| `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
+| `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
+| `GET http://localhost:3001/api/auth/profile` sem token | HTTP `401` |
 
 ---
 
-## ⚙️ Variáveis de Ambiente e Integradores
+## ⚙️ Variáveis de Ambiente
 
-Configure o arquivo `.env` na raiz do projeto com as chaves necessárias:
+Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 
-```env
-# Banco de Dados PostgreSQL
-POSTGRES_HOST=postgres
-POSTGRES_PORT=5432
-POSTGRES_USER=greener_user
-POSTGRES_PASSWORD=greener_password
-POSTGRES_DB=greener_db
+| Variável | Uso | Valor do modelo |
+|---|---|---|
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Credenciais e nome do banco | `greener_user`, `troque_esta_senha_local`, `greener_db` |
+| `POSTGRES_HOST`, `POSTGRES_PORT` | Endereço do banco visto pelo backend | `greener-postgres`, `5432` |
+| `JWT_SECRET` | Chave de assinatura do JWT (troque por um valor próprio) | `seu_segredo_jwt_aqui` |
+| `JWT_EXPIRATION` | Validade do token | `1d` |
+| `AGGREGATOR_API_URL` | URL base do Agregador de Métricas | `https://metrics.unilaunch.org` |
+| `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
+| `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
+| `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (s) | `30` |
+| `VITE_API_URL` | Endereço da API acessado pelo **navegador** | `http://localhost:3001/api` |
+| `FRONTEND_ORIGIN` | Origem permitida pelo CORS do backend | `http://localhost:3000` |
 
-# Backend NestJS
-PORT=3001
-JWT_SECRET=sua_chave_secreta_jwt_super_segura
-JWT_EXPIRATION=1d
-
-# APIs Auxiliares UniLaunch
-AGGREGATOR_API_URL=https://metrics.unilaunch.org
-AGGREGATOR_SERVICES_PATH=/services
-AGGREGATOR_TIMEOUT=5000
-METRICS_COLLECTION_INTERVAL_SECONDS=30
-CARBON_INTENSITY_URL=https://carbon.unilaunch.org
-FRONTEND_ORIGIN=http://localhost:3000
-```
-
-`FRONTEND_ORIGIN` define a origem permitida para chamadas do navegador ao backend.
-
----
+O arquivo `.env` não é versionado (está no `.gitignore`).
 
 ### Coleta periódica de métricas
 
-O backend usa `METRICS_COLLECTION_INTERVAL_SECONDS`, configurado no `.env` e validado na
-inicialização. O padrão do projeto é **30 segundos**; esse intervalo é aguardado após o término de
-cada ciclo antes de iniciar o próximo, evitando sobreposição.
+* O primeiro ciclo começa `METRICS_COLLECTION_INTERVAL_SECONDS` após a inicialização do backend, e cada ciclo seguinte começa esse mesmo tempo depois do término do anterior, sem sobreposição.
+* Para cada serviço com endpoint de métricas, o coletor chama `GET {AGGREGATOR_API_URL}{metrics_path}`.
+* Resposta válida grava a coleta e define `ACTIVE`; resposta sem métricas válidas define `NO_METRICS`; timeout, falha de conexão, HTTP 404 ou HTTP 500 define `UNAVAILABLE`. As transições não apagam o histórico.
+* A descoberta de serviços é executada na inicialização do backend (a execução periódica está prevista para a Sprint 2).
 
-O coletor tenta todos os serviços conhecidos com endpoint configurado, usando o `metrics_path`
-persistido pela sincronização da TASK-014 para chamar `GET {AGGREGATOR_API_URL}{metrics_path}`.
-Isso permite que serviços `UNAVAILABLE` e `NO_METRICS` sejam reavaliados nos ciclos seguintes;
-serviços sem endpoint ficam em `NO_METRICS` até a descoberta fornecer um. Timeout, falha de
-conexão, HTTP 500 ou HTTP 404 define `UNAVAILABLE` (404 significa que o serviço foi removido
-ou não tem métricas, conforme a OpenAPI); o 404 é registrado como aviso, sem stack trace. Uma
-resposta sem métricas válidas define `NO_METRICS`; só uma resposta válida cujas métricas foram
-persistidas define `ACTIVE` — a descoberta sozinha não ativa o serviço. Essas transições não
-apagam o histórico. Uma omissão na descoberta só define `UNAVAILABLE` quando a resposta é válida
-e completa; respostas parciais ou falhas da API não contam como remoção.
-O contrato atual do Agregador documenta:
+Mapeamento dos campos do Agregador:
 
 | Campo do Agregador | Campo persistido | Unidade |
 | --- | --- | --- |
@@ -216,99 +237,68 @@ O contrato atual do Agregador documenta:
 | `disk_gb` | `storage_usage` | GB |
 | `network_gb` | `network_io` | GB |
 
-O instante em que a resposta da coleta é recebida fica salvo em `timestamp`. O histórico pode ser
-consultado por UUID interno do serviço em
-`GET /services/:id/history?from=<ISO-8601>&to=<ISO-8601>` (os limites são inclusivos).
-`GET /metrics/collection-config` retorna o intervalo efetivo e o horário global da última
-coleta registrada; a tela inicial atualiza essas informações automaticamente.
-
-Depois de iniciar o PostgreSQL pela primeira vez, aplique as migrações (incluindo a alteração de
-precisão dos campos de métricas) com `docker compose exec greener-backend npm run migration:run`.
-
-O Agregador descreve esses campos em seu [contrato OpenAPI](https://metrics.unilaunch.org/openapi.json).
-A descoberta e sincronização da TASK-014 cadastra e atualiza os serviços antes das coletas.
-
-## 🔌 Documentação dos Endpoints da API
-
-### 🔓 Rotas Públicas (Dashboard)
-
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| `GET` | `/api/services` | Lista os serviços monitorados e seus estados (ativo, indisponível, sem métricas). |
-| `GET` | `/api/metrics/summary` | Retorna indicadores consolidados (Consumo Total kWh, Emissão Total $\text{CO}_2\text{e}$, Total de Serviços). |
-| `GET` | `/api/metrics/ranking` | Retorna o ranking de serviços ordenados por maior consumo de energia ou emissão de $\text{CO}_2\text{e}$. |
-| `GET` | `/api/metrics/compare` | Compara dois ou mais serviços em um período específico. |
-| `GET` | `/services/:id/history` | Retorna o histórico temporal de coletas do serviço. |
-| `GET` | `/metrics/collection-config` | Informa o intervalo efetivo de coleta em segundos. |
-
-### 🔐 Rotas Autenticadas (Requer JWT Header `Authorization: Bearer <token>`)
-
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Realiza autenticação do gestor e retorna o JWT. |
-| `PUT` | `/api/config/interval` | Altera o intervalo de amostragem e coleta de métricas. |
-| `POST` | `/api/services/refresh` | Força a redescoberta manual dos serviços no Agregador. |
+Contrato completo: [`greener/docs/contrato-agregador.md`](greener/docs/contrato-agregador.md).
 
 ---
 
-## 🗄️ Modelo de Dados Simplificado
+## 🔌 Endpoints da API
 
-* **`Service`**: ID, Nome, URL/Endpoint, Status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), País, Região, Cidade, Latitude, Longitude, Criado em.
-* **`MetricCollection`**: ID, ServiceID (FK), CPU Usage, Memory Usage, Network I/O, Consumo Energético Estimado (kWh), Emissão $\text{CO}_2\text{e}$ Estimada (g), Timestamp.
-* **`User`**: ID, Nome, Email, Senha Hash (Bcrypt), Criado em.
+Rotas implementadas na Sprint 1 (prefixo `/api`):
+
+| Método | Endpoint | Acesso | Descrição |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api` | Público | Verificação de que a API está no ar |
+| `POST` | `/api/auth/login` | Público | Autentica o usuário e retorna o JWT em `access_token` |
+| `GET` | `/api/auth/profile` | JWT | Dados do usuário autenticado |
+| `GET` | `/api/services` | Público | Serviços monitorados e seus estados (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`) |
+| `GET` | `/api/services/:id/history?from=&to=` | Público | Histórico de coletas do serviço (datas ISO-8601, limites inclusivos) |
+| `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta |
+
+As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
+
+Parâmetros, respostas, códigos de erro e endpoints planejados: [`greener/docs/api.md`](greener/docs/api.md).
 
 ---
 
-## 🧪 Testes Unitários e Qualidade
+## 🗄️ Modelo de Dados
 
-O backend conta com testes unitários para isolar e garantir a precisão dos cálculos ambientais e o tratamento de cenários de indisponibilidade (RNF05, RNF07).
+* **`users`**: id (UUID), nome, e-mail (único), hash da senha (bcrypt), data de criação.
+* **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
+* **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, instante da coleta.
 
-Para executar os testes unitários dentro do container backend:
+Os campos de estimativa de energia e CO₂e serão adicionados na Sprint 2. DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).
+
+---
+
+## 🧪 Testes
+
+O backend tem 20 testes unitários (Jest) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador e a autenticação. Os testes substituem o banco e o Agregador por *doubles*.
+
+Os testes exigem **Node.js 24.9 ou superior**:
+
 ```bash
-docker exec -it greener-backend npm run test
+cd greener/backend
+npm install
+npm test
 ```
+
+> **Limitação conhecida:** a imagem Docker do backend usa Node 22, por isso `npm test` ainda não roda dentro do container. A atualização da imagem está prevista para a Sprint 2.
+
 ---
-## 📘 API e Swagger
 
-O backend usa o prefixo `/api` nas rotas. Atualmente, o projeto **ainda não configura a interface Swagger**. A URL prevista para a interface é:
+## 📚 Documentação
 
-[http://localhost:3001/api/docs](http://localhost:3001/api/docs)
-
-Esse endereço só ficará disponível depois que o Swagger for configurado no backend.
-
-Quando a interface Swagger estiver habilitada:
-
-1. Abra a URL da documentação no navegador.
-2. Expanda a rota que deseja consultar.
-3. Clique em **Try it out**.
-4. Preencha os parâmetros ou o corpo da requisição.
-5. Clique em **Execute** para enviar a chamada.
-6. Para rotas protegidas, obtenha um JWT pelo endpoint de login e use a opção **Authorize**, se a autenticação Bearer estiver configurada na documentação.
-
-### Rotas implementadas atualmente
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `GET` | `/api` | Público | Retorna a resposta inicial da API |
-| `GET` | `/api/services` | Público | Consulta os serviços cadastrados |
-| `POST` | `/api/auth/login` | Público | Autentica o usuário e retorna um JWT |
-| `GET` | `/api/auth/profile` | JWT | Retorna os dados do usuário autenticado |
-
-O login recebe `email` e `password`. A resposta de autenticação contém o token no campo `access_token`.
-
-## Autenticação
-
-As rotas protegidas usam o cabeçalho:
-
-```http
-Authorization: Bearer <token>
-```
-
-O token é obtido pela rota `POST /api/auth/login`. Para autenticar, o usuário precisa existir no banco de dados e ter uma senha cadastrada.
-
-## Documentação adicional
-
-A documentação do projeto está na pasta [`greener/docs`](greener/docs), incluindo os documentos de arquitetura, API e planejamento das sprints.
+| Documento | Conteúdo |
+|---|---|
+| [`greener/docs/README.md`](greener/docs/README.md) | Índice da documentação |
+| [`plano-de-entregas.md`](greener/docs/plano-de-entregas.md) | Critérios por sprint, responsáveis, evidências e participação |
+| [`sprints/sprint-1.md`](greener/docs/sprints/sprint-1.md) | Sprint 1: backlog, histórias, DoD, review e retrospectiva |
+| [`arquitetura.md`](greener/docs/arquitetura.md) | Componentes, fluxo de dados e decisões |
+| [`api.md`](greener/docs/api.md) | Endpoints da API |
+| [`interface.md`](greener/docs/interface.md) | Usuários, tarefas, protótipos e usabilidade |
+| [`calculos.md`](greener/docs/calculos.md) | Dados de entrada e cálculos de energia e CO₂e |
+| [`contrato-agregador.md`](greener/docs/contrato-agregador.md) | Contrato da API do Agregador de Métricas |
+| [GitHub Projects](https://github.com/orgs/CyberChese/projects/2/views/3) | Kanban, histórias e tasks |
 
 ---
 
