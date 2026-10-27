@@ -1,4 +1,7 @@
-import { PlaceholderCard } from '../components/PlaceholderCard.tsx'
+import { LogOut } from 'lucide-react'
+import { HistoryTable } from '@/components/admin/history-table'
+import { MonitoringSettings } from '@/components/admin/monitoring-settings'
+import { useMetricsContext } from '@/hooks/useMetricsContext'
 import { SessionCard } from '../components/SessionCard.tsx'
 import { useAuth } from '../hooks/useAuth.ts'
 import { useLogout } from '../hooks/useLogout.ts'
@@ -6,36 +9,31 @@ import { useLogout } from '../hooks/useLogout.ts'
 export function AdminPage() {
   const { session } = useAuth()
   const handleLogout = useLogout()
+  const metrics = useMetricsContext()
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-brand">
-            Acesso restrito
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight">Área do Administrador</h1>
-          <p className="max-w-prose text-ink-muted">
+    <div id="view-admin" className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">Acesso restrito</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-50 md:text-4xl">Área do Administrador</h1>
+          <p className="mt-1 text-sm text-zinc-400">
             Configuração do monitoramento, histórico temporal das coletas e sessão autenticada.
           </p>
         </div>
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-xl border border-line px-5 py-2.5 text-sm font-medium transition-colors hover:bg-surface-2"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-4 text-sm font-medium text-zinc-300 hover:border-lime-400/40 hover:text-zinc-50"
         >
+          <LogOut className="size-4" aria-hidden="true" />
           Sair
         </button>
-      </header>
+      </div>
 
       <SessionCard session={session} />
-
-      <PlaceholderCard eyebrow="RF16 · Configuração do monitoramento" title="Parâmetros de coleta e exibição">
-        Disponível quando o backend expuser a rota protegida de configuração.
-      </PlaceholderCard>
-      <PlaceholderCard eyebrow="RF10 · Histórico de coletas" title="Registros mais recentes">
-        Disponível quando o backend expuser o histórico de coletas.
-      </PlaceholderCard>
+      <MonitoringSettings />
+      <HistoryTable history={metrics.history} onClear={metrics.clearHistory} intervalSeconds={metrics.intervalMs / 1000} />
     </div>
   )
 }
