@@ -1,4 +1,4 @@
-import { Clock, LayoutDashboard, Leaf, Pause, Play, ShieldCheck, Timer } from 'lucide-react'
+import { Clock, LayoutDashboard, Leaf, Map as MapIcon, Pause, Play, ShieldCheck, Timer } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { formatDateTime, formatSimulatedClock } from '@/lib/format'
@@ -15,6 +15,7 @@ interface AppHeaderProps {
 
 const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] = [
   { to: '/', label: 'Observatório', icon: LayoutDashboard, end: true },
+  { to: '/mapa', label: 'Mapa', icon: MapIcon },
   { to: '/admin', label: 'Área do Administrador', icon: ShieldCheck },
 ]
 
