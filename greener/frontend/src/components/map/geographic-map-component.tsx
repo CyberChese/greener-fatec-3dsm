@@ -87,11 +87,11 @@ export function GeographicMapComponent({ services }: { services: ServiceSnapshot
             {STATUS_META[status].badgeLabel}
           </li>
         ))}
-        <li className="text-zinc-500">O número no marcador indica quantos serviços estão no mesmo ponto.</li>
+        <li className="text-ink-subtle">O número no marcador indica quantos serviços estão no mesmo ponto.</li>
       </ul>
 
       {missing.length > 0 ? (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-ink-subtle">
           {missing.length} serviço(s) sem coordenadas não aparecem no mapa: {missing.map((s) => s.name).join(', ')}.
         </p>
       ) : null}

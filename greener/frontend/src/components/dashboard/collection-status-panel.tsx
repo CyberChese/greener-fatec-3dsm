@@ -17,7 +17,7 @@ export function CollectionStatusView({ status, error, loading }: CollectionStatu
       ) : (
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="flex items-center gap-1.5 text-zinc-500">
+            <dt className="flex items-center gap-1.5 text-ink-subtle">
               <RefreshCw className="size-3.5" aria-hidden="true" /> Intervalo entre ciclos
             </dt>
             <dd className="text-zinc-100">
@@ -25,7 +25,7 @@ export function CollectionStatusView({ status, error, loading }: CollectionStatu
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Última coleta registrada</dt>
+            <dt className="text-ink-subtle">Última coleta registrada</dt>
             <dd className="text-zinc-100">
               {status?.last_collection_at
                 ? formatLastCollection(status.last_collection_at)
@@ -35,7 +35,7 @@ export function CollectionStatusView({ status, error, loading }: CollectionStatu
         </dl>
       )}
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-rose-300">
+        <p role="alert" className="mt-3 text-sm text-state-down">
           Não foi possível consultar a atualização: {error}
         </p>
       ) : null}

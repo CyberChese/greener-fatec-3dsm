@@ -30,7 +30,7 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
         title={metric === 'energy' ? 'Maior consumo energético' : 'Maior emissão de CO₂e'}
         id="ranking-title"
         aside={
-          <div className="flex rounded-lg border border-white/10 p-0.5 text-xs" role="group" aria-label="Ordenar ranking por">
+          <div className="flex rounded-lg border border-edge p-0.5 text-xs" role="group" aria-label="Ordenar ranking por">
             <button
               type="button"
               aria-pressed={metric === 'energy'}
@@ -50,10 +50,10 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
           </div>
         }
       />
-      <p className="-mt-2 mb-4 text-xs text-zinc-500">Período considerado: {periodLabel}</p>
+      <p className="-mt-2 mb-4 text-xs text-ink-subtle">Período considerado: {periodLabel}</p>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-zinc-500">Nenhum serviço corresponde aos filtros.</p>
+        <p className="text-sm text-ink-subtle">Nenhum serviço corresponde aos filtros.</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {rows.map(({ service, value }, index) => {
@@ -63,7 +63,7 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
               <li key={service.id}>
                 <div className="mb-1 flex items-center justify-between gap-3 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="w-5 shrink-0 font-mono text-xs text-zinc-500">{index + 1}.</span>
+                    <span className="w-5 shrink-0 font-mono text-xs text-ink-subtle">{index + 1}.</span>
                     <span className="truncate text-zinc-200">{service.name}</span>
                     <Icon className="size-3.5 shrink-0" style={{ color: meta.hex }} aria-label={meta.label} />
                   </span>

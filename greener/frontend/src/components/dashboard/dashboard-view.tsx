@@ -109,7 +109,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as Period)}
-            className="h-10 rounded-lg border border-white/10 bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60"
+            className="h-10 rounded-lg border border-edge bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60"
           >
             <option value="last10">Últimas 10 coletas</option>
             <option value="session">Sessão inteira</option>
@@ -121,8 +121,8 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         <div role="note" className="flex items-start gap-3 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
           <ServerCrash className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
-            Serviços e estados reais, vindos do backend. Energia, CO₂e e intensidade de carbono aparecem como “—” porque o
-            backend ainda não calcula nem expõe esses valores.
+            Serviços, estados e métricas (CPU, memória, disco e rede) reais, vindos do backend. Energia, CO₂e e intensidade
+            de carbono aparecem como “—” porque o backend ainda não calcula nem expõe esses valores.
           </p>
         </div>
       ) : null}

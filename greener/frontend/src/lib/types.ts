@@ -64,6 +64,10 @@ export interface ServiceSnapshot {
   energyKwh: number | null
   co2eKg: number | null
   errorMessage: string | null
+  /** Id interno (UUID) do serviço no backend; usado nas rotas /services/:id/history. */
+  backendId?: string
+  /** Instante da coleta de onde vieram as métricas (modo real). */
+  metricsAt?: string | null
 }
 
 export interface CollectionRecord {

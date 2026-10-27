@@ -1,7 +1,7 @@
 import { classifyStatus, estimateCo2eKg, estimateEnergyKwh, estimatePowerWatts } from '@/lib/calculations'
 import type { CarbonIntensity, ServiceSnapshot, ServiceSummary } from '@/lib/types'
 import { getCarbonIntensity } from './carbon-intensity'
-import { fetchBackendServices } from './backend-services'
+import { attachLatestMetrics, fetchBackendServices, type LatestMetricsCache } from './backend-services'
 import { advanceSimulatedEnvironment, getServiceMetrics, listServices } from './metrics-aggregator'
 
 export interface CollectionResult {
@@ -73,10 +73,17 @@ export async function runCollection(
   return { snapshots, aggregatorError, carbonError }
 }
 
-/** Coleta no modo real: lê os serviços do backend. Se falhar, mantém os últimos dados conhecidos. */
-export async function runBackendCollection(previous: ServiceSnapshot[]): Promise<CollectionResult> {
+/**
+ * Coleta no modo real: lê os serviços do backend e, para os ativos, a coleta de métricas mais recente
+ * (GET /services/:id/history). Se a lista de serviços falhar, mantém os últimos dados conhecidos.
+ */
+export async function runBackendCollection(
+  previous: ServiceSnapshot[],
+  metricsCache: LatestMetricsCache = new Map(),
+): Promise<CollectionResult> {
   try {
-    return { snapshots: await fetchBackendServices(), aggregatorError: null, carbonError: null }
+    const services = await fetchBackendServices()
+    return { snapshots: await attachLatestMetrics(services, metricsCache), aggregatorError: null, carbonError: null }
   } catch (reason) {
     return {
       snapshots: previous,

@@ -34,11 +34,12 @@ describe('ServicesGrid / ServiceCard (TASK-025)', () => {
     expect(html).toContain('Billing API')
     expect(html).toContain('br-sudeste')
     expect(html).toContain('Sudeste')
+    expect(html).toContain('Potência estimada')
     expect(html).toContain('123,4 W')
   })
 
   it('usa "—" quando o consumo ainda não foi calculado', () => {
-    expect(render([snapshot({ powerWatts: null })])).toContain('Consumo atual: <span class="font-mono text-zinc-100">—')
+    expect(render([snapshot({ powerWatts: null })])).toContain('Potência estimada: <span class="font-mono text-zinc-300">—')
   })
 
   it('organiza em 1 coluna no mobile e 3/4 no desktop', () => {
