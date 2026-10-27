@@ -1,3 +1,4 @@
+import type { BackendCollection } from '@/services/backend-services'
 import type { CollectionRecord } from './types'
 
 const HEADER = [
@@ -38,6 +39,21 @@ export function recordsToCsv(records: CollectionRecord[]): string {
         r.energyKwh,
         r.co2eKg,
       ]
+        .map(cell)
+        .join(','),
+    )
+  }
+  return lines.join('\n')
+}
+
+const num = (value: string | number | null) => (value === null || value === '' ? null : Number(value))
+
+/** CSV do histórico real de um serviço (GET /services/:id/history). */
+export function collectionsToCsv(serviceName: string, records: BackendCollection[]): string {
+  const lines = [['servico', 'recebida_em', 'cpu_percent', 'memoria_gb', 'disco_gb', 'rede_gb'].join(',')]
+  for (const r of records) {
+    lines.push(
+      [serviceName, r.timestamp, num(r.cpu_usage), num(r.memory_usage), num(r.storage_usage), num(r.network_io)]
         .map(cell)
         .join(','),
     )

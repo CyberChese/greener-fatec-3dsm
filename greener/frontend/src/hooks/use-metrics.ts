@@ -8,6 +8,7 @@ import type {
   ServiceSnapshot,
 } from '@/lib/types'
 import { IS_SIMULATED } from '@/lib/dataSource'
+import type { LatestMetricsCache } from '@/services/backend-services'
 import { runBackendCollection, runCollection } from '@/services/collector'
 
 const MAX_HISTORY = 1500
@@ -71,6 +72,7 @@ export function useMetrics(intervalMs: number = REAL_INTERVAL_MS) {
   const stateRef = useRef(state)
   const inFlight = useRef(false)
   const intensityCache = useRef(new Map<string, CarbonIntensity>())
+  const metricsCache = useRef<LatestMetricsCache>(new Map())
   const simulatedStart = useRef<number | null>(null)
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export function useMetrics(intervalMs: number = REAL_INTERVAL_MS) {
 
       const result = IS_SIMULATED
         ? await runCollection(prev.snapshots, intensityCache.current)
-        : await runBackendCollection(prev.snapshots)
+        : await runBackendCollection(prev.snapshots, metricsCache.current)
       const aggregates = aggregateSnapshots(result.snapshots)
 
       const records: CollectionRecord[] = result.snapshots.map((s) => ({

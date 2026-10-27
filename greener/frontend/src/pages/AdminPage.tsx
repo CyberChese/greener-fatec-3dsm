@@ -1,6 +1,8 @@
 import { LogOut } from 'lucide-react'
 import { HistoryTable } from '@/components/admin/history-table'
 import { MonitoringSettings } from '@/components/admin/monitoring-settings'
+import { ServiceHistoryPanel } from '@/components/admin/service-history-panel'
+import { IS_SIMULATED } from '@/lib/dataSource'
 import { useMetricsContext } from '@/hooks/useMetricsContext'
 import { SessionCard } from '../components/SessionCard.tsx'
 import { useAuth } from '../hooks/useAuth.ts'
@@ -24,7 +26,7 @@ export function AdminPage() {
         <button
           type="button"
           onClick={handleLogout}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 px-4 text-sm font-medium text-zinc-300 hover:border-lime-400/40 hover:text-zinc-50"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-edge px-4 text-sm font-medium text-zinc-300 hover:border-lime-400/40 hover:text-zinc-50"
         >
           <LogOut className="size-4" aria-hidden="true" />
           Sair
@@ -33,7 +35,11 @@ export function AdminPage() {
 
       <SessionCard session={session} />
       <MonitoringSettings />
-      <HistoryTable history={metrics.history} onClear={metrics.clearHistory} intervalSeconds={metrics.intervalMs / 1000} />
+      {IS_SIMULATED ? (
+        <HistoryTable history={metrics.history} onClear={metrics.clearHistory} intervalSeconds={metrics.intervalMs / 1000} />
+      ) : (
+        <ServiceHistoryPanel services={metrics.snapshots} />
+      )}
     </div>
   )
 }
