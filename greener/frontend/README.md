@@ -28,7 +28,7 @@ npm run dev
 
 | Variável | Para que serve | Valor padrão |
 |---|---|---|
-| `VITE_API_URL` | Endereço do backend, acessado pelo **navegador** | `http://localhost:3001` |
+| `VITE_API_URL` | Endereço do backend, acessado pelo **navegador** | `http://localhost:3001/api` |
 
 O Vite só expõe ao código as variáveis que começam com `VITE_`, e **tudo o que começa com `VITE_` fica
 visível no navegador**. Nunca coloque senha, chave ou segredo em variável `VITE_`.
@@ -77,13 +77,13 @@ Convenções:
 | `/` | Pública | Observatório |
 | `/comparar` | Pública | Comparação de serviços (ainda sem link no menu) |
 | `/login` | Pública | **Modal** de login, aberto sobre o Observatório |
-| `/config` | **Protegida** | Área do Administrador |
+| `/admin` | **Protegida** | Área do Administrador |
 | qualquer outra | Pública | Página não encontrada |
 
 A consulta ao dashboard é pública. A rota protegida (`ProtectedRoute`) só controla a **navegação na
 interface**: quem barra de verdade é o backend, que valida o JWT em cada rota protegida.
 
-Abrir `/config` sem sessão leva a `/login`; depois do login a pessoa volta para a tela que tentou abrir.
+Abrir `/admin` sem sessão leva a `/login`; depois do login a pessoa volta para a tela que tentou abrir.
 
 ## Chamadas HTTP (Axios)
 
@@ -152,3 +152,29 @@ Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
   protegidas do backend.
 - A barra de status do topo (agregador operacional, última atualização, intervalo, pausar) e o Observatório completo.
 - Testes automatizados do frontend, quando houver um executor de testes configurado.
+
+## Observatório e origem dos dados
+
+A tela inicial (`/`) é o painel público do Observatório: indicadores, filtros, mapa-múndi, evolução, ranking, serviços
+(cartões ou tabela), comparação e eventos. A Área do Administrador (`/admin`, protegida) tem a sessão, a configuração do
+monitoramento (RF16) e o histórico de coletas com exportação em CSV (RF10).
+
+Origem dos dados, escolhida por `VITE_DATA_SOURCE`:
+
+| Valor | O que mostra |
+|---|---|
+| `api` (padrão) | Serviços, estados e localização **reais**, lidos de `GET /api/services`. Energia, CO₂e, intensidade, gráfico de evolução e ranking aparecem como "—" ou como aviso, porque o backend ainda não calcula nem expõe esses valores. |
+| `simulated` | Simulação no navegador (demonstração), com coleta acelerada: cada coleta equivale a 15 min simulados. |
+
+O login é sempre o real (`POST /api/auth/login`). O que o backend precisa expor para o painel mostrar tudo com dados reais
+está em `greener/docs/frontend-dados-simulados.md`.
+
+```
+src/lib/         regras puras: cálculos, formatação, CSV, validação de configurações, tipos, origem dos dados
+src/services/    backend-services.ts (backend real), simulação (metrics-aggregator, carbon-intensity, collector), http.ts, authApi.ts
+src/hooks/       use-metrics (coleta periódica), useAuth, useSettings, useMetricsContext
+src/components/  dashboard/ (painel) e admin/ (configuração e histórico)
+tests/           testes unitários (npm test)
+```
+
+Scripts: `npm run lint`, `npm run build`, `npm test`.

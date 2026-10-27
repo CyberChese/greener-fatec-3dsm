@@ -1,10 +1,13 @@
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // "@/..." aponta para src/ (mesmo alias do tsconfig.app.json).
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {
     host: true,
     port: 5173,
@@ -13,4 +16,5 @@ export default defineConfig({
     // Se o consumo de CPU incomodar e o hot reload funcionar sem ele, pode remover.
     watch: { usePolling: true },
   },
+  test: { environment: 'node', include: ['tests/**/*.test.{ts,tsx}'] },
 })

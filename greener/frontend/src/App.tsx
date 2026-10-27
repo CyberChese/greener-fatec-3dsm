@@ -5,12 +5,11 @@ import { ProtectedRoute } from './components/ProtectedRoute.tsx'
 import { useAuth } from './hooks/useAuth.ts'
 import { useLoginRedirect } from './hooks/useLoginRedirect.ts'
 import { AdminPage } from './pages/AdminPage.tsx'
-import { ComparePage } from './pages/ComparePage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 
 // Consulta (observatório e comparação) é pública; só a área do administrador exige sessão.
-// O login não é uma página: é um modal que abre sobre o observatório quando a rota é /login.
+// A rota /login mostra só o modal de entrada sobre um fundo preto; o resto do site não aparece.
 function App() {
   const location = useLocation()
   const { isAuthenticated } = useAuth()
@@ -21,20 +20,25 @@ function App() {
     return <Navigate to={redirectTo} replace />
   }
 
+  if (isLoginRoute) {
+    return (
+      <div className="min-h-screen bg-black">
+        <LoginModal />
+      </div>
+    )
+  }
+
   return (
-    <>
-      <Routes location={isLoginRoute ? '/' : location}>
-        <Route element={<AppLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="comparar" element={<ComparePage />} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="config" element={<AdminPage />} />
-          </Route>
-          <Route path="*" element={<NotFoundPage />} />
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<HomePage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="admin" element={<AdminPage />} />
         </Route>
-      </Routes>
-      {isLoginRoute && <LoginModal />}
-    </>
+        <Route path="config" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   )
 }
 
