@@ -6,6 +6,7 @@ import { useAuth } from './hooks/useAuth.ts'
 import { useLoginRedirect } from './hooks/useLoginRedirect.ts'
 import { AdminPage } from './pages/AdminPage.tsx'
 import { HomePage } from './pages/HomePage.tsx'
+import { MapPage } from './pages/MapPage.tsx'
 import { NotFoundPage } from './pages/NotFoundPage.tsx'
 
 // Consulta (observatório e comparação) é pública; só a área do administrador exige sessão.
@@ -32,6 +33,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="mapa" element={<MapPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="admin" element={<AdminPage />} />
         </Route>
