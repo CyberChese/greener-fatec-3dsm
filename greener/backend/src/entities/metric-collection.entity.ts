@@ -71,4 +71,16 @@ export class MetricCollection {
     type: 'timestamptz',
   })
   timestamp: Date;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 8,
+    nullable: true,
+    transformer: {
+      to: (value: number | null)=> value,
+      from: (value: string | null) => (value === null ? null :parseFloat(value)),
+    }
+  })
+  energy_kwh: number | null;
 }
