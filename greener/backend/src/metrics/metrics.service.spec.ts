@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
+import { EnergyEngineService } from '../engine/energy-engine.service';
 import {
   AggregatorHttpError,
   AggregatorTimeoutError,
@@ -66,6 +67,7 @@ describe('MetricsService', () => {
     metricsService = new MetricsService(
       services as unknown as Repository<Service>,
       collections as unknown as Repository<MetricCollection>,
+      new EnergyEngineService(),
       config as unknown as ConfigService,
       aggregatorClient as unknown as AggregatorClientService,
     );
@@ -95,6 +97,7 @@ describe('MetricsService', () => {
         memory_usage: '3.17',
         storage_usage: '19.26',
         network_io: '0.45',
+        energy_kwh: expect.any(Number),
         timestamp: expect.any(Date),
       }),
     );
