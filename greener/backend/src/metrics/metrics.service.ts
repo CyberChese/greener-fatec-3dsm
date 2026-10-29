@@ -25,6 +25,8 @@ import {
   AggregatorUnavailableError,
 } from '../modules/aggregator/aggregator.errors';
 
+import { EnergyEngineService } from '../engine/energy-engine.service';
+
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
 
@@ -115,6 +117,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly serviceRepository: Repository<Service>,
     @InjectRepository(MetricCollection)
     private readonly collectionRepository: Repository<MetricCollection>,
+    private readonly energyEngineService: EnergyEngineService,
     configService: ConfigService,
     private readonly aggregatorClient: AggregatorClientService,
   ) {
@@ -279,6 +282,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     const { metrics } = metricsResponse;
     const timestamp = new Date();
 
+   const energyKwh = this.energyEngineService.calculatekWh({
+      cpuUsagePercent: metrics.cpu_percent,
+      memoryUsedMb: metrics.memory_gb * 1024,
+      durationSeconds: metricsResponse.collection_interval_seconds || this.collectionIntervalSeconds,
+   }); 
+
     await this.collectionRepository.save(
       this.collectionRepository.create({
         service_id: service.idServices,
@@ -287,6 +296,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         memory_usage: String(metrics.memory_gb),
         storage_usage: String(metrics.disk_gb),
         network_io: String(metrics.network_gb),
+        energy_kwh: Number(energyKwh),
         timestamp,
       }),
     );
