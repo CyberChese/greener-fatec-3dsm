@@ -83,4 +83,26 @@ export class MetricCollection {
     }
   })
   energy_kwh: number | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 8,
+    nullable: true,
+  })
+  carbon_intensity_gco2e_per_kwh: string | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 8,
+    nullable: true,
+  })
+  co2e_g: string | null;
+
+  @Column({
+    type: 'boolean',
+    nullable: true,
+  })
+  carbon_intensity_fallback: boolean | null;
 }

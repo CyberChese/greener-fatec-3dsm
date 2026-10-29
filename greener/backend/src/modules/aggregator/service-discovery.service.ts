@@ -39,6 +39,8 @@ export class ServiceDiscoveryService implements OnModuleInit {
         external_id: discovered.externalId,
         nameServices: discovered.name,
         endpoint: discovered.metricsPath ?? previous?.endpoint ?? null,
+        region_code:
+          discovered.location.regionCode ?? previous?.region_code ?? null,
         status: previous?.status ?? ServiceStatus.NO_METRICS,
         country: discovered.location.country ?? previous?.country ?? null,
         region: discovered.location.region ?? previous?.region ?? null,
@@ -46,11 +48,11 @@ export class ServiceDiscoveryService implements OnModuleInit {
         latitude:
           discovered.location.lat !== undefined
             ? String(discovered.location.lat)
-            : previous?.latitude ?? null,
+            : (previous?.latitude ?? null),
         longitude:
           discovered.location.lng !== undefined
             ? String(discovered.location.lng)
-            : previous?.longitude ?? null,
+            : (previous?.longitude ?? null),
         last_observed_at: observedAt,
       };
     });

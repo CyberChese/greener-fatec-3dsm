@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
+import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
 import { EnergyEngineService } from '../engine/energy-engine.service';
 import {
   AggregatorHttpError,
@@ -16,6 +17,7 @@ describe('MetricsService', () => {
     idServices: '2f33c598-f9bc-46d6-afef-d2f1d6ae12d3',
     external_id: 'billing-api',
     endpoint: '/metrics/billing-api',
+    region_code: 'br-sudeste',
     status: ServiceStatus.ACTIVE,
   } as Service;
   let services: {
@@ -31,6 +33,9 @@ describe('MetricsService', () => {
   let metricsService: MetricsService;
   let aggregatorClient: {
     fetchMetrics: jest.Mock;
+  };
+  let carbonIntensityClient: {
+    getIntensity: jest.Mock;
   };
 
   beforeEach(() => {
@@ -63,6 +68,12 @@ describe('MetricsService', () => {
         },
       }),
     };
+    carbonIntensityClient = {
+      getIntensity: jest.fn().mockResolvedValue({
+        intensityGco2ePerKwh: 85,
+        usedFallback: false,
+      }),
+    };
 
     metricsService = new MetricsService(
       services as unknown as Repository<Service>,
@@ -70,6 +81,7 @@ describe('MetricsService', () => {
       new EnergyEngineService(),
       config as unknown as ConfigService,
       aggregatorClient as unknown as AggregatorClientService,
+      carbonIntensityClient as unknown as CarbonIntensityClientService,
     );
   });
 
@@ -98,9 +110,62 @@ describe('MetricsService', () => {
         storage_usage: '19.26',
         network_io: '0.45',
         energy_kwh: expect.any(Number),
+        carbon_intensity_gco2e_per_kwh: '85',
+        co2e_g: expect.any(String),
+        carbon_intensity_fallback: false,
         timestamp: expect.any(Date),
       }),
     );
+    expect(carbonIntensityClient.getIntensity).toHaveBeenCalledWith(
+      'br-sudeste',
+    );
+    const savedCollection = collections.save.mock.calls[0][0];
+    expect(Number(savedCollection.co2e_g)).toBeCloseTo(
+      savedCollection.energy_kwh * 85,
+      8,
+    );
+  });
+
+  it('persists fallback usage with the calculated emissions for audit', async () => {
+    carbonIntensityClient.getIntensity.mockResolvedValue({
+      intensityGco2ePerKwh: 120,
+      usedFallback: true,
+    });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carbon_intensity_gco2e_per_kwh: '120',
+        carbon_intensity_fallback: true,
+        co2e_g: expect.any(String),
+      }),
+    );
+  });
+
+  it('continues collecting other services when a collection uses fallback', async () => {
+    const secondService = {
+      ...service,
+      idServices: 'efc7aa92-c05f-4971-b711-5ad006752b3b',
+      external_id: 'catalog-api',
+      endpoint: '/metrics/catalog-api',
+      region_code: null,
+    } as Service;
+    services.find.mockResolvedValue([service, secondService]);
+    carbonIntensityClient.getIntensity
+      .mockResolvedValueOnce({
+        intensityGco2ePerKwh: 120,
+        usedFallback: true,
+      })
+      .mockResolvedValueOnce({
+        intensityGco2ePerKwh: 85,
+        usedFallback: false,
+      });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).toHaveBeenCalledTimes(2);
+    expect(carbonIntensityClient.getIntensity).toHaveBeenCalledTimes(2);
   });
 
   it('does not persist a payload that violates the aggregator contract', async () => {

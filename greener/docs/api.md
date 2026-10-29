@@ -82,6 +82,7 @@ Lista todos os serviços cadastrados pela descoberta no Agregador de Métricas.
     "external_id": "billing-api",
     "nameServices": "Billing API",
     "endpoint": "/metrics/billing-api",
+    "region_code": "br-sudeste",
     "status": "ACTIVE",
     "country": "Brazil",
     "region": "Sudeste",
@@ -98,6 +99,7 @@ Lista todos os serviços cadastrados pela descoberta no Agregador de Métricas.
 |---|---|
 | `status` | `ACTIVE` (última coleta válida), `UNAVAILABLE` (timeout, falha de conexão, HTTP 404/500 ou ausente na descoberta completa) ou `NO_METRICS` (respondeu sem métricas válidas ou sem endpoint) |
 | `endpoint` | Caminho relativo de métricas informado pelo Agregador (`metrics_path`) |
+| `region_code` | Código regional persistido para consultar a API de intensidade de carbono; `null` quando não informado |
 | `latitude`, `longitude` | Retornados como texto, pois a coluna é `numeric` no PostgreSQL |
 
 ### `GET /api/services/:id/history`
@@ -123,6 +125,10 @@ Exemplo: `GET /api/services/b9a3f744-1f9b-4e53-8b11-31d112a49c83/history?from=20
     "memory_usage": "2.100000",
     "storage_usage": "10.000000",
     "network_io": "0.300000",
+    "energy_kwh": 0.00042,
+    "carbon_intensity_gco2e_per_kwh": "85.00000000",
+    "co2e_g": "0.03570000",
+    "carbon_intensity_fallback": false,
     "timestamp": "2026-10-19T00:48:13.443Z"
   }
 ]
@@ -134,6 +140,10 @@ Exemplo: `GET /api/services/b9a3f744-1f9b-4e53-8b11-31d112a49c83/history?from=20
 | `memory_usage` | GB |
 | `storage_usage` | GB |
 | `network_io` | GB |
+| `energy_kwh` | kWh |
+| `carbon_intensity_gco2e_per_kwh` | gCO₂e/kWh |
+| `co2e_g` | gCO₂e |
+| `carbon_intensity_fallback` | `true` se o fator configurado de fallback foi usado; `false` se veio da API |
 | `timestamp` | instante em que a resposta da coleta foi recebida (UTC) |
 
 | Código | Situação |

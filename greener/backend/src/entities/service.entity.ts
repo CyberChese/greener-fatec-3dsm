@@ -37,6 +37,13 @@ export class Service {
   endpoint: string | null;
 
   @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  region_code: string | null;
+
+  @Column({
     type: 'enum',
     enum: ServiceStatus,
     enumName: 'service_status',

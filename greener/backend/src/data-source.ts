@@ -1,7 +1,13 @@
 import 'reflect-metadata';
 import 'dotenv/config';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { DataSource, type DataSourceOptions } from 'typeorm';
+
+const rootEnvPath = join(__dirname, '../../../.env');
+if (existsSync(rootEnvPath)) {
+  process.loadEnvFile(rootEnvPath);
+}
 
 export const databaseOptions: DataSourceOptions = {
   type: 'postgres',

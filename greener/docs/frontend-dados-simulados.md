@@ -9,8 +9,9 @@ O Observatório e a Área do Administrador foram portados do protótipo visual d
   `GET /api/services/:id/history` (consulta com `from` dos últimos 15 min, repetida no máximo a cada 10 s, já que o worker
   coleta a cada ~30 s). Mostra nome, estado (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), localização e CPU/memória/disco/rede com
   o horário da coleta. A Área do Administrador lista o histórico real de um serviço (período à escolha) e exporta CSV.
-  O horário exibido é o horário real. Tudo o que o backend ainda não fornece aparece como "—" (nunca como zero) ou como
-  aviso: energia, CO₂e, intensidade de carbono, potência, gráfico de evolução e ranking de impacto.
+  O horário exibido é o horário real. O backend já persiste energia, CO₂e, intensidade de carbono e o uso de fallback no
+  histórico; esses campos ainda aparecem como "—" no frontend enquanto o adaptador real não os mapeia. Potência, gráfico
+  de evolução e ranking também ainda não são apresentados no modo `api`.
 - **`simulated`**: simulação no navegador para demonstração (coleta acelerada, cada coleta ≙ 15 min simulados, e por isso
   o horário da tabela avança de 15 em 15 min enquanto o relógio do topo mostra a hora real).
 
@@ -30,7 +31,9 @@ ficar no backend.
 |---|---|---|
 | Lista de serviços, estado e localização | **Real** (`GET /api/services`) | já existe |
 | Métricas da última coleta por serviço (CPU, memória, disco, rede) | **Real** (última linha de `GET /api/services/:id/history`) | já existe; um `GET /api/services/:id/latest` evitaria 1 consulta por serviço |
-| Energia, CO2e, intensidade (gCO2e/kWh) e % renovável por serviço e período | falta | calculados pelo worker; `GET /api/dashboard/summary?period=` |
+| Energia, CO2e e intensidade (gCO2e/kWh) por coleta | Persistidos no histórico pelo worker; ainda não mapeados pelo adaptador | `GET /api/services/:id/history` |
+| % renovável por serviço e período | falta | API atual não persiste esse dado |
+| Resumo agregado por período | falta | `GET /api/dashboard/summary?period=` (proposta) |
 | Série temporal para o gráfico e o ranking | falta | `GET /api/dashboard/series?period=` |
 | Eventos do ambiente (serviço descoberto, removido, indisponível) | derivados no front a partir da diferença entre consultas | `GET /api/events` (opcional) |
 | Histórico de coletas e CSV (RF10) | **Real** por serviço (`GET /api/services/:id/history?from=&to=`) | já existe; paginação e filtro por estado seriam úteis, e a rota pública poderia exigir JWT na área admin |
@@ -40,7 +43,7 @@ ficar no backend.
 
 - O histórico devolve CPU em %, memória/disco/rede em GB, como texto numérico; o front converte. Coleta com algum valor
   nulo é tratada como sem métricas (o front não preenche com zero).
-- `GET /api/services` devolve `latitude`/`longitude` como texto (colunas `numeric`); o front converte. Não há `region_code`,
-  então o front usa a região como código enquanto a API de carbono não for integrada.
+- `GET /api/services` devolve `latitude`/`longitude` como texto (colunas `numeric`); o front converte. `region_code` é
+  persistido e retornado pelo backend para a integração de carbono.
 - O CORS do backend precisa liberar a origem do frontend (`http://localhost:3000` em desenvolvimento).
 - Ao integrar os novos endpoints, basta estender `src/services/backend-services.ts`; as telas já tratam valores nulos.

@@ -1,9 +1,8 @@
 # Cálculos de Energia e CO₂e
 
-> **Situação:** o cálculo das estimativas de energia (kWh) e de emissões (CO₂e) **não faz parte da Sprint 1** e está previsto para a Sprint 2, conforme o [plano de entregas](plano-de-entregas.md).
-> Este documento registra os dados de entrada que o sistema já coleta e a estrutura que será preenchida quando o cálculo for implementado.
+> O backend persiste a energia estimada, consulta o fator regional e registra a estimativa de CO₂e por coleta. As premissas do modelo de energia ainda precisam de validação do Product Owner.
 
-## 1. Dados de entrada já coletados (Sprint 1)
+## 1. Dados de entrada da coleta
 
 A cada ciclo de coleta, o backend grava em `metric_collections` os valores recebidos do Agregador de Métricas:
 
@@ -17,24 +16,25 @@ A cada ciclo de coleta, o backend grava em `metric_collections` os valores receb
 
 Valores fora dessas faixas não são gravados e o serviço é marcado como `NO_METRICS` (ver [`arquitetura.md`](arquitetura.md#32-coleta-periódica-de-métricas)).
 
-Cada serviço também tem localização (`country`, `region`, `city`, `latitude`, `longitude`). O código de região (`region_code`), necessário para consultar a intensidade de carbono, é recebido do Agregador, mas ainda não é gravado. Isso está registrado como pendência da Sprint 1.
+Cada serviço também tem localização (`country`, `region`, `city`, `latitude`, `longitude`) e o código `region_code` recebido do Agregador é persistido para consultar a intensidade regional.
 
-## 2. Estrutura prevista para a Sprint 2
+## 2. Intensidade de carbono e emissões
 
-Quando o cálculo for implementado, este documento deve conter:
+O backend consulta a [API oficial de Intensidade de Carbono](contrato-intensidade-carbono.md) usando o `region_code` persistido. O fator e a procedência ficam registrados por coleta:
 
-| Item | Conteúdo a documentar |
+| Coluna | Conteúdo |
 |---|---|
-| Fórmula de energia | Como CPU, memória, armazenamento e rede são convertidos em kWh |
-| Fatores | Valor, unidade e fonte de cada fator utilizado |
-| Intensidade de carbono | Origem (serviço da UniLaunch), unidade (gCO₂e/kWh) e região consultada |
-| Fórmula de emissão | Conversão de kWh em CO₂e |
-| Período | Intervalo de tempo a que cada estimativa se refere |
-| Dados ausentes | Tratamento quando uma métrica ou a intensidade de carbono não estiver disponível |
-| Exemplo | Cálculo completo com valores reais de uma coleta |
+| `carbon_intensity_gco2e_per_kwh` | Fator retornado pela API ou fallback configurado, em gCO₂e/kWh |
+| `carbon_intensity_fallback` | `true` quando o fator da coleta veio do fallback; `false` quando veio da API |
+| `co2e_g` | Emissão estimada em gramas de CO₂e |
+
+Fórmula: `co2e_g = energy_kwh × carbon_intensity_gco2e_per_kwh`. A unidade resulta de `kWh × gCO₂e/kWh = gCO₂e`. O valor de fallback vem de `CARBON_INTENSITY_FALLBACK_G_PER_KWH` e deve ser definido pelo operador conforme o ambiente; o sistema não inventa um fator padrão. Timeout, erro HTTP, resposta inválida ou região ausente/desconhecida acionam o fallback e geram aviso de log quando o fator está configurado. Se estiver ausente, o erro é explícito e aquela coleta não é persistida. A flag persistida permite auditar quais estimativas o utilizaram.
+
+O cálculo detalhado de energia e as premissas dos fatores físicos continuam sujeitos à validação do Product Owner; valores da simulação do frontend não são usados pelo backend.
 
 ## 3. Histórico
 
 | Data | Alteração |
 |---|---|
 | 19/10/2026 | Documentação dos dados de entrada coletados na Sprint 1 e da estrutura prevista para a Sprint 2 |
+| 29/10/2026 | Documentada a integração regional, a emissão por coleta e a auditoria do fallback |
