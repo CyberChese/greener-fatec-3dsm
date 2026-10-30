@@ -25,9 +25,8 @@ import {
   AggregatorUnavailableError,
 } from '../modules/aggregator/aggregator.errors';
 
-import { EnergyEngineService } from '../engine/energy-engine.service';
-
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
+const HTTP_NOT_FOUND = 404;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
 
 interface AggregatorMetrics {
@@ -93,6 +92,32 @@ function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
   };
 }
 
+/**
+ * Regra de estado persistido para falhas ao buscar as métricas de um serviço.
+ *
+ * - HTTP 404: o Agregador respondeu, mas informa que o serviço foi removido ou
+ *   não tem métricas (OpenAPI). O serviço é alcançável, portanto não fica
+ *   `UNAVAILABLE`: passa a `NO_METRICS`.
+ * - Timeout, falha de conexão ou HTTP 5xx/outros: o Agregador não entregou
+ *   uma resposta utilizável. O serviço passa a `UNAVAILABLE`.
+ *
+ * Em ambos os casos o histórico é preservado e o serviço volta a `ACTIVE` no
+ * primeiro ciclo seguinte que receber métricas válidas.
+ */
+function statusForFetchError(error: unknown): ServiceStatus | undefined {
+  if (error instanceof AggregatorHttpError && error.statusCode === HTTP_NOT_FOUND) {
+    return ServiceStatus.NO_METRICS;
+  }
+  if (
+    error instanceof AggregatorHttpError ||
+    error instanceof AggregatorTimeoutError ||
+    error instanceof AggregatorUnavailableError
+  ) {
+    return ServiceStatus.UNAVAILABLE;
+  }
+  return undefined;
+}
+
 function parseDateParameter(value: string | undefined, name: string): Date | undefined {
   if (value === undefined) {
     return undefined;
@@ -117,7 +142,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly serviceRepository: Repository<Service>,
     @InjectRepository(MetricCollection)
     private readonly collectionRepository: Repository<MetricCollection>,
-    private readonly energyEngineService: EnergyEngineService,
     configService: ConfigService,
     private readonly aggregatorClient: AggregatorClientService,
   ) {
@@ -175,9 +199,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.collectService(service, service.endpoint);
       } catch (error) {
-        if (error instanceof AggregatorHttpError && error.statusCode === 404) {
+        if (
+          error instanceof AggregatorHttpError &&
+          error.statusCode === HTTP_NOT_FOUND
+        ) {
           this.logger.warn(
-            `Metrics endpoint for service "${service.external_id}" returned HTTP 404; service remains unavailable and will be retried.`,
+            `Metrics endpoint for service "${service.external_id}" returned HTTP 404; service marked as NO_METRICS and will be retried.`,
           );
           continue;
         }
@@ -267,26 +294,18 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         await this.aggregatorClient.fetchMetrics(metricsPath),
       );
     } catch (error) {
-      if (error instanceof MetricsContractError) {
-        await this.updateServiceStatus(service, ServiceStatus.NO_METRICS);
-      } else if (
-        error instanceof AggregatorHttpError ||
-        error instanceof AggregatorTimeoutError ||
-        error instanceof AggregatorUnavailableError
-      ) {
-        await this.updateServiceStatus(service, ServiceStatus.UNAVAILABLE);
+      const status =
+        error instanceof MetricsContractError
+          ? ServiceStatus.NO_METRICS
+          : statusForFetchError(error);
+      if (status) {
+        await this.updateServiceStatus(service, status);
       }
       throw error;
     }
 
     const { metrics } = metricsResponse;
     const timestamp = new Date();
-
-   const energyKwh = this.energyEngineService.calculatekWh({
-      cpuUsagePercent: metrics.cpu_percent,
-      memoryUsedMb: metrics.memory_gb * 1024,
-      durationSeconds: metricsResponse.collection_interval_seconds || this.collectionIntervalSeconds,
-   }); 
 
     await this.collectionRepository.save(
       this.collectionRepository.create({
@@ -296,7 +315,6 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         memory_usage: String(metrics.memory_gb),
         storage_usage: String(metrics.disk_gb),
         network_io: String(metrics.network_gb),
-        energy_kwh: Number(energyKwh),
         timestamp,
       }),
     );

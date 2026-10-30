@@ -4,10 +4,10 @@ import { In, Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
-import { EnergyEngineService } from '../engine/energy-engine.service';
 import {
   AggregatorHttpError,
   AggregatorTimeoutError,
+  AggregatorUnavailableError,
 } from '../modules/aggregator/aggregator.errors';
 import { MetricsService } from './metrics.service';
 
@@ -67,7 +67,6 @@ describe('MetricsService', () => {
     metricsService = new MetricsService(
       services as unknown as Repository<Service>,
       collections as unknown as Repository<MetricCollection>,
-      new EnergyEngineService(),
       config as unknown as ConfigService,
       aggregatorClient as unknown as AggregatorClientService,
     );
@@ -97,7 +96,6 @@ describe('MetricsService', () => {
         memory_usage: '3.17',
         storage_usage: '19.26',
         network_io: '0.45',
-        energy_kwh: expect.any(Number),
         timestamp: expect.any(Date),
       }),
     );
@@ -144,8 +142,8 @@ describe('MetricsService', () => {
 
   it.each([
     ['a timeout', new AggregatorTimeoutError('Request timed out', '/metrics')],
-    ['an HTTP failure', new AggregatorHttpError('HTTP 500', '/metrics', 500)],
-    ['an absent service response', new AggregatorHttpError('HTTP 404', '/metrics', 404)],
+    ['an HTTP 500 failure', new AggregatorHttpError('HTTP 500', '/metrics', 500)],
+    ['an unreachable aggregator', new AggregatorUnavailableError('ECONNREFUSED', '/metrics')],
   ])('marks a service unavailable after %s and continues the cycle', async (_, error) => {
     const secondService = {
       ...service,
@@ -166,6 +164,71 @@ describe('MetricsService', () => {
     );
   });
 
+  it('marks a service as NO_METRICS after HTTP 404 and continues the cycle', async () => {
+    const secondService = {
+      ...service,
+      idServices: 'efc7aa92-c05f-4971-b711-5ad006752b3b',
+      external_id: 'catalog-api',
+    } as Service;
+    services.find.mockResolvedValue([service, secondService]);
+    aggregatorClient.fetchMetrics.mockRejectedValueOnce(
+      new AggregatorHttpError('HTTP 404', '/metrics', 404),
+    );
+
+    await metricsService.collectCycle();
+
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
+    expect(services.update).not.toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.UNAVAILABLE },
+    );
+    expect(collections.save).toHaveBeenCalledWith(
+      expect.objectContaining({ service_id: secondService.idServices }),
+    );
+  });
+
+  it('does not keep the previous ACTIVE state after HTTP 404', async () => {
+    service.status = ServiceStatus.ACTIVE;
+    aggregatorClient.fetchMetrics.mockRejectedValue(
+      new AggregatorHttpError('HTTP 404', '/metrics', 404),
+    );
+
+    await metricsService.collectCycle();
+
+    expect(service.status).toBe(ServiceStatus.NO_METRICS);
+    expect(collections.save).not.toHaveBeenCalled();
+  });
+
+  it('persists different states for HTTP 404 and HTTP 500 in the same cycle', async () => {
+    const secondService = {
+      ...service,
+      idServices: 'efc7aa92-c05f-4971-b711-5ad006752b3b',
+      external_id: 'catalog-api',
+      endpoint: '/metrics/catalog-api',
+    } as Service;
+    services.find.mockResolvedValue([service, secondService]);
+    aggregatorClient.fetchMetrics
+      .mockRejectedValueOnce(new AggregatorHttpError('HTTP 404', '/metrics', 404))
+      .mockRejectedValueOnce(new AggregatorHttpError('HTTP 500', '/metrics', 500));
+    const loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    await metricsService.collectCycle();
+
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: secondService.idServices },
+      { status: ServiceStatus.UNAVAILABLE },
+    );
+    loggerError.mockRestore();
+  });
+
   it('reports a 404 endpoint as a warning without logging an exception stack', async () => {
     aggregatorClient.fetchMetrics.mockRejectedValue(
       new AggregatorHttpError('HTTP 404', '/metrics', 404),
@@ -177,7 +240,7 @@ describe('MetricsService', () => {
 
     expect(services.update).toHaveBeenCalledWith(
       { idServices: service.idServices },
-      { status: ServiceStatus.UNAVAILABLE },
+      { status: ServiceStatus.NO_METRICS },
     );
     expect(loggerWarn).toHaveBeenCalledWith(
       expect.stringContaining('returned HTTP 404'),

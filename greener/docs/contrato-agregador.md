@@ -64,5 +64,16 @@ Cliente no GreenER: `AggregatorClientService` (`backend/src/modules/aggregator`)
 - **Mapeamento persistido:** `cpu_percent` → `cpu_usage` (**percentual**); `memory_gb` → `memory_usage` (**GB**); `disk_gb` → `storage_usage` (**GB**); `network_gb` → `network_io` (**GB**).
 - `collection_interval_seconds` é o intervalo informado pelo agregador e não substitui o intervalo de agendamento local.
 - O coletor persiste o instante da resposta em `MetricCollection.timestamp`. Serviços ativos sem `metrics_path` não são coletados até que tenham um endpoint configurado.
-- Timeout, falha de conexão, HTTP 500 ou HTTP 404 atualiza o serviço para `UNAVAILABLE`; pela OpenAPI, 404 significa que o serviço foi removido ou não tem métricas. O 404 é registrado como aviso, sem stack trace, e a coleta tenta novamente no ciclo seguinte para permitir recuperação. Uma resposta sem métricas válidas atualiza para `NO_METRICS`. Descobrir um serviço não o ativa por si só: somente uma resposta válida e persistida atualiza para `ACTIVE`. O histórico de coletas não é removido por essas transições.
+- **Estados por tipo de falha ao buscar métricas (TASK-034):**
+
+  | Situação | Estado persistido | Motivo |
+  |---|---|---|
+  | Timeout, falha de conexão ou HTTP 500 (ou outro erro HTTP que não seja 404) | `UNAVAILABLE` | O Agregador não entregou uma resposta utilizável: o serviço está indisponível. |
+  | HTTP 404 | `NO_METRICS` | Pela OpenAPI, 404 significa que o serviço foi removido ou não tem métricas. O Agregador respondeu, então o serviço não está indisponível: ele está sem métricas. |
+  | Resposta 200 sem métricas válidas, ou serviço sem `metrics_path` | `NO_METRICS` | Resposta alcançável, porém sem dados utilizáveis. |
+  | Resposta 200 com métricas válidas, gravadas | `ACTIVE` | Única situação que ativa um serviço. |
+
+- O 404 é registrado como aviso, sem stack trace; os demais erros são registrados como erro. Em todos os casos a coleta continua para os demais serviços e tenta novamente no ciclo seguinte, o que permite a recuperação: um serviço em `UNAVAILABLE` ou `NO_METRICS` volta a `ACTIVE` na primeira resposta válida. O estado anterior nunca é mantido após uma falha, e o histórico de coletas não é removido por essas transições.
+- Descobrir um serviço não o ativa por si só. Um serviço ausente de uma descoberta completa é marcado como `UNAVAILABLE` (sem apagar histórico); ausência em resposta incompleta ou falha da API não conta como remoção.
+- A regra do 404 está concentrada em `statusForFetchError` (`backend/src/metrics/metrics.service.ts`), com testes em `metrics.service.spec.ts`.
 - A especificação foi conferida em `GET /openapi.json` e com `GET /metrics/billing-api` em 16/10/2026.
