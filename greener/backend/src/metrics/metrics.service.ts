@@ -26,6 +26,7 @@ import {
 } from '../modules/aggregator/aggregator.errors';
 
 import { EnergyEngineService } from '../engine/energy-engine.service';
+import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
 
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
@@ -120,6 +121,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly energyEngineService: EnergyEngineService,
     configService: ConfigService,
     private readonly aggregatorClient: AggregatorClientService,
+    private readonly carbonIntensityClient: CarbonIntensityClientService,
   ) {
     const configuredInterval = configService.get<string>(
       'METRICS_COLLECTION_INTERVAL_SECONDS',
@@ -282,11 +284,19 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     const { metrics } = metricsResponse;
     const timestamp = new Date();
 
-   const energyKwh = this.energyEngineService.calculatekWh({
+    const energyKwh = this.energyEngineService.calculatekWh({
       cpuUsagePercent: metrics.cpu_percent,
       memoryUsedMb: metrics.memory_gb * 1024,
-      durationSeconds: metricsResponse.collection_interval_seconds || this.collectionIntervalSeconds,
-   }); 
+      durationSeconds:
+        metricsResponse.collection_interval_seconds ||
+        this.collectionIntervalSeconds,
+    });
+    const carbonIntensity = await this.carbonIntensityClient.getIntensity(
+      service.region_code,
+    );
+    const co2eGrams = Number(
+      (energyKwh * carbonIntensity.intensityGco2ePerKwh).toFixed(8),
+    );
 
     await this.collectionRepository.save(
       this.collectionRepository.create({
@@ -297,6 +307,11 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         storage_usage: String(metrics.disk_gb),
         network_io: String(metrics.network_gb),
         energy_kwh: Number(energyKwh),
+        carbon_intensity_gco2e_per_kwh: String(
+          carbonIntensity.intensityGco2ePerKwh,
+        ),
+        co2e_g: String(co2eGrams),
+        carbon_intensity_fallback: carbonIntensity.usedFallback,
         timestamp,
       }),
     );

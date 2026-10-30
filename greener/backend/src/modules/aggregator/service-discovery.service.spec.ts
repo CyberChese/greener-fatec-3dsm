@@ -70,7 +70,7 @@ describe('ServiceDiscoveryService', () => {
           externalId: 'billing-api',
           name: 'Billing API',
           metricsPath: '/metrics/billing-api',
-          location: {},
+          location: { regionCode: 'br-sudeste' },
         },
         {
           externalId: 'new-service',
@@ -95,10 +95,45 @@ describe('ServiceDiscoveryService', () => {
         expect.objectContaining({
           external_id: 'billing-api',
           status: ServiceStatus.UNAVAILABLE,
+          region_code: 'br-sudeste',
         }),
         expect.objectContaining({
           external_id: 'new-service',
           status: ServiceStatus.NO_METRICS,
+          region_code: null,
+        }),
+      ],
+      ['external_id'],
+    );
+  });
+
+  it('updates the stored region code when discovery reports a new one', async () => {
+    aggregatorClient.fetchDiscoveredServices.mockResolvedValue({
+      services: [
+        {
+          externalId: 'billing-api',
+          name: 'Billing API',
+          location: { regionCode: 'br-sul' },
+        },
+      ],
+      isComplete: false,
+    });
+    serviceRepository.find.mockResolvedValue([
+      {
+        external_id: 'billing-api',
+        region_code: 'br-sudeste',
+        status: ServiceStatus.ACTIVE,
+      },
+    ]);
+
+    await discoveryService.synchronize();
+
+    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          external_id: 'billing-api',
+          region_code: 'br-sul',
+          status: ServiceStatus.ACTIVE,
         }),
       ],
       ['external_id'],
