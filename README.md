@@ -109,8 +109,9 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | **Backend** | NestJS 12 + TypeScript | API REST organizada em módulos, controllers e services |
 | **Banco de Dados** | PostgreSQL 15 + TypeORM | Persistência com migrações versionadas |
 | **Autenticação** | JWT (Passport) + bcrypt | Proteção das rotas administrativas |
-| **Testes** | Jest | Testes unitários do backend |
+| **Testes** | Jest (backend) e Vitest (frontend) | Testes unitários executáveis dentro dos containers |
 | **Containerização** | Docker & Docker Compose | Execução unificada dos três serviços |
+| **Runtime** | Node.js 24 LTS (`^24.15.0`) | Imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` e CI |
 
 ---
 
@@ -272,17 +273,25 @@ Os campos de estimativa de energia e CO₂e serão adicionados na Sprint 2. DER 
 
 ## 🧪 Testes
 
-O backend tem 20 testes unitários (Jest) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador e a autenticação. Os testes substituem o banco e o Agregador por *doubles*.
+O backend tem 35 testes unitários (Jest, 6 suítes) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação, o cálculo de energia e o cliente de intensidade de carbono. Os testes substituem o banco e o Agregador por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
 
-Os testes exigem **Node.js 24.9 ou superior**:
+Os testes exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A política de runtime do projeto é **Node 24 LTS** em todos os lugares: imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` (`^24.15.0`) e CI.
+
+Pelo Docker (forma oficial), com os containers no ar:
 
 ```bash
-cd greener/backend
-npm install
-npm test
+docker compose exec greener-backend npm test
+docker compose exec greener-frontend npm test
 ```
 
-> **Limitação conhecida:** a imagem Docker do backend usa Node 22, por isso `npm test` ainda não roda dentro do container. A atualização da imagem está prevista para a Sprint 2.
+Sem Docker:
+
+```bash
+cd greener/backend && npm ci && npm test
+cd ../frontend && npm ci && npm test
+```
+
+> Depois de trocar a versão do Node das imagens, suba de novo com `docker compose up --build -d --renew-anon-volumes`, para o `node_modules` do container ser recriado.
 
 ---
 

@@ -70,11 +70,11 @@ A API fica em <http://localhost:3001/api>. O seed cria o usuário `teste@greener
 
 ### Sem Docker
 
-Requer Node.js 24 e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env` e rode:
+Requer Node.js 24.15 ou superior (`^24.15.0`, declarado em `engines`) e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env` e rode:
 
 ```bash
 cd greener/backend
-npm install
+npm ci
 npm run migration:run
 npm run seed
 npm run start:dev
@@ -110,11 +110,12 @@ npm run test:cov  # testes com relatório de cobertura
 |---|---|
 | `metrics/metrics.service.spec.ts` | Gravação das coletas, estados `ACTIVE`, `NO_METRICS` e `UNAVAILABLE`, continuidade do ciclo após falhas e filtro do histórico |
 | `modules/carbon-intensity/carbon-intensity-client.service.spec.ts` | Contrato da API, timeout, região ausente/inexistente, resposta inválida e fallback |
+| `engine/energy-engine.service.spec.ts` | Cálculo da energia (kWh) a partir de CPU e memória no intervalo de coleta |
 | `modules/aggregator/service-discovery.service.spec.ts` | Serviços omitidos marcados como `UNAVAILABLE` só em descoberta completa, preservação do estado existente e nenhuma alteração quando a descoberta falha |
 | `modules/aggregator/aggregator-client.service.spec.ts` | Classificação da resposta de descoberta como completa ou incompleta |
 | `auth/auth.service.spec.ts` | Login válido, senha incorreta e usuário inexistente |
 
-Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.9 ou superior**, porque o NestJS 12 é distribuído como ESM. A imagem Docker ainda usa Node 22, por isso `npm test` não roda dentro do container nesta versão (pendência da Sprint 1, prevista para a Sprint 2).
+Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A imagem Docker do backend usa Node 24, então os testes também rodam dentro do container: `docker compose exec greener-backend npm test`.
 
 ## Outros comandos
 

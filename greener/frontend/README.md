@@ -24,6 +24,8 @@ npm install
 npm run dev
 ```
 
+Requer Node.js 24.15 ou superior (`^24.15.0`, declarado em `engines`), a mesma versão usada na imagem Docker.
+
 ## Variáveis de ambiente
 
 | Variável | Para que serve | Valor padrão |
@@ -42,10 +44,27 @@ vem do `compose.yaml`, que lê o `.env` da raiz do repositório (veja o `.env.ex
 | `npm run dev` | Servidor de desenvolvimento com hot reload |
 | `npm run build` | Checa os tipos (`tsc -b`) e gera a versão de produção |
 | `npm run lint` | Executa o ESLint |
+| `npm test` | Executa os testes unitários (Vitest) |
 | `npm run preview` | Serve a versão de produção localmente |
 
 Para checar só os tipos use `npx tsc -p tsconfig.app.json --noEmit`.
 O `tsconfig.json` da raiz apenas referencia os demais, então `npx tsc --noEmit` sozinho não verifica nada.
+
+## Testes
+
+Os testes ficam em `tests/` e rodam com o Vitest, no Node 24 da imagem Docker. Pelo Docker (forma oficial), com os containers no ar:
+
+```bash
+docker compose exec greener-frontend npm test
+```
+
+Sem Docker:
+
+```bash
+cd greener/frontend
+npm ci
+npm test
+```
 
 ## Estrutura de pastas
 
@@ -157,7 +176,6 @@ Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
 - Parâmetros de coleta (RF16) e histórico de coletas (RF10) na Área do Administrador: dependem das rotas
   protegidas do backend.
 - A barra de status do topo (agregador operacional, última atualização, intervalo, pausar) e o Observatório completo.
-- Testes automatizados do frontend, quando houver um executor de testes configurado.
 
 ## Observatório e origem dos dados
 

@@ -71,3 +71,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Testes unitários
+        run: npm test
