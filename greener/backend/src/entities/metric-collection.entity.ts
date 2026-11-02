@@ -9,12 +9,11 @@ import {
 import { Service } from './service.entity';
 
 @Entity('metric_collections')
-@Index('idx_metric_collections_timestamp', ['timestamp'])
-@Index('idx_metric_collections_service_id', ['service_id'])
 @Index('idx_metric_collections_service_timestamp', [
   'service_id',
   'timestamp',
 ])
+@Index('idx_metric_collections_timestamp_totals', { synchronize: false })
 export class MetricCollection {
   @PrimaryGeneratedColumn('uuid')
   idCollections: string;
