@@ -7,11 +7,11 @@ export interface CollectionStatusState {
   loading: boolean
 }
 
-const RETRY_MS = 30_000
+const RETRY_MS = 15_000
 
 /**
  * Consulta o intervalo e a última coleta do worker do backend (GET /metrics/collection-config, task 015).
- * Repete a consulta no ritmo do próprio worker e tenta de novo em 30 s se falhar.
+ * Repete a consulta no ritmo do próprio worker, preserva dados em falha e cancela timer/requisição ao desmontar.
  */
 export function useCollectionStatus(enabled = true): CollectionStatusState {
   const [state, setState] = useState<CollectionStatusState>({ status: null, error: null, loading: true })
@@ -20,25 +20,38 @@ export function useCollectionStatus(enabled = true): CollectionStatusState {
     if (!enabled) return
     let disposed = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    let controller: AbortController | undefined
+    let inFlight = false
 
     async function refresh() {
+      if (inFlight || disposed) return
+      inFlight = true
+      if (timer) {
+        clearTimeout(timer)
+        timer = undefined
+      }
+      controller = new AbortController()
+      const currentController = controller
       try {
-        const status = await getCollectionStatus()
-        if (disposed) return
+        const status = await getCollectionStatus(currentController.signal)
+        if (disposed || currentController.signal.aborted) return
         setState({ status, error: null, loading: false })
         timer = setTimeout(refresh, status.interval_seconds * 1000)
       } catch (error) {
-        if (disposed) return
+        if (disposed || currentController.signal.aborted) return
         const message = error instanceof Error ? error.message : 'Não foi possível carregar o estado da coleta.'
         setState((previous) => ({ status: previous.status, error: message, loading: false }))
         timer = setTimeout(refresh, RETRY_MS)
+      } finally {
+        inFlight = false
       }
     }
 
-    void refresh()
+    timer = setTimeout(refresh, 0)
     return () => {
       disposed = true
       if (timer) clearTimeout(timer)
+      controller?.abort()
     }
   }, [enabled])
 

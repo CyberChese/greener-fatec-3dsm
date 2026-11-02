@@ -1,3 +1,4 @@
+import { IS_SIMULATED } from './dataSource'
 import type { Period } from './types'
 
 export interface MonitoringSettings {
@@ -7,7 +8,14 @@ export interface MonitoringSettings {
   defaultPeriod: Period
 }
 
-export const DEFAULT_SETTINGS: MonitoringSettings = { intervalSeconds: 3, defaultPeriod: 'last10' }
+/** Intervalo padrão documentado pela API (30 segundos). */
+export const DEFAULT_POLLING_INTERVAL_SECONDS = 30
+export const DEFAULT_POLLING_INTERVAL_MS = DEFAULT_POLLING_INTERVAL_SECONDS * 1000
+
+export const DEFAULT_SETTINGS: MonitoringSettings = {
+  intervalSeconds: IS_SIMULATED ? 3 : DEFAULT_POLLING_INTERVAL_SECONDS,
+  defaultPeriod: 'last10',
+}
 export const INTERVAL_LIMITS = { min: 1, max: 60 } as const
 
 export type SettingsErrors = Partial<Record<keyof MonitoringSettings, string>>

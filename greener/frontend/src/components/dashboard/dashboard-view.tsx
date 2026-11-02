@@ -1,10 +1,11 @@
-import { ServerCrash } from 'lucide-react'
+import { RefreshCw, ServerCrash } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import type { UseMetricsResult } from '@/hooks/use-metrics'
 import { haversineKm, totalsByService } from '@/lib/calculations'
 import type { PeriodTotals } from '@/lib/calculations'
 import { IS_SIMULATED } from '@/lib/dataSource'
+import { cn } from '@/lib/utils'
 import { CollectionStatusPanel } from './collection-status-panel'
 import type { DashboardFilters, Period, RankingMetric, ServiceSnapshot } from '@/lib/types'
 import { ComparisonPanel } from './comparison-panel'
@@ -43,7 +44,7 @@ function matchesFilters(s: ServiceSnapshot, filters: DashboardFilters) {
 }
 
 export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
-  const { snapshots, history, series, events, tick, aggregatorError, carbonError, lastUpdated, intervalMs } = metrics
+  const { snapshots, history, series, events, tick, aggregatorError, carbonError, lastUpdated, intervalMs, refreshing, retry } = metrics
   const { settings } = useSettings()
   const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
   const [period, setPeriod] = useState<Period>(settings.defaultPeriod)
@@ -149,12 +150,23 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
       {!IS_SIMULATED ? <CollectionStatusPanel /> : null}
 
       {apiErrors.length > 0 ? (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
-          <ServerCrash className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <div>
-            <p className="font-semibold">Falha temporária na consulta de dados — exibindo últimos dados conhecidos.</p>
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
+          <ServerCrash className="size-4 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              Falha temporária na consulta de dados — mantendo dados anteriores e tentando reconectar automaticamente.
+            </p>
             <p className="text-orange-200/80">{apiErrors.join(' · ')}</p>
           </div>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={refreshing}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-edge bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none hover:bg-zinc-800 focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/40 disabled:opacity-60"
+          >
+            <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} aria-hidden="true" />
+            Tentar novamente
+          </button>
         </div>
       ) : null}
 

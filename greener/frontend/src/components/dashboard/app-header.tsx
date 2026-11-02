@@ -1,4 +1,4 @@
-import { Clock, LayoutDashboard, Leaf, Map as MapIcon, Menu, Pause, Play, ShieldCheck, Timer, X } from 'lucide-react'
+import { Clock, LayoutDashboard, Leaf, LoaderCircle, Map as MapIcon, Menu, Pause, Play, ShieldCheck, Timer, TriangleAlert, X } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { NavLink } from 'react-router'
@@ -13,6 +13,8 @@ interface AppHeaderProps {
   paused: boolean
   onTogglePause: () => void
   tick: number
+  refreshing?: boolean
+  reconnecting?: boolean
 }
 
 const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] = [
@@ -56,7 +58,16 @@ function NavTabs({ vertical, onNavigate }: { vertical?: boolean; onNavigate?: ()
   )
 }
 
-export function AppHeader({ lastUpdated, simulatedNow, intervalMs, paused, onTogglePause, tick }: AppHeaderProps) {
+export function AppHeader({
+  lastUpdated,
+  simulatedNow,
+  intervalMs,
+  paused,
+  onTogglePause,
+  tick,
+  refreshing = false,
+  reconnecting = false,
+}: AppHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const menuButton = useRef<HTMLButtonElement>(null)
@@ -71,7 +82,11 @@ export function AppHeader({ lastUpdated, simulatedNow, intervalMs, paused, onTog
 
   const lastUpdatedChip = (
     <span className={chipClass}>
-      <Clock className="size-3.5 text-ink-subtle" aria-hidden="true" />
+      {refreshing ? (
+        <LoaderCircle className="size-3.5 animate-spin text-lime-400" aria-hidden="true" />
+      ) : (
+        <Clock className="size-3.5 text-ink-subtle" aria-hidden="true" />
+      )}
       <span className="text-ink-subtle">Última atualização</span>
       <time className="font-mono tabular-nums text-zinc-100" dateTime={lastUpdated ?? undefined}>
         {lastUpdated ? formatDateTime(lastUpdated) : 'aguardando…'}
@@ -123,20 +138,26 @@ export function AppHeader({ lastUpdated, simulatedNow, intervalMs, paused, onTog
           <span
             className={cn(
               'inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-bold tracking-wider ring-1 ring-inset',
-              paused ? 'bg-zinc-800 text-zinc-300 ring-white/10' : 'bg-lime-400/10 text-lime-300 ring-lime-400/30',
+              paused
+                ? 'bg-zinc-800 text-zinc-300 ring-white/10'
+                : reconnecting
+                  ? 'bg-orange-400/10 text-orange-300 ring-orange-400/30'
+                  : 'bg-lime-400/10 text-lime-300 ring-lime-400/30',
             )}
             role="status"
             aria-live="polite"
           >
             {paused ? (
               <Pause className="size-3.5" aria-hidden="true" />
+            ) : reconnecting ? (
+              <TriangleAlert className="size-3.5" aria-hidden="true" />
             ) : (
               <span className="relative flex size-2.5" aria-hidden="true">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-lime-400 opacity-70" />
                 <span className="relative inline-flex size-2.5 rounded-full bg-lime-400" />
               </span>
             )}
-            {paused ? 'PAUSADO' : 'AO VIVO'}
+            {paused ? 'PAUSADO' : reconnecting ? 'RECONECTANDO' : 'AO VIVO'}
           </span>
 
           <div className="hidden items-center gap-2 xl:flex xl:gap-3">

@@ -9,6 +9,14 @@ const STORAGE_KEY = 'greener.settings.v1'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+export function hasSavedSettings(): boolean {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
 export async function loadSettings(): Promise<MonitoringSettings> {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
