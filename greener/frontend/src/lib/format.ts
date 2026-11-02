@@ -14,6 +14,18 @@ export const formatGb = (value: number | null) => (value == null ? '—' : `${fm
 export const formatIntensity = (value: number | null) => (value == null ? '—' : fmt0.format(value))
 export const formatNumber = (value: number, digits = 2) => decimal(digits).format(value)
 
+const smallMeasure = new Intl.NumberFormat('pt-BR', { maximumSignificantDigits: 3 })
+const largeMeasure = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+const shareFormat = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 })
+const countFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
+
+export const formatMeasure = (value: number | null) => {
+  if (value == null || !Number.isFinite(value)) return '—'
+  return Math.abs(value) < 1 ? smallMeasure.format(value) : largeMeasure.format(value)
+}
+export const formatShare = (part: number, total: number) => (total > 0 ? shareFormat.format(part / total) : '—')
+
+export const formatCount = (value: number) => countFormat.format(value)
 export const formatTime = (iso: string | Date) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
