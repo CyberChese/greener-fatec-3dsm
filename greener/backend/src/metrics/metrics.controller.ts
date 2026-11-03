@@ -1,10 +1,15 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { MetricCollection } from '../entities/metric-collection.entity';
-import { MetricsService } from './metrics.service';
+import { MetricsService, MetricsSummary } from './metrics.service';
 
 @Controller('metrics')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
+
+  @Get('summary')
+  getSummary(): Promise<MetricsSummary> {
+    return this.metricsService.getSummary();
+  }
 
   @Get('collection-config')
   getCollectionConfig(): Promise<{

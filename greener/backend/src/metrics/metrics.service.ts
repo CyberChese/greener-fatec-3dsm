@@ -32,6 +32,16 @@ import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
 
+export interface MetricsSummary {
+  total_energy_kwh: number;
+  total_co2e_kg: number;
+  services_count: {
+    active: number;
+    unavailable: number;
+    no_metrics: number;
+  };
+}
+
 interface AggregatorMetrics {
   cpu_percent: number;
   memory_gb: number;
@@ -160,6 +170,52 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     return {
       interval_seconds: this.collectionIntervalSeconds,
       last_collection_at: latestCollection?.timestamp ?? null,
+    };
+  }
+
+  async getSummary(): Promise<MetricsSummary> {
+    const [totals, statusRows] = await Promise.all([
+      this.collectionRepository
+        .createQueryBuilder('collection')
+        .select(
+          'COALESCE(SUM(collection.energy_kwh), 0)',
+          'total_energy_kwh',
+        )
+        .addSelect('COALESCE(SUM(collection.co2e_kg), 0)', 'total_co2e_kg')
+        .getRawOne<{
+          total_energy_kwh: string | number | null;
+          total_co2e_kg: string | number | null;
+        }>(),
+      this.serviceRepository
+        .createQueryBuilder('service')
+        .select('service.status', 'status')
+        .addSelect('COUNT(service.idServices)', 'count')
+        .groupBy('service.status')
+        .getRawMany<{ status: ServiceStatus; count: string | number }>(),
+    ]);
+
+    const servicesCount = {
+      active: 0,
+      unavailable: 0,
+      no_metrics: 0,
+    };
+
+    for (const row of statusRows) {
+      const count = Number(row.count);
+
+      if (row.status === ServiceStatus.ACTIVE) {
+        servicesCount.active = count;
+      } else if (row.status === ServiceStatus.UNAVAILABLE) {
+        servicesCount.unavailable = count;
+      } else if (row.status === ServiceStatus.NO_METRICS) {
+        servicesCount.no_metrics = count;
+      }
+    }
+
+    return {
+      total_energy_kwh: Number(totals?.total_energy_kwh ?? 0),
+      total_co2e_kg: Number(totals?.total_co2e_kg ?? 0),
+      services_count: servicesCount,
     };
   }
 
