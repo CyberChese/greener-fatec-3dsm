@@ -25,11 +25,13 @@ describe('MetricsService', () => {
     find: jest.Mock;
     findOneBy: jest.Mock;
     update: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
   let collections: {
     create: jest.Mock;
     save: jest.Mock;
     find: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
   let metricsService: MetricsService;
   let aggregatorClient: {
@@ -45,11 +47,13 @@ describe('MetricsService', () => {
       find: jest.fn().mockResolvedValue([service]),
       findOneBy: jest.fn().mockResolvedValue(service),
       update: jest.fn().mockResolvedValue({ affected: 1 }),
+      createQueryBuilder: jest.fn(),
     };
     collections = {
       create: jest.fn((value: object) => value as MetricCollection),
       save: jest.fn((value: MetricCollection) => Promise.resolve(value)),
       find: jest.fn().mockResolvedValue([]),
+      createQueryBuilder: jest.fn(),
     };
 
     const config = {
@@ -131,6 +135,68 @@ describe('MetricsService', () => {
       Number(savedCollection.co2e_g) / 1000,
       11,
     );
+  });
+
+  it('aggregates energy, CO2e and service statuses', async () => {
+    const collectionQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        total_energy_kwh: '12.50000000',
+        total_co2e_kg: '3.20000000000',
+      }),
+    };
+    const serviceQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { status: ServiceStatus.ACTIVE, count: '4' },
+        { status: ServiceStatus.UNAVAILABLE, count: '1' },
+        { status: ServiceStatus.NO_METRICS, count: '2' },
+      ]),
+    };
+    collections.createQueryBuilder.mockReturnValue(collectionQueryBuilder);
+    services.createQueryBuilder.mockReturnValue(serviceQueryBuilder);
+
+    await expect(metricsService.getSummary()).resolves.toEqual({
+      total_energy_kwh: 12.5,
+      total_co2e_kg: 3.2,
+      services_count: {
+        active: 4,
+        unavailable: 1,
+        no_metrics: 2,
+      },
+    });
+  });
+
+  it('returns zeros when there are no collections or services', async () => {
+    const collectionQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        total_energy_kwh: '0',
+        total_co2e_kg: '0',
+      }),
+    };
+    const serviceQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    collections.createQueryBuilder.mockReturnValue(collectionQueryBuilder);
+    services.createQueryBuilder.mockReturnValue(serviceQueryBuilder);
+
+    await expect(metricsService.getSummary()).resolves.toEqual({
+      total_energy_kwh: 0,
+      total_co2e_kg: 0,
+      services_count: {
+        active: 0,
+        unavailable: 0,
+        no_metrics: 0,
+      },
+    });
   });
 
   it('persists fallback usage with the calculated emissions for audit', async () => {
