@@ -5,9 +5,6 @@ export class AddCarbonIntensityData1793308800000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      'ALTER TABLE "services" ADD "region_code" character varying(100)',
-    );
-    await queryRunner.query(
       'ALTER TABLE "metric_collections" ADD "carbon_intensity_gco2e_per_kwh" numeric(20,8)',
     );
     await queryRunner.query(
@@ -28,6 +25,5 @@ export class AddCarbonIntensityData1793308800000 implements MigrationInterface {
     await queryRunner.query(
       'ALTER TABLE "metric_collections" DROP COLUMN "carbon_intensity_gco2e_per_kwh"',
     );
-    await queryRunner.query('ALTER TABLE "services" DROP COLUMN "region_code"');
   }
 }

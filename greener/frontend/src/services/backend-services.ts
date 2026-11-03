@@ -6,6 +6,7 @@ export interface BackendService {
   idServices: string
   external_id: string
   nameServices: string
+  region_code?: string | null
   status: string
   country: string | null
   region: string | null
@@ -44,7 +45,7 @@ export function mapBackendService(service: BackendService): ServiceSnapshot {
     id: service.external_id || service.idServices,
     name: service.nameServices,
     location: {
-      region_code: service.region ?? '',
+      region_code: service.region_code ?? service.region ?? '',
       country: service.country ?? '',
       region: service.region ?? '',
       city: service.city,
