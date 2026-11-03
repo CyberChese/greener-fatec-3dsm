@@ -149,13 +149,13 @@ export type BackendCollectionWithEnergy = BackendCollection & {
   co2e_g?: string | number | null
 }
 
-async function fetchDerivedSummary(now = Date.now()): Promise<PublicSummary> {
+async function fetchDerivedSummary(now = Date.now(), signal?: AbortSignal): Promise<PublicSummary> {
   const period = { from: new Date(now - DERIVED_WINDOW_MS).toISOString(), to: new Date(now).toISOString() }
-  const services = await fetchBackendServices()
+  const services = await fetchBackendServices(signal)
   const histories = await Promise.all(
     services
       .filter((s) => s.backendId)
-      .map((s) => fetchServiceHistory(s.backendId as string, { from: period.from }) as Promise<BackendCollectionWithEnergy[]>),
+      .map((s) => fetchServiceHistory(s.backendId as string, { from: period.from }, signal) as Promise<BackendCollectionWithEnergy[]>),
   )
   return deriveSummary(services, histories.flat(), period)
 }
@@ -165,13 +165,14 @@ async function fetchDerivedSummary(now = Date.now()): Promise<PublicSummary> {
  * Enquanto a TASK-023 não publicar o endpoint (resposta 404), o resumo é montado com as rotas já existentes.
  * Quando o endpoint existir, ele passa a ser usado automaticamente, sem mudar a tela.
  */
-export async function fetchPublicSummary(): Promise<SummaryResult> {
+export async function fetchPublicSummary(signal?: AbortSignal): Promise<SummaryResult> {
   try {
-    const { data } = await publicApi.get<unknown>('/metrics/summary')
+    const { data } = await publicApi.get<unknown>('/metrics/summary', { signal })
     return { summary: parsePublicSummary(data), source: 'api' }
   } catch (error) {
+    if (signal?.aborted) throw error
     if (error instanceof ApiError && error.status === 404) {
-      return { summary: await fetchDerivedSummary(), source: 'derived' }
+      return { summary: await fetchDerivedSummary(Date.now(), signal), source: 'derived' }
     }
     throw error
   }

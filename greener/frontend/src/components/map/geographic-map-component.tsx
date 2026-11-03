@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css'
 import '@/styles/map.css'
 import { divIcon, latLngBounds } from 'leaflet'
 import type { DivIcon } from 'leaflet'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import { groupByLocation, servicesWithoutCoordinates, type LocationGroup } from '@/lib/map-groups'
 import type { ServiceSnapshot, ServiceStatus } from '@/lib/types'
@@ -24,11 +24,13 @@ function markerIcon(group: LocationGroup): DivIcon {
   })
 }
 
-/** Enquadra o mapa nos marcadores sempre que o conjunto de localizações muda (não a cada coleta). */
+/** Enquadra o mapa nos marcadores apenas na primeira carga para preservar o zoom/pan durante o polling. */
 function FitBounds({ locations }: { locations: string }) {
   const map = useMap()
+  const fittedRef = useRef(false)
   useEffect(() => {
-    if (!locations) return
+    if (!locations || fittedRef.current) return
+    fittedRef.current = true
     const points = locations.split(';').map((p) => p.split(',').map(Number) as [number, number])
     map.fitBounds(latLngBounds(points), { padding: [48, 48], maxZoom: 5 })
   }, [map, locations])

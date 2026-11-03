@@ -25,6 +25,8 @@ export function AppLayout() {
         paused={metrics.paused}
         onTogglePause={() => metrics.setPaused(!metrics.paused)}
         tick={metrics.tick}
+        refreshing={metrics.refreshing}
+        reconnecting={metrics.reconnecting}
       />
       <main id="conteudo" tabIndex={-1} className="relative mx-auto outline-none max-w-[1600px] px-4 py-6 md:px-6">
         <Outlet />

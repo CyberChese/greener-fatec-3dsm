@@ -19,8 +19,8 @@ function isCollectionStatus(value: unknown): value is CollectionStatus {
   )
 }
 
-export async function getCollectionStatus(): Promise<CollectionStatus> {
-  const response = await publicApi.get<unknown>('/metrics/collection-config')
+export async function getCollectionStatus(signal?: AbortSignal): Promise<CollectionStatus> {
+  const response = await publicApi.get<unknown>('/metrics/collection-config', { signal })
   if (!isCollectionStatus(response.data)) {
     throw new Error('A API retornou uma configuração de coleta inválida.')
   }

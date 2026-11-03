@@ -47,14 +47,15 @@ const RETRY_MS = 15_000
 interface Options {
   intervalMs: number
   enabled?: boolean
-  load?: () => Promise<SummaryResult>
+  load?: (signal?: AbortSignal) => Promise<SummaryResult>
 }
 
 /**
  * Consulta o resumo público periodicamente.
  * - skeleton apenas no primeiro carregamento;
  * - atualizações seguintes substituem os valores sem limpar a tela;
- * - erro de rede mantém os dados anteriores e tenta de novo em 15 s.
+ * - erro de rede mantém os dados anteriores e tenta de novo em 15 s;
+ * - cancela timer e requisição ativa ao desmontar a tela.
  */
 export function usePublicSummary({ intervalMs, enabled = true, load = fetchPublicSummary }: Options) {
   const [state, setState] = useState<PublicSummaryState>(initialSummaryState)
@@ -69,20 +70,26 @@ export function usePublicSummary({ intervalMs, enabled = true, load = fetchPubli
     if (!enabled) return
     let disposed = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    let controller: AbortController | undefined
     let inFlight = false
 
     async function refresh() {
-      if (inFlight) return
+      if (inFlight || disposed) return
       inFlight = true
-      if (timer) clearTimeout(timer)
+      if (timer) {
+        clearTimeout(timer)
+        timer = undefined
+      }
+      controller = new AbortController()
+      const currentController = controller
       setState(summaryRequested)
       try {
-        const result = await loadRef.current()
-        if (disposed) return
+        const result = await loadRef.current(currentController.signal)
+        if (disposed || currentController.signal.aborted) return
         setState((s) => summaryLoaded(s, result, new Date().toISOString()))
         timer = setTimeout(refresh, intervalMs)
       } catch (error) {
-        if (disposed) return
+        if (disposed || currentController.signal.aborted) return
         const message = error instanceof Error ? error.message : 'Não foi possível carregar os indicadores.'
         setState((s) => summaryFailed(s, message))
         timer = setTimeout(refresh, Math.min(RETRY_MS, intervalMs))
@@ -97,6 +104,7 @@ export function usePublicSummary({ intervalMs, enabled = true, load = fetchPubli
     return () => {
       disposed = true
       if (timer) clearTimeout(timer)
+      controller?.abort()
     }
   }, [enabled, intervalMs])
 
