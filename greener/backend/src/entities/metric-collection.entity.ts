@@ -100,6 +100,14 @@ export class MetricCollection {
   co2e_g: string | null;
 
   @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 11,
+    nullable: true,
+  })
+  co2e_kg: string | null;
+
+  @Column({
     type: 'boolean',
     nullable: true,
   })

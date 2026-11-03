@@ -6,6 +6,7 @@ import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
 import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
 import { EnergyEngineService } from '../engine/energy-engine.service';
+import { CarbonEngineService } from '../engine/carbon-engine.service';
 import {
   AggregatorHttpError,
   AggregatorTimeoutError,
@@ -79,6 +80,7 @@ describe('MetricsService', () => {
       services as unknown as Repository<Service>,
       collections as unknown as Repository<MetricCollection>,
       new EnergyEngineService(),
+      new CarbonEngineService(collections as unknown as Repository<MetricCollection>),
       config as unknown as ConfigService,
       aggregatorClient as unknown as AggregatorClientService,
       carbonIntensityClient as unknown as CarbonIntensityClientService,
@@ -110,8 +112,9 @@ describe('MetricsService', () => {
         storage_usage: '19.26',
         network_io: '0.45',
         energy_kwh: expect.any(Number),
-        carbon_intensity_gco2e_per_kwh: '85',
+        carbon_intensity_gco2e_per_kwh: '85.00000000',
         co2e_g: expect.any(String),
+        co2e_kg: expect.any(String),
         carbon_intensity_fallback: false,
         timestamp: expect.any(Date),
       }),
@@ -123,6 +126,10 @@ describe('MetricsService', () => {
     expect(Number(savedCollection.co2e_g)).toBeCloseTo(
       savedCollection.energy_kwh * 85,
       8,
+    );
+    expect(Number(savedCollection.co2e_kg)).toBeCloseTo(
+      Number(savedCollection.co2e_g) / 1000,
+      11,
     );
   });
 
@@ -136,9 +143,10 @@ describe('MetricsService', () => {
 
     expect(collections.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        carbon_intensity_gco2e_per_kwh: '120',
+        carbon_intensity_gco2e_per_kwh: '120.00000000',
         carbon_intensity_fallback: true,
         co2e_g: expect.any(String),
+        co2e_kg: expect.any(String),
       }),
     );
   });

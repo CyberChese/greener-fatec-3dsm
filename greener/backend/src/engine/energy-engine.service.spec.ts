@@ -45,15 +45,21 @@ describe('EnergyEngineService', () => {
     expect(result).toBeCloseTo(0.00033333, 6);
   });
 
-  it('deve ser resiliente e tratar valores nulos ou faltantes aplicandos fallbacks', () => {
-    const result = service.calculatekWh({
-      cpuUsagePercent: null as any,
-      memoryUsedMb: undefined as any,
-      diskIoMBps: undefined,
-      networkIoMBps: undefined,
-    });
+  it('deve rejeitar métricas obrigatórias ausentes ou inválidas', () => {
+    expect(() =>
+      service.calculatekWh({
+        cpuUsagePercent: null as any,
+        memoryUsedMb: 0,
+        durationSeconds: 60,
+      }),
+    ).toThrow('cpuUsagePercent must be a finite number.');
 
-    expect(result).toBeGreaterThan(0);
-    expect(typeof result).toBe('number');
+    expect(() =>
+      service.calculatekWh({
+        cpuUsagePercent: 50,
+        memoryUsedMb: undefined as any,
+        durationSeconds: 60,
+      }),
+    ).toThrow('memoryUsedMb must be a finite number.');
   });
 });

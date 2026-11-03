@@ -26,6 +26,7 @@ import {
 } from '../modules/aggregator/aggregator.errors';
 
 import { EnergyEngineService } from '../engine/energy-engine.service';
+import { CarbonEngineService } from '../engine/carbon-engine.service';
 import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
 
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
@@ -70,8 +71,9 @@ function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
 
   if (
     typeof collectionIntervalSeconds !== 'number' ||
-    !Number.isInteger(collectionIntervalSeconds) ||
-    collectionIntervalSeconds < 0 ||
+    !Number.isSafeInteger(collectionIntervalSeconds) ||
+    collectionIntervalSeconds <= 0 ||
+    collectionIntervalSeconds > MAX_INTERVAL_SECONDS ||
     !isNonNegativeNumber(cpu_percent) ||
     cpu_percent > 100 ||
     !isNonNegativeNumber(memory_gb) ||
@@ -119,6 +121,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     @InjectRepository(MetricCollection)
     private readonly collectionRepository: Repository<MetricCollection>,
     private readonly energyEngineService: EnergyEngineService,
+    private readonly carbonEngineService: CarbonEngineService,
     configService: ConfigService,
     private readonly aggregatorClient: AggregatorClientService,
     private readonly carbonIntensityClient: CarbonIntensityClientService,
@@ -287,15 +290,15 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     const energyKwh = this.energyEngineService.calculatekWh({
       cpuUsagePercent: metrics.cpu_percent,
       memoryUsedMb: metrics.memory_gb * 1024,
-      durationSeconds:
-        metricsResponse.collection_interval_seconds ||
-        this.collectionIntervalSeconds,
+      // O Agregador informa disco e rede em GB, sem janela para derivar taxas MB/s.
+      durationSeconds: metricsResponse.collection_interval_seconds,
     });
     const carbonIntensity = await this.carbonIntensityClient.getIntensity(
       service.region_code,
     );
-    const co2eGrams = Number(
-      (energyKwh * carbonIntensity.intensityGco2ePerKwh).toFixed(8),
+    const carbonEmission = this.carbonEngineService.calculateEmission(
+      energyKwh,
+      carbonIntensity.intensityGco2ePerKwh,
     );
 
     await this.collectionRepository.save(
@@ -307,10 +310,10 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         storage_usage: String(metrics.disk_gb),
         network_io: String(metrics.network_gb),
         energy_kwh: Number(energyKwh),
-        carbon_intensity_gco2e_per_kwh: String(
-          carbonIntensity.intensityGco2ePerKwh,
-        ),
-        co2e_g: String(co2eGrams),
+        carbon_intensity_gco2e_per_kwh:
+          carbonEmission.intensityGco2ePerKwh,
+        co2e_g: carbonEmission.emissionGrams,
+        co2e_kg: carbonEmission.emissionKilograms,
         carbon_intensity_fallback: carbonIntensity.usedFallback,
         timestamp,
       }),
