@@ -80,11 +80,17 @@ export async function runCollection(
 export async function runBackendCollection(
   previous: ServiceSnapshot[],
   metricsCache: LatestMetricsCache = new Map(),
+  signal?: AbortSignal,
 ): Promise<CollectionResult> {
   try {
-    const services = await fetchBackendServices()
-    return { snapshots: await attachLatestMetrics(services, metricsCache), aggregatorError: null, carbonError: null }
+    const services = await fetchBackendServices(signal)
+    return {
+      snapshots: await attachLatestMetrics(services, metricsCache, { signal }),
+      aggregatorError: null,
+      carbonError: null,
+    }
   } catch (reason) {
+    if (signal?.aborted) throw reason
     return {
       snapshots: previous,
       aggregatorError: reason instanceof Error ? reason.message : 'Falha ao consultar o backend',

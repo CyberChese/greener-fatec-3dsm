@@ -4,6 +4,9 @@ import { In, Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
+import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
+import { EnergyEngineService } from '../engine/energy-engine.service';
+import { CarbonEngineService } from '../engine/carbon-engine.service';
 import {
   AggregatorHttpError,
   AggregatorTimeoutError,
@@ -16,21 +19,27 @@ describe('MetricsService', () => {
     idServices: '2f33c598-f9bc-46d6-afef-d2f1d6ae12d3',
     external_id: 'billing-api',
     endpoint: '/metrics/billing-api',
+    region_code: 'br-sudeste',
     status: ServiceStatus.ACTIVE,
   } as Service;
   let services: {
     find: jest.Mock;
     findOneBy: jest.Mock;
     update: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
   let collections: {
     create: jest.Mock;
     save: jest.Mock;
     find: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
   let metricsService: MetricsService;
   let aggregatorClient: {
     fetchMetrics: jest.Mock;
+  };
+  let carbonIntensityClient: {
+    getIntensity: jest.Mock;
   };
 
   beforeEach(() => {
@@ -39,11 +48,13 @@ describe('MetricsService', () => {
       find: jest.fn().mockResolvedValue([service]),
       findOneBy: jest.fn().mockResolvedValue(service),
       update: jest.fn().mockResolvedValue({ affected: 1 }),
+      createQueryBuilder: jest.fn(),
     };
     collections = {
       create: jest.fn((value: object) => value as MetricCollection),
       save: jest.fn((value: MetricCollection) => Promise.resolve(value)),
       find: jest.fn().mockResolvedValue([]),
+      createQueryBuilder: jest.fn(),
     };
 
     const config = {
@@ -63,12 +74,21 @@ describe('MetricsService', () => {
         },
       }),
     };
+    carbonIntensityClient = {
+      getIntensity: jest.fn().mockResolvedValue({
+        intensityGco2ePerKwh: 85,
+        usedFallback: false,
+      }),
+    };
 
     metricsService = new MetricsService(
       services as unknown as Repository<Service>,
       collections as unknown as Repository<MetricCollection>,
+      new EnergyEngineService(),
+      new CarbonEngineService(collections as unknown as Repository<MetricCollection>),
       config as unknown as ConfigService,
       aggregatorClient as unknown as AggregatorClientService,
+      carbonIntensityClient as unknown as CarbonIntensityClientService,
     );
   });
 
@@ -96,9 +116,131 @@ describe('MetricsService', () => {
         memory_usage: '3.17',
         storage_usage: '19.26',
         network_io: '0.45',
+        energy_kwh: expect.any(Number),
+        carbon_intensity_gco2e_per_kwh: '85.00000000',
+        co2e_g: expect.any(String),
+        co2e_kg: expect.any(String),
+        carbon_intensity_fallback: false,
         timestamp: expect.any(Date),
       }),
     );
+    expect(carbonIntensityClient.getIntensity).toHaveBeenCalledWith(
+      'br-sudeste',
+    );
+    const savedCollection = collections.save.mock.calls[0][0];
+    expect(Number(savedCollection.co2e_g)).toBeCloseTo(
+      savedCollection.energy_kwh * 85,
+      8,
+    );
+    expect(Number(savedCollection.co2e_kg)).toBeCloseTo(
+      Number(savedCollection.co2e_g) / 1000,
+      11,
+    );
+  });
+
+  it('aggregates energy, CO2e and service statuses', async () => {
+    const collectionQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        total_energy_kwh: '12.50000000',
+        total_co2e_kg: '3.20000000000',
+      }),
+    };
+    const serviceQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { status: ServiceStatus.ACTIVE, count: '4' },
+        { status: ServiceStatus.UNAVAILABLE, count: '1' },
+        { status: ServiceStatus.NO_METRICS, count: '2' },
+      ]),
+    };
+    collections.createQueryBuilder.mockReturnValue(collectionQueryBuilder);
+    services.createQueryBuilder.mockReturnValue(serviceQueryBuilder);
+
+    await expect(metricsService.getSummary()).resolves.toEqual({
+      total_energy_kwh: 12.5,
+      total_co2e_kg: 3.2,
+      services_count: {
+        active: 4,
+        unavailable: 1,
+        no_metrics: 2,
+      },
+    });
+  });
+
+  it('returns zeros when there are no collections or services', async () => {
+    const collectionQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        total_energy_kwh: '0',
+        total_co2e_kg: '0',
+      }),
+    };
+    const serviceQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    collections.createQueryBuilder.mockReturnValue(collectionQueryBuilder);
+    services.createQueryBuilder.mockReturnValue(serviceQueryBuilder);
+
+    await expect(metricsService.getSummary()).resolves.toEqual({
+      total_energy_kwh: 0,
+      total_co2e_kg: 0,
+      services_count: {
+        active: 0,
+        unavailable: 0,
+        no_metrics: 0,
+      },
+    });
+  });
+
+  it('persists fallback usage with the calculated emissions for audit', async () => {
+    carbonIntensityClient.getIntensity.mockResolvedValue({
+      intensityGco2ePerKwh: 120,
+      usedFallback: true,
+    });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        carbon_intensity_gco2e_per_kwh: '120.00000000',
+        carbon_intensity_fallback: true,
+        co2e_g: expect.any(String),
+        co2e_kg: expect.any(String),
+      }),
+    );
+  });
+
+  it('continues collecting other services when a collection uses fallback', async () => {
+    const secondService = {
+      ...service,
+      idServices: 'efc7aa92-c05f-4971-b711-5ad006752b3b',
+      external_id: 'catalog-api',
+      endpoint: '/metrics/catalog-api',
+      region_code: null,
+    } as Service;
+    services.find.mockResolvedValue([service, secondService]);
+    carbonIntensityClient.getIntensity
+      .mockResolvedValueOnce({
+        intensityGco2ePerKwh: 120,
+        usedFallback: true,
+      })
+      .mockResolvedValueOnce({
+        intensityGco2ePerKwh: 85,
+        usedFallback: false,
+      });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).toHaveBeenCalledTimes(2);
+    expect(carbonIntensityClient.getIntensity).toHaveBeenCalledTimes(2);
   });
 
   it('does not persist a payload that violates the aggregator contract', async () => {
@@ -213,8 +355,8 @@ describe('MetricsService', () => {
     aggregatorClient.fetchMetrics
       .mockRejectedValueOnce(new AggregatorHttpError('HTTP 404', '/metrics', 404))
       .mockRejectedValueOnce(new AggregatorHttpError('HTTP 500', '/metrics', 500));
-    const loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
     await metricsService.collectCycle();
 
@@ -226,7 +368,6 @@ describe('MetricsService', () => {
       { idServices: secondService.idServices },
       { status: ServiceStatus.UNAVAILABLE },
     );
-    loggerError.mockRestore();
   });
 
   it('reports a 404 endpoint as a warning without logging an exception stack', async () => {

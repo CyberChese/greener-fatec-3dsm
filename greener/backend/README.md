@@ -26,6 +26,7 @@ src/
 │   ├── aggregator.mapper.ts           # Validação e conversão da resposta de descoberta
 │   ├── aggregator.errors.ts           # Hierarquia de erros do cliente
 │   └── service-discovery.service.ts   # Upsert dos serviços descobertos
+├── modules/carbon-intensity/          # Cliente HTTP da API de intensidade de carbono
 ├── entities/                # User, Service, MetricCollection
 ├── migrations/              # Migrações versionadas do banco
 └── seeds/user.seed.ts       # Usuário de teste
@@ -46,6 +47,9 @@ O backend lê o `.env` da raiz do repositório (modelo em [`.env.example`](../..
 | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Conexão com o PostgreSQL |
 | `JWT_SECRET`, `JWT_EXPIRATION` | Assinatura e validade do token |
 | `AGGREGATOR_API_URL`, `AGGREGATOR_SERVICES_PATH`, `AGGREGATOR_TIMEOUT` | Acesso ao Agregador de Métricas |
+| `CARBON_INTENSITY_API_URL` | URL base da API oficial de intensidade de carbono |
+| `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da consulta de carbono (1 a 5000 ms; padrão 5000) |
+| `CARBON_INTENSITY_FALLBACK_G_PER_KWH` | Fator de fallback não negativo em gCO₂e/kWh; defina no ambiente para que indisponibilidades possam usar fallback |
 | `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (inteiro positivo; padrão 30) |
 | `FRONTEND_ORIGIN` | Origem permitida pelo CORS |
 
@@ -66,11 +70,11 @@ A API fica em <http://localhost:3001/api>. O seed cria o usuário `teste@greener
 
 ### Sem Docker
 
-Requer Node.js 24 e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env` e rode:
+Requer Node.js 24.15 ou superior (`^24.15.0`, declarado em `engines`) e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env` e rode:
 
 ```bash
 cd greener/backend
-npm install
+npm ci
 npm run migration:run
 npm run seed
 npm run start:dev
@@ -85,6 +89,7 @@ O esquema é criado **somente** por migrações (`synchronize: false`). As migra
 | `1791678624275-CreateInitialSchema` | Cria `users`, `services`, `metric_collections`, o tipo `service_status`, índices e chave estrangeira |
 | `1792014000000-ExpandMetricCollectionPrecision` | Amplia a precisão das colunas de métricas para `numeric(20,6)` |
 | `1792082024000-MakeServiceEndpointNullable` | Permite serviços sem endpoint de métricas |
+| `1793308800000-AddCarbonIntensityData` | Persiste o código regional e os resultados/auditoria de intensidade de carbono |
 
 | Comando | O que faz |
 |---|---|
@@ -104,11 +109,13 @@ npm run test:cov  # testes com relatório de cobertura
 | Arquivo | O que testa |
 |---|---|
 | `metrics/metrics.service.spec.ts` | Gravação das coletas, estados `ACTIVE`, `NO_METRICS` e `UNAVAILABLE`, continuidade do ciclo após falhas e filtro do histórico |
+| `modules/carbon-intensity/carbon-intensity-client.service.spec.ts` | Contrato da API, timeout, região ausente/inexistente, resposta inválida e fallback |
+| `engine/energy-engine.service.spec.ts` | Cálculo da energia (kWh) a partir de CPU e memória no intervalo de coleta |
 | `modules/aggregator/service-discovery.service.spec.ts` | Serviços omitidos marcados como `UNAVAILABLE` só em descoberta completa, preservação do estado existente e nenhuma alteração quando a descoberta falha |
 | `modules/aggregator/aggregator-client.service.spec.ts` | Classificação da resposta de descoberta como completa ou incompleta |
 | `auth/auth.service.spec.ts` | Login válido, senha incorreta e usuário inexistente |
 
-Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.9 ou superior**, porque o NestJS 12 é distribuído como ESM. A imagem Docker ainda usa Node 22, por isso `npm test` não roda dentro do container nesta versão (pendência da Sprint 1, prevista para a Sprint 2).
+Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A imagem Docker do backend usa Node 24, então os testes também rodam dentro do container: `docker compose exec greener-backend npm test`.
 
 ## Outros comandos
 

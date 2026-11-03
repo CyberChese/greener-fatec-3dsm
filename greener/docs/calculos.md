@@ -1,9 +1,8 @@
 # Cálculos de Energia e CO₂e
 
-> **Situação:** o cálculo das estimativas de energia (kWh) e de emissões (CO₂e) **não faz parte da Sprint 1** e está previsto para a Sprint 2, conforme o [plano de entregas](plano-de-entregas.md).
-> Este documento registra os dados de entrada que o sistema já coleta e a estrutura que será preenchida quando o cálculo for implementado.
+> O backend persiste a energia estimada, consulta o fator regional e registra a estimativa de CO₂e por coleta. As premissas do modelo de energia ainda precisam de validação do Product Owner.
 
-## 1. Dados de entrada já coletados (Sprint 1)
+## 1. Dados de entrada da coleta
 
 A cada ciclo de coleta, o backend grava em `metric_collections` os valores recebidos do Agregador de Métricas:
 
@@ -17,24 +16,40 @@ A cada ciclo de coleta, o backend grava em `metric_collections` os valores receb
 
 Valores fora dessas faixas não são gravados e o serviço é marcado como `NO_METRICS` (ver [`arquitetura.md`](arquitetura.md#32-coleta-periódica-de-métricas)).
 
-Cada serviço também tem localização (`country`, `region`, `city`, `latitude`, `longitude`). O código de região (`region_code`), necessário para consultar a intensidade de carbono, é recebido do Agregador, mas ainda não é gravado. Isso está registrado como pendência da Sprint 1.
+Cada serviço também tem localização (`country`, `region`, `city`, `latitude`, `longitude`) e o código `region_code` recebido do Agregador é persistido para consultar a intensidade regional.
 
-## 2. Estrutura prevista para a Sprint 2
+## 2. Intensidade de carbono e emissões
 
-Quando o cálculo for implementado, este documento deve conter:
+O backend consulta a [API oficial de Intensidade de Carbono](contrato-intensidade-carbono.md) usando o `region_code` persistido. O fator e a procedência ficam registrados por coleta:
 
-| Item | Conteúdo a documentar |
+| Coluna | Conteúdo |
 |---|---|
-| Fórmula de energia | Como CPU, memória, armazenamento e rede são convertidos em kWh |
-| Fatores | Valor, unidade e fonte de cada fator utilizado |
-| Intensidade de carbono | Origem (serviço da UniLaunch), unidade (gCO₂e/kWh) e região consultada |
-| Fórmula de emissão | Conversão de kWh em CO₂e |
-| Período | Intervalo de tempo a que cada estimativa se refere |
-| Dados ausentes | Tratamento quando uma métrica ou a intensidade de carbono não estiver disponível |
-| Exemplo | Cálculo completo com valores reais de uma coleta |
+| `carbon_intensity_gco2e_per_kwh` | Fator retornado pela API ou fallback configurado, em gCO₂e/kWh |
+| `carbon_intensity_fallback` | `true` quando o fator da coleta veio do fallback; `false` quando veio da API |
+| `co2e_g` | Emissão estimada em gramas de CO₂e |
+| `co2e_kg` | A mesma emissão convertida em quilogramas de CO₂e |
 
-## 3. Histórico
+Fórmulas: `co2e_g = energy_kwh × carbon_intensity_gco2e_per_kwh` e `co2e_kg = co2e_g ÷ 1.000`. A unidade resulta em gramas e quilogramas de CO₂e, respectivamente. O fator é normalizado para 8 casas decimais antes do cálculo para que o valor aplicado seja igual ao persistido; gramas usam 8 casas (`numeric(20,8)`) e quilogramas 11 (`numeric(20,11)`). O serviço pode reprocessar uma coleta pelo seu ID: lê energia e fator persistidos e atualiza a mesma linha, sem inserir outra coleta. O valor de fallback vem de `CARBON_INTENSITY_FALLBACK_G_PER_KWH` e deve ser definido pelo operador conforme o ambiente; o sistema não inventa um fator padrão. Timeout, erro HTTP, resposta inválida ou região ausente/desconhecida acionam o fallback e geram aviso de log quando o fator está configurado. Se estiver ausente, o erro é explícito e aquela coleta não é persistida. A flag persistida permite auditar quais estimativas o utilizaram.
+
+O cálculo detalhado de energia e as premissas dos fatores físicos continuam sujeitos à validação do Product Owner; valores da simulação do frontend não são usados pelo backend.
+
+## 3. Modelo de energia implementado (TASK-020)
+
+O cálculo recebe CPU em percentual, memória em MB e duração em segundos. CPU deve estar entre 0 e 100; memória deve ser não negativa. Entradas ausentes, não finitas ou fora dessas faixas são rejeitadas. A duração é obrigatória, positiva e finita; na coleta, o backend usa o `collection_interval_seconds` positivo e válido do Agregador.
+
+```text
+cpu_watts = 20 + (100 - 20) × (cpu_percent ÷ 100)
+memory_watts = (memory_mb ÷ 1024) × 0,375
+energy_kwh = (cpu_watts + memory_watts + disk_watts + network_watts)
+             × duration_seconds ÷ 3.600.000
+```
+
+Quando taxas válidas são fornecidas diretamente ao motor, `disk_watts = disk_MBps × 0,001` e `network_watts = network_MBps × 0,005`. A coleta atual não as fornece: o Agregador reporta disco e rede em GB, sem unidade temporal/janela documentada. Esses valores continuam persistidos e ficam fora da energia estimada até existir um contrato que permita derivar taxas sem suposições. A energia é arredondada para 8 casas decimais antes de persistir e rejeitada se exceder `9.999,99999999 kWh`, limite de `numeric(12,8)` usado pela coluna `energy_kwh`. Os coeficientes de potência acima são os parâmetros atuais no código e ainda aguardam validação do Product Owner; esta documentação registra a implementação, não uma validação científica independente.
+
+## 4. Histórico
 
 | Data | Alteração |
 |---|---|
 | 19/10/2026 | Documentação dos dados de entrada coletados na Sprint 1 e da estrutura prevista para a Sprint 2 |
+| 29/10/2026 | Documentada a integração regional, a emissão por coleta e a auditoria do fallback |
+| 03/11/2026 | Documentadas precisão e conversão para quilogramas da TASK-022 |

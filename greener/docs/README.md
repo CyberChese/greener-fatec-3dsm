@@ -21,6 +21,7 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | [API](api.md) | Endpoints implementados, parâmetros, respostas e endpoints planejados |
 | [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e (Sprint 2) |
 | [Contrato do Agregador](contrato-agregador.md) | Contrato da API de Métricas da UniLaunch usado pelo backend |
+| [Contrato da API de Intensidade de Carbono](contrato-intensidade-carbono.md) | Contrato oficial da consulta regional, unidade, validação e fallback |
 
 ## 🎨 Design e Usabilidade
 

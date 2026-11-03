@@ -1,10 +1,11 @@
-import { ServerCrash } from 'lucide-react'
+import { RefreshCw, ServerCrash } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import type { UseMetricsResult } from '@/hooks/use-metrics'
-import { aggregateSnapshots, haversineKm, totalsByService } from '@/lib/calculations'
+import { haversineKm, totalsByService } from '@/lib/calculations'
 import type { PeriodTotals } from '@/lib/calculations'
 import { IS_SIMULATED } from '@/lib/dataSource'
+import { cn } from '@/lib/utils'
 import { CollectionStatusPanel } from './collection-status-panel'
 import type { DashboardFilters, Period, RankingMetric, ServiceSnapshot } from '@/lib/types'
 import { ComparisonPanel } from './comparison-panel'
@@ -13,10 +14,11 @@ import { EvolutionChart } from './evolution-chart'
 import { EventsFeed } from './events-feed'
 import { FiltersPanel } from './filters-panel'
 import { ImpactRanking } from './impact-ranking'
-import { KpiCards } from './kpi-cards'
+import { ExecutiveHeader, ExecutiveHeaderView } from './executive-header'
 import { DashboardSkeleton, EmptyServices } from './loading-state'
 import { ServicesSection } from './services-section'
 import { WorldMap } from './world-map'
+import { summaryFromSnapshots } from '@/services/summary'
 
 const EMPTY_FILTERS: DashboardFilters = {
   search: '',
@@ -42,7 +44,7 @@ function matchesFilters(s: ServiceSnapshot, filters: DashboardFilters) {
 }
 
 export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
-  const { snapshots, history, series, events, tick, aggregatorError, carbonError } = metrics
+  const { snapshots, history, series, events, tick, aggregatorError, carbonError, lastUpdated, intervalMs, refreshing, retry } = metrics
   const { settings } = useSettings()
   const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
   const [period, setPeriod] = useState<Period>(settings.defaultPeriod)
@@ -67,16 +69,10 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
     () => (IS_SIMULATED ? totalsByService(history, fromTick) : new Map<string, PeriodTotals>()),
     [history, fromTick],
   )
-  const current = useMemo(() => aggregateSnapshots(snapshots), [snapshots])
-  const periodSum = useMemo(() => {
-    let energyKwh = 0
-    let co2eKg = 0
-    for (const t of periodTotals.values()) {
-      energyKwh += t.energyKwh
-      co2eKg += t.co2eKg
-    }
-    return { energyKwh, co2eKg }
-  }, [periodTotals])
+  const simulatedSummary = useMemo(
+    () => (IS_SIMULATED && tick > 0 ? { summary: summaryFromSnapshots(snapshots, lastUpdated), source: 'simulated' as const } : null),
+    [snapshots, lastUpdated, tick],
+  )
 
   const filtered = useMemo(() => snapshots.filter((s) => matchesFilters(s, filters)), [snapshots, filters])
   const compared = snapshots.filter((s) => selectedIds.includes(s.id))
@@ -86,12 +82,9 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
 
   const apiErrors = [aggregatorError, carbonError].filter(Boolean) as string[]
 
-  // Estados de carregamento e de ausência de dados (IHC04).
-  if (tick === 0) return <DashboardSkeleton />
-  if (snapshots.length === 0) return <EmptyServices error={apiErrors[0] ?? null} />
-
-  return (
-    <div id="view-dashboard" role="tabpanel" className="flex flex-col gap-5">
+  // Título e indicadores consolidados ficam sempre visíveis: têm carregamento e erro próprios (TASK-024).
+  const top = (
+    <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">
@@ -117,12 +110,39 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         </label>
       </div>
 
+      {IS_SIMULATED ? (
+        <ExecutiveHeaderView
+          data={simulatedSummary}
+          updatedAt={lastUpdated}
+          error={aggregatorError}
+          initialLoading={tick === 0}
+        />
+      ) : (
+        <ExecutiveHeader intervalMs={intervalMs} />
+      )}
+    </>
+  )
+
+  // Estados de carregamento e de ausência de dados do restante do painel (IHC04).
+  if (tick === 0 || snapshots.length === 0) {
+    return (
+      <div id="view-dashboard" role="tabpanel" className="flex flex-col gap-5">
+        {top}
+        {tick === 0 ? <DashboardSkeleton /> : <EmptyServices error={apiErrors[0] ?? null} />}
+      </div>
+    )
+  }
+
+  return (
+    <div id="view-dashboard" role="tabpanel" className="flex flex-col gap-5">
+      {top}
+
       {!IS_SIMULATED ? (
         <div role="note" className="flex items-start gap-3 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
           <ServerCrash className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
-            Serviços, estados e métricas (CPU, memória, disco e rede) reais, vindos do backend. Energia, CO₂e e intensidade
-            de carbono aparecem como “—” porque o backend ainda não calcula nem expõe esses valores.
+            Serviços, estados e métricas (CPU, memória, disco e rede) reais, vindos do backend. Os indicadores consolidados
+            acima vêm do resumo público; energia e CO₂e por serviço ainda aparecem como “—” no restante do painel.
           </p>
         </div>
       ) : null}
@@ -130,21 +150,25 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
       {!IS_SIMULATED ? <CollectionStatusPanel /> : null}
 
       {apiErrors.length > 0 ? (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
-          <ServerCrash className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <div>
-            <p className="font-semibold">Falha temporária na consulta de dados — exibindo últimos dados conhecidos.</p>
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 px-4 py-3 text-sm text-orange-200">
+          <ServerCrash className="size-4 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">
+              Falha temporária na consulta de dados — mantendo dados anteriores e tentando reconectar automaticamente.
+            </p>
             <p className="text-orange-200/80">{apiErrors.join(' · ')}</p>
           </div>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={refreshing}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-edge bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none hover:bg-zinc-800 focus-visible:border-lime-400/60 focus-visible:ring-2 focus-visible:ring-lime-400/40 disabled:opacity-60"
+          >
+            <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} aria-hidden="true" />
+            Tentar novamente
+          </button>
         </div>
       ) : null}
-
-      <KpiCards
-        periodLabel={period === 'last10' ? 'Últimas 10 coletas' : 'Sessão inteira'}
-        periodEnergyKwh={IS_SIMULATED ? periodSum.energyKwh : null}
-        periodCo2eKg={IS_SIMULATED ? periodSum.co2eKg : null}
-        current={current}
-      />
 
       <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <FiltersPanel

@@ -1,18 +1,16 @@
-export class MetricInputDto{
+export class MetricInputDto {
+  /** CPU usage percentage, from 0 through 100. */
+  cpuUsagePercent: number;
 
-/** Porcentagem de uso de CPU (0-100) */
-cpuUsagePercent: number;
+  /** Memory usage in MB. */
+  memoryUsedMb: number;
 
-/** Quantidade de memória utilizada em MB   */
-memoryUsedMb: number;
+  /** Disk I/O rate in MB/s, when supplied by a source with that unit. */
+  diskIoMBps?: number;
 
-/** Taxa de leitura e escrita em disco em MB/s (opcional)  */
-diskIoMBps?: number;
+  /** Network I/O rate in MB/s, when supplied by a source with that unit. */
+  networkIoMBps?: number;
 
-/** Taxa de trafego de rede em MB/s (opcional)  */
-networkIoMBps?: number;
-
-///** Duração da métrica em segundos (opcional) (padrao: 60s) */
-durationSeconds?: number;
-
+  /** Duration represented by the metrics, in positive seconds. */
+  durationSeconds: number;
 }

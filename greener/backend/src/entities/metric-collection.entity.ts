@@ -9,12 +9,11 @@ import {
 import { Service } from './service.entity';
 
 @Entity('metric_collections')
-@Index('idx_metric_collections_timestamp', ['timestamp'])
-@Index('idx_metric_collections_service_id', ['service_id'])
 @Index('idx_metric_collections_service_timestamp', [
   'service_id',
   'timestamp',
 ])
+@Index('idx_metric_collections_timestamp_totals', { synchronize: false })
 export class MetricCollection {
   @PrimaryGeneratedColumn('uuid')
   idCollections: string;
@@ -83,4 +82,34 @@ export class MetricCollection {
     }
   })
   energy_kwh: number | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 8,
+    nullable: true,
+  })
+  carbon_intensity_gco2e_per_kwh: string | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 8,
+    nullable: true,
+  })
+  co2e_g: string | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 20,
+    scale: 11,
+    nullable: true,
+  })
+  co2e_kg: string | null;
+
+  @Column({
+    type: 'boolean',
+    nullable: true,
+  })
+  carbon_intensity_fallback: boolean | null;
 }

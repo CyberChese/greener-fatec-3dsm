@@ -6,6 +6,7 @@ export interface BackendService {
   idServices: string
   external_id: string
   nameServices: string
+  region_code?: string | null
   status: string
   country: string | null
   region: string | null
@@ -44,7 +45,7 @@ export function mapBackendService(service: BackendService): ServiceSnapshot {
     id: service.external_id || service.idServices,
     name: service.nameServices,
     location: {
-      region_code: service.region ?? '',
+      region_code: service.region_code ?? service.region ?? '',
       country: service.country ?? '',
       region: service.region ?? '',
       city: service.city,
@@ -65,8 +66,8 @@ export function mapBackendService(service: BackendService): ServiceSnapshot {
 }
 
 /** GET /api/services (rota pública). */
-export async function fetchBackendServices(): Promise<ServiceSnapshot[]> {
-  const { data } = await publicApi.get<BackendService[]>('/services')
+export async function fetchBackendServices(signal?: AbortSignal): Promise<ServiceSnapshot[]> {
+  const { data } = await publicApi.get<BackendService[]>('/services', { signal })
   return data.map(mapBackendService)
 }
 
@@ -101,9 +102,14 @@ export interface HistoryRange {
 }
 
 /** GET /api/services/:id/history (rota pública), em ordem cronológica crescente. */
-export async function fetchServiceHistory(backendId: string, range: HistoryRange = {}): Promise<BackendCollection[]> {
+export async function fetchServiceHistory(
+  backendId: string,
+  range: HistoryRange = {},
+  signal?: AbortSignal,
+): Promise<BackendCollection[]> {
   const { data } = await publicApi.get<BackendCollection[]>(`/services/${encodeURIComponent(backendId)}/history`, {
     params: range,
+    signal,
   })
   return data
 }
@@ -123,16 +129,18 @@ export type LatestMetricsCache = Map<string, LatestMetrics>
 interface AttachOptions {
   now?: number
   fetchHistory?: typeof fetchServiceHistory
+  signal?: AbortSignal
 }
 
 /**
  * Preenche as métricas (CPU, memória, disco e rede) de cada serviço ativo com a coleta mais recente do histórico.
- * Nunca lança: se a consulta falhar, mantém a última leitura guardada; sem leitura, o valor fica nulo ("—").
+ * Nunca lança em falha de rede (mantém a última leitura guardada; sem leitura, o valor fica nulo "—"),
+ * exceto quando a requisição é explicitamente cancelada via AbortSignal.
  */
 export async function attachLatestMetrics(
   snapshots: ServiceSnapshot[],
   cache: LatestMetricsCache,
-  { now = Date.now(), fetchHistory = fetchServiceHistory }: AttachOptions = {},
+  { now = Date.now(), fetchHistory = fetchServiceHistory, signal }: AttachOptions = {},
 ): Promise<ServiceSnapshot[]> {
   return Promise.all(
     snapshots.map(async (snapshot) => {
@@ -143,14 +151,15 @@ export async function attachLatestMetrics(
       let failed = false
       if (!entry || now - entry.fetchedAt >= METRICS_TTL_MS) {
         try {
-          const records = await fetchHistory(id, { from: new Date(now - LATEST_WINDOW_MS).toISOString() })
+          const records = await fetchHistory(id, { from: new Date(now - LATEST_WINDOW_MS).toISOString() }, signal)
           const latest = records.reduce<BackendCollection | null>(
             (best, r) => (best === null || Date.parse(r.timestamp) >= Date.parse(best.timestamp) ? r : best),
             null,
           )
           entry = { metrics: latest ? mapCollectionToMetrics(latest) : null, at: latest?.timestamp ?? null, fetchedAt: now }
           cache.set(id, entry)
-        } catch {
+        } catch (error) {
+          if (signal?.aborted) throw error
           failed = true
         }
       }
