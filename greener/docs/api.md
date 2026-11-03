@@ -97,7 +97,7 @@ Lista todos os serviços cadastrados pela descoberta no Agregador de Métricas.
 
 | Campo | Significado |
 |---|---|
-| `status` | `ACTIVE` (última coleta válida), `UNAVAILABLE` (timeout, falha de conexão, HTTP 404/500 ou ausente na descoberta completa) ou `NO_METRICS` (respondeu sem métricas válidas ou sem endpoint) |
+| `status` | `ACTIVE` (última coleta válida), `UNAVAILABLE` (timeout, falha de conexão, HTTP 500 ou ausente na descoberta completa) ou `NO_METRICS` (HTTP 404, respondeu sem métricas válidas ou sem endpoint) |
 | `endpoint` | Caminho relativo de métricas informado pelo Agregador (`metrics_path`) |
 | `region_code` | Código regional persistido para consultar a API de intensidade de carbono; `null` quando não informado |
 | `latitude`, `longitude` | Retornados como texto, pois a coluna é `numeric` no PostgreSQL |
