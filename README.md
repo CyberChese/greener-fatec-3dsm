@@ -156,7 +156,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    cd greener-fatec-3dsm
    ```
 
-2. **Criar o arquivo de variáveis de ambiente** a partir do modelo (troque `POSTGRES_PASSWORD` e `JWT_SECRET`):
+2. **Criar o arquivo de variáveis de ambiente** a partir do modelo. Configure `POSTGRES_PASSWORD` e gere `JWT_SECRET` com pelo menos 32 bytes aleatórios antes de iniciar o backend:
    ```bash
    cp .env.example .env
    ```
@@ -171,11 +171,11 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    docker compose exec greener-backend npm run migration:run
    ```
 
-5. **Criar o usuário de teste** para o login:
+5. **Opcionalmente, criar um usuário local** para o login: no `.env`, habilite `LOCAL_DEVELOPMENT_SEED_ENABLED=true` e informe `LOCAL_DEVELOPMENT_SEED_EMAIL` e `LOCAL_DEVELOPMENT_SEED_PASSWORD` com valores próprios. O seed só funciona com `NODE_ENV=development`.
    ```bash
    docker compose exec greener-backend npm run seed
    ```
-   Credenciais criadas: `teste@greener.com` / `senha123` (somente para desenvolvimento).
+   As credenciais são lidas somente pelo backend e nunca são impressas pelo seed.
 
 6. **Acessar:**
 
@@ -196,7 +196,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | Verificação | Resultado esperado |
 |---|---|
 | Abrir <http://localhost:3000> | Observatório com o intervalo de coleta e a última coleta registrada |
-| Clicar em "Área do Administrador" e entrar com o usuário de teste | Acesso à Área do Administrador com a sessão autenticada |
+| Clicar em "Área do Administrador" e entrar com o usuário local configurado | Acesso à Área do Administrador com a sessão autenticada |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
 | `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
 | `GET http://localhost:3001/api/auth/profile` sem token | HTTP `401` |
@@ -211,8 +211,12 @@ Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 |---|---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Credenciais e nome do banco | `greener_user`, `troque_esta_senha_local`, `greener_db` |
 | `POSTGRES_HOST`, `POSTGRES_PORT` | Endereço do banco visto pelo backend | `greener-postgres`, `5432` |
-| `JWT_SECRET` | Chave de assinatura do JWT (troque por um valor próprio) | `seu_segredo_jwt_aqui` |
+| `JWT_SECRET` | Chave aleatória de pelo menos 32 bytes para assinatura do JWT; obrigatória fora de testes | Definida localmente; nunca no frontend |
 | `JWT_EXPIRATION` | Validade do token | `1d` |
+| `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | Tentativas de login por origem ou identidade (padrão `5`) | `5` |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Janela do limite de login em segundos (padrão `60`) | `60` |
+| `LOCAL_DEVELOPMENT_SEED_ENABLED` | Habilita explicitamente o seed local (exige `NODE_ENV=development`) | `false` |
+| `LOCAL_DEVELOPMENT_SEED_EMAIL`, `LOCAL_DEVELOPMENT_SEED_PASSWORD` | Credenciais locais fornecidas ao seed | Vazias no modelo |
 | `AGGREGATOR_API_URL` | URL base do Agregador de Métricas | `https://metrics.unilaunch.org` |
 | `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
 | `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
@@ -273,7 +277,7 @@ Os campos de estimativa de energia e CO₂e serão adicionados na Sprint 2. DER 
 
 ## 🧪 Testes
 
-O backend tem 35 testes unitários (Jest, 6 suítes) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação, o cálculo de energia e o cliente de intensidade de carbono. Os testes substituem o banco e o Agregador por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
+O backend tem 51 testes unitários (Jest, 10 suítes) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação e o limite de tentativas, a configuração, o cálculo de energia e o cliente de intensidade de carbono. Os testes substituem o banco e o Agregador por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
 
 Os testes exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A política de runtime do projeto é **Node 24 LTS** em todos os lugares: imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` (`^24.15.0`) e CI.
 

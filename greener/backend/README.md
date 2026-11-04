@@ -46,6 +46,10 @@ O backend lê o `.env` da raiz do repositório (modelo em [`.env.example`](../..
 | `PORT` | Porta HTTP (definida como `3001` no `compose.yaml`) |
 | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Conexão com o PostgreSQL |
 | `JWT_SECRET`, `JWT_EXPIRATION` | Assinatura e validade do token |
+| `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | Tentativas de login por IP ou e-mail na janela (padrão 5) |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Janela do limite de login em segundos (padrão 60) |
+| `LOCAL_DEVELOPMENT_SEED_ENABLED` | Habilita o seed somente com `NODE_ENV=development` e valor `true` |
+| `LOCAL_DEVELOPMENT_SEED_EMAIL`, `LOCAL_DEVELOPMENT_SEED_PASSWORD` | Credenciais fornecidas para o seed local; não são registradas em logs |
 | `AGGREGATOR_API_URL`, `AGGREGATOR_SERVICES_PATH`, `AGGREGATOR_TIMEOUT` | Acesso ao Agregador de Métricas |
 | `CARBON_INTENSITY_API_URL` | URL base da API oficial de intensidade de carbono |
 | `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da consulta de carbono (1 a 5000 ms; padrão 5000) |
@@ -57,7 +61,7 @@ O backend lê o `.env` da raiz do repositório (modelo em [`.env.example`](../..
 
 ### Com Docker (recomendado)
 
-Na raiz do repositório:
+Na raiz do repositório, defina no `.env` um `JWT_SECRET` aleatório com pelo menos 32 bytes. Para criar um usuário de desenvolvimento, defina também `LOCAL_DEVELOPMENT_SEED_ENABLED=true` e suas próprias `LOCAL_DEVELOPMENT_SEED_EMAIL` e `LOCAL_DEVELOPMENT_SEED_PASSWORD`. O seed recusa qualquer outro ambiente e nunca imprime as credenciais.
 
 ```bash
 cp .env.example .env
@@ -66,11 +70,11 @@ docker compose exec greener-backend npm run migration:run
 docker compose exec greener-backend npm run seed
 ```
 
-A API fica em <http://localhost:3001/api>. O seed cria o usuário `teste@greener.com` com a senha `senha123` (somente para desenvolvimento).
+A API fica em <http://localhost:3001/api>. O seed local é opcional e não possui credenciais padrão.
 
 ### Sem Docker
 
-Requer Node.js 24.15 ou superior (`^24.15.0`, declarado em `engines`) e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env` e rode:
+Requer Node.js 24.15 ou superior (`^24.15.0`, declarado em `engines`) e um PostgreSQL acessível. Ajuste `POSTGRES_HOST=localhost` no `.env`, configure a chave JWT e, se necessário, as variáveis explícitas do seed local; depois rode:
 
 ```bash
 cd greener/backend
@@ -97,7 +101,7 @@ O esquema é criado **somente** por migrações (`synchronize: false`). As migra
 | `npm run migration:show` | Lista as migrações e indica as já aplicadas |
 | `npm run migration:revert` | Desfaz a última migração |
 | `npm run migration:generate -- src/migrations/NomeDaMigracao` | Gera uma migração a partir das entidades |
-| `npm run seed` | Cria o usuário de teste (não duplica se já existir) |
+| `npm run seed` | Cria o usuário local configurado (somente em desenvolvimento explicitamente habilitado; não duplica se já existir) |
 
 ## Testes
 
@@ -114,6 +118,8 @@ npm run test:cov  # testes com relatório de cobertura
 | `modules/aggregator/service-discovery.service.spec.ts` | Serviços omitidos marcados como `UNAVAILABLE` só em descoberta completa, preservação do estado existente e nenhuma alteração quando a descoberta falha |
 | `modules/aggregator/aggregator-client.service.spec.ts` | Classificação da resposta de descoberta como completa ou incompleta |
 | `auth/auth.service.spec.ts` | Login válido, senha incorreta e usuário inexistente |
+| `auth/login-rate-limit.guard.spec.ts` | Bloqueio `429`, `Retry-After`, recuperação após a janela e limites por IP/e-mail |
+| `config/configuration.spec.ts` | Exigência da chave JWT e validação das opções do limite de login |
 
 Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A imagem Docker do backend usa Node 24, então os testes também rodam dentro do container: `docker compose exec greener-backend npm test`.
 
