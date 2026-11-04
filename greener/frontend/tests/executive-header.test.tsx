@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ExecutiveHeaderView, type ExecutiveHeaderViewProps } from '@/components/dashboard/executive-header'
 import {
   initialSummaryState,
@@ -8,17 +8,19 @@ import {
   summaryRequested,
 } from '@/hooks/use-public-summary'
 import { formatMeasure, formatShare } from '@/lib/format'
-import { deriveSummary, parsePublicSummary, type SummaryResult } from '@/services/summary'
+import { publicApi } from '@/services/http'
+import { deriveSummary, fetchPublicSummary, parsePublicSummary, type SummaryResult } from '@/services/summary'
 import { snapshot } from './fixtures'
 
+/** Formato real de GET /api/metrics/summary (backend). */
 const apiResponse = {
-  energy_kwh: 1234.5,
-  co2e_kg: 0.004567,
-  services: { total: 5, active: 3, unavailable: 1, no_metrics: 1 },
-  last_collection_at: '2026-11-02T12:00:00.000Z',
+  total_energy_kwh: 1234.5,
+  total_co2e_kg: 0.004567,
+  services_count: { active: 3, unavailable: 1, no_metrics: 1 },
 }
+const LAST_COLLECTION = '2026-11-02T12:00:00.000Z'
 
-const result: SummaryResult = { summary: parsePublicSummary(apiResponse), source: 'api' }
+const result: SummaryResult = { summary: parsePublicSummary(apiResponse, LAST_COLLECTION), source: 'api' }
 
 const render = (props: Partial<ExecutiveHeaderViewProps>) =>
   renderToStaticMarkup(
@@ -41,16 +43,78 @@ describe('formatação pt-BR (TASK-024)', () => {
 })
 
 describe('parsePublicSummary', () => {
+  it('converte o formato real do backend e calcula o total de serviços', () => {
+    const parsed = parsePublicSummary(
+      {
+        total_energy_kwh: 0.04692212,
+        total_co2e_kg: 0.01007074489,
+        services_count: { active: 7, unavailable: 1, no_metrics: 0 },
+      },
+      LAST_COLLECTION,
+    )
+    expect(parsed.energy_kwh).toBe(0.04692212)
+    expect(parsed.co2e_kg).toBe(0.01007074489)
+    expect(parsed.services).toEqual({ total: 8, active: 7, unavailable: 1, no_metrics: 0 })
+    expect(parsed.last_collection_at).toBe(LAST_COLLECTION)
+  })
+
+  it('sem horário de coleta, mantém last_collection_at nulo', () => {
+    expect(parsePublicSummary(apiResponse).last_collection_at).toBeNull()
+  })
+
   it('aceita números enviados como texto pelo PostgreSQL', () => {
-    const parsed = parsePublicSummary({ ...apiResponse, energy_kwh: '2.5', co2e_kg: '1' })
+    const parsed = parsePublicSummary({ ...apiResponse, total_energy_kwh: '2.5', total_co2e_kg: '1' })
     expect(parsed.energy_kwh).toBe(2.5)
     expect(parsed.co2e_kg).toBe(1)
   })
 
   it('rejeita respostas fora do contrato em vez de inventar zeros', () => {
-    expect(() => parsePublicSummary({ ...apiResponse, energy_kwh: null })).toThrow()
-    expect(() => parsePublicSummary({ ...apiResponse, services: { ...apiResponse.services, active: 9 } })).toThrow()
-    expect(() => parsePublicSummary({ ...apiResponse, last_collection_at: 'ontem' })).toThrow()
+    expect(() => parsePublicSummary({ ...apiResponse, total_energy_kwh: null })).toThrow()
+    expect(() => parsePublicSummary({ ...apiResponse, total_co2e_kg: -1 })).toThrow()
+    expect(() => parsePublicSummary({ ...apiResponse, services_count: { active: 1, unavailable: 0 } })).toThrow()
+    expect(() => parsePublicSummary({ ...apiResponse, services_count: { active: 1.5, unavailable: 0, no_metrics: 0 } })).toThrow()
+    expect(() => parsePublicSummary({ total_energy_kwh: 1, total_co2e_kg: 1 })).toThrow()
+    expect(() => parsePublicSummary(apiResponse, 'ontem')).toThrow()
+  })
+
+  it('rejeita o formato antigo suposto antes do endpoint existir', () => {
+    expect(() =>
+      parsePublicSummary({
+        energy_kwh: 1,
+        co2e_kg: 1,
+        services: { total: 1, active: 1, unavailable: 0, no_metrics: 0 },
+      }),
+    ).toThrow()
+  })
+})
+
+describe('fetchPublicSummary', () => {
+  it('combina o resumo do backend com o horário da última coleta', async () => {
+    const get = vi.spyOn(publicApi, 'get').mockImplementation((url: string) =>
+      Promise.resolve({
+        data:
+          url === '/metrics/summary'
+            ? apiResponse
+            : { interval_seconds: 30, last_collection_at: LAST_COLLECTION },
+      }),
+    )
+    const fetched = await fetchPublicSummary()
+    expect(fetched.source).toBe('api')
+    expect(fetched.summary.services.total).toBe(5)
+    expect(fetched.summary.last_collection_at).toBe(LAST_COLLECTION)
+    expect(get).toHaveBeenCalledWith('/metrics/summary', expect.anything())
+    expect(get).toHaveBeenCalledWith('/metrics/collection-config', expect.anything())
+    get.mockRestore()
+  })
+
+  it('falha com mensagem clara quando o backend devolve um resumo inválido', async () => {
+    const get = vi.spyOn(publicApi, 'get').mockImplementation((url: string) =>
+      Promise.resolve({
+        data: url === '/metrics/summary' ? { energy_kwh: 1 } : { interval_seconds: 30, last_collection_at: null },
+      }),
+    )
+    await expect(fetchPublicSummary()).rejects.toThrow('resumo de indicadores inválido')
+    get.mockRestore()
   })
 })
 
@@ -129,10 +193,9 @@ describe('ExecutiveHeaderView', () => {
 
   it('sem dados: estado vazio acessível', () => {
     const empty = parsePublicSummary({
-      energy_kwh: 0,
-      co2e_kg: 0,
-      services: { total: 0, active: 0, unavailable: 0, no_metrics: 0 },
-      last_collection_at: null,
+      total_energy_kwh: 0,
+      total_co2e_kg: 0,
+      services_count: { active: 0, unavailable: 0, no_metrics: 0 },
     })
     const html = render({ data: { summary: empty, source: 'api' } })
     expect(html).toContain('role="status"')
@@ -140,7 +203,7 @@ describe('ExecutiveHeaderView', () => {
   })
 
   it('serviços sem coleta: energia e emissão aparecem como "—", nunca zero', () => {
-    const noCollection = parsePublicSummary({ ...apiResponse, last_collection_at: null })
+    const noCollection = parsePublicSummary(apiResponse, null)
     const html = render({ data: { summary: noCollection, source: 'api' } })
     expect(html).toContain('Nenhuma coleta registrada ainda')
     expect(html).not.toContain('1.234,5')
