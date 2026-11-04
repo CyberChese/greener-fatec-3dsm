@@ -39,7 +39,7 @@ Autentica um usuário cadastrado e emite um token JWT.
 | `password` | string | Obrigatório, mínimo de 6 caracteres |
 
 ```json
-{ "email": "teste@greener.com", "password": "senha123" }
+{ "email": "user@example.com", "password": "<senha>" }
 ```
 
 **Respostas:**
@@ -49,9 +49,13 @@ Autentica um usuário cadastrado e emite um token JWT.
 | `200` | Credenciais válidas | `{ "access_token": "<jwt>", "user": { "id", "email", "name" } }` |
 | `400` | Corpo inválido | `{ "message": ["O email informado deve ser um endereço válido.", ...], "error": "Bad Request", "statusCode": 400 }` |
 | `401` | E-mail inexistente ou senha incorreta | `{ "message": "Credenciais inválidas.", "error": "Unauthorized", "statusCode": 401 }` |
+| `429` | Limite de tentativas atingido | `{ "message": "Muitas tentativas de login. Tente novamente após o período indicado.", "error": "Too Many Requests", "statusCode": 429 }` |
 
 A mensagem de `401` é a mesma nos dois casos, para não revelar se o e-mail existe.
 O token expira conforme `JWT_EXPIRATION` (padrão `1d`). O payload contém `sub` (id do usuário), `email` e `name`.
+O limite é aplicado por IP de origem e por e-mail normalizado; atingir qualquer um dos limites bloqueia novas tentativas. O padrão é 5 requisições por janela de 60 segundos, configurável por `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` e `LOGIN_RATE_LIMIT_WINDOW_SECONDS`. Respostas `429` incluem o cabeçalho `Retry-After` em segundos; após a janela, novas tentativas são aceitas.
+O contador é mantido em memória por processo; instalações com múltiplas réplicas devem usar um armazenamento compartilhado para manter o limite consistente.
+`JWT_SECRET` é obrigatório fora de testes e deve ter pelo menos 32 bytes aleatórios. Mantenha-o somente no backend; nunca o inclua no frontend. A resposta de login contém apenas o token e os dados públicos do usuário.
 
 ### `GET /api/auth/profile`
 

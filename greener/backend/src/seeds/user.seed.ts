@@ -1,37 +1,63 @@
 import * as bcrypt from 'bcrypt';
-import dataSource from '../data-source'; 
+import dataSource from '../data-source';
 
-async function runSeed() {
-  console.log('🔄 Conectando ao banco de dados...');
-  await dataSource.initialize();
-
-  const name = 'Usuario Teste';
-  const email = 'teste@greener.com';
-  const plainPassword = 'senha123';
-
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(plainPassword, saltRounds);
-
-  console.log(`👤 Criando usuário: ${email}`);
-
-  await dataSource.query(
-    `INSERT INTO "users" ("nameUsers", "email", "password_hash")
-     VALUES ($1, $2, $3)
-     ON CONFLICT ("email") DO NOTHING;`,
-    [name, email, passwordHash],
-  );
-
-  console.log('✅ Seed executado com sucesso!');
-  console.log('-----------------------------------');
-  console.log(`Email de login : ${email}`);
-  console.log(`Senha de login : ${plainPassword}`);
-  console.log('-----------------------------------');
-
-  await dataSource.destroy();
-  process.exit(0);
+interface LocalSeedCredentials {
+  email: string;
+  password: string;
 }
 
-runSeed().catch((error) => {
-  console.error('❌ Erro ao executar o seed:', error);
-  process.exit(1);
+class SeedConfigurationError extends Error {}
+
+function getLocalSeedCredentials(): LocalSeedCredentials {
+  if (
+    process.env.NODE_ENV !== 'development' ||
+    process.env.LOCAL_DEVELOPMENT_SEED_ENABLED !== 'true'
+  ) {
+    throw new SeedConfigurationError(
+      'Seed disabled. Use NODE_ENV=development and explicitly enable the local seed.',
+    );
+  }
+
+  const email = process.env.LOCAL_DEVELOPMENT_SEED_EMAIL?.trim();
+  const password = process.env.LOCAL_DEVELOPMENT_SEED_PASSWORD;
+  if (!email || !password) {
+    throw new SeedConfigurationError(
+      'Set LOCAL_DEVELOPMENT_SEED_EMAIL and LOCAL_DEVELOPMENT_SEED_PASSWORD for the local seed.',
+    );
+  }
+
+  return { email, password };
+}
+
+async function runSeed(): Promise<void> {
+  const { email, password } = getLocalSeedCredentials();
+  let initialized = false;
+
+  try {
+    await dataSource.initialize();
+    initialized = true;
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await dataSource.query(
+      `INSERT INTO "users" ("nameUsers", "email", "password_hash")
+       VALUES ($1, $2, $3)
+       ON CONFLICT ("email") DO NOTHING;`,
+      ['Usuário local', email, passwordHash],
+    );
+
+    console.info('Local development seed completed.');
+  } finally {
+    if (initialized) {
+      await dataSource.destroy();
+    }
+  }
+}
+
+runSeed().catch((error: unknown) => {
+  console.error(
+    error instanceof SeedConfigurationError
+      ? error.message
+      : 'Seed failed. Check database connectivity and configuration without logging credentials.',
+  );
+  process.exitCode = 1;
 });
