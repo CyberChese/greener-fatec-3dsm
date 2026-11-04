@@ -46,10 +46,41 @@ energy_kwh = (cpu_watts + memory_watts + disk_watts + network_watts)
 
 Quando taxas válidas são fornecidas diretamente ao motor, `disk_watts = disk_MBps × 0,001` e `network_watts = network_MBps × 0,005`. A coleta atual não as fornece: o Agregador reporta disco e rede em GB, sem unidade temporal/janela documentada. Esses valores continuam persistidos e ficam fora da energia estimada até existir um contrato que permita derivar taxas sem suposições. A energia é arredondada para 8 casas decimais antes de persistir e rejeitada se exceder `9.999,99999999 kWh`, limite de `numeric(12,8)` usado pela coluna `energy_kwh`. Os coeficientes de potência acima são os parâmetros atuais no código e ainda aguardam validação do Product Owner; esta documentação registra a implementação, não uma validação científica independente.
 
-## 4. Histórico
+## 4. Períodos de referência exibidos (TASK-033)
+
+Cada indicador da interface informa a janela de tempo a que se refere (IHC03). O backend grava energia e CO₂e **por coleta**; o frontend só agrega valores já calculados, sem refazer as fórmulas.
+
+| Onde aparece | Período de referência | Como é obtido |
+|---|---|---|
+| Indicadores consolidados do Observatório (energia total, CO₂e total) | **Acumulado de todas as coletas registradas** | `GET /api/metrics/summary` soma `energy_kwh` e `co2e_kg` de todas as coletas armazenadas |
+| Energia e CO₂e de cada serviço no Dashboard (cards, tabela, comparação, popups do mapa) | **Últimos 15 minutos** | Soma de `energy_kwh` e `co2e_kg` das coletas do serviço em `GET /api/services/:id/history?from=<agora − 15 min>` |
+| Intensidade de carbono de cada serviço | **Coleta mais recente** do serviço | `carbon_intensity_gco2e_per_kwh` da última linha do histórico que a informou; `carbon_intensity_fallback` indica se foi o valor padrão |
+
+Por que 15 minutos: uma única coleta cobre o intervalo de coleta do Agregador (≈30 s) e gera valores da ordem de 0,0004 kWh, pequenos demais para leitura. A janela de 15 minutos reúne cerca de 30 coletas e usa a mesma consulta de histórico que já alimenta as métricas atuais (CPU, memória, disco e rede), sem requisição adicional. Os dois períodos são diferentes de propósito, e por isso o valor de um serviço não deve ser comparado com o total acumulado do Observatório.
+
+Regras de agregação:
+
+- Coletas sem `energy_kwh` ou `co2e_kg` (por exemplo, anteriores ao cálculo) **não entram na soma** e não valem zero.
+- Se nenhuma coleta da janela tiver o valor, ou se o serviço não estiver `ACTIVE`, a tela mostra "—".
+- Se `co2e_kg` não vier, usa-se `co2e_g ÷ 1.000`.
+- A intensidade exibida é a da coleta mais recente, e não uma média.
+
+Exemplo (CPU 50 %, memória 2 GB, intervalo de 30 s, intensidade 400 gCO₂e/kWh, 30 coletas iguais na janela):
+
+```text
+potência por coleta = 20 + 80 × 0,5 + 2 × 0,375 = 60,75 W
+energia por coleta  = 60,75 × 30 ÷ 3.600.000 = 0,00050625 kWh
+energia em 15 min   = 30 × 0,00050625 = 0,0151875 kWh
+CO₂e em 15 min      = 0,0151875 × 400 = 6,075 g = 0,006075 kg
+```
+
+No modo `simulated` (demonstração) o painel continua somando as coletas simuladas do período escolhido (últimas 10 coletas ou sessão inteira).
+
+## 5. Histórico
 
 | Data | Alteração |
 |---|---|
 | 19/10/2026 | Documentação dos dados de entrada coletados na Sprint 1 e da estrutura prevista para a Sprint 2 |
 | 29/10/2026 | Documentada a integração regional, a emissão por coleta e a auditoria do fallback |
 | 03/11/2026 | Documentadas precisão e conversão para quilogramas da TASK-022 |
+| 03/11/2026 | Documentados os períodos de referência dos indicadores (acumulado, últimos 15 min e coleta mais recente) da TASK-033 |

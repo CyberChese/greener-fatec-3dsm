@@ -53,6 +53,7 @@ import {
   attachLatestMetrics,
   mapCollectionToMetrics,
   METRICS_TTL_MS,
+  summarizeImpact,
   type BackendCollection,
   type LatestMetricsCache,
 } from '@/services/backend-services'
@@ -139,6 +140,99 @@ describe('attachLatestMetrics', () => {
     const [s] = await attachLatestMetrics([active()], new Map(), { now: NOW, fetchHistory: async () => [] })
     expect(s.metrics).toBeNull()
     expect(s.errorMessage).toContain('15 minutos')
+  })
+})
+
+describe('summarizeImpact', () => {
+  const withImpact = (overrides: Partial<BackendCollection> = {}) =>
+    collection({
+      energy_kwh: 0.0004,
+      carbon_intensity_gco2e_per_kwh: '400.00000000',
+      co2e_g: '0.16000000',
+      co2e_kg: '0.00016000000',
+      carbon_intensity_fallback: false,
+      ...overrides,
+    })
+
+  it('soma energia e CO2e das coletas da janela (texto → número)', () => {
+    const impact = summarizeImpact([
+      withImpact({ idCollections: 'a', timestamp: '2026-10-19T00:50:00Z' }),
+      withImpact({ idCollections: 'b', energy_kwh: '0.0006', co2e_kg: '0.00024000000', timestamp: '2026-10-19T00:50:30Z' }),
+    ])
+    expect(impact.energyKwh).toBeCloseTo(0.001, 8)
+    expect(impact.co2eKg).toBeCloseTo(0.0004, 8)
+    expect(impact.samples).toBe(2)
+  })
+
+  it('usa a intensidade e o aviso de valor padrão da coleta mais recente', () => {
+    const impact = summarizeImpact([
+      withImpact({ carbon_intensity_gco2e_per_kwh: '100', carbon_intensity_fallback: false, timestamp: '2026-10-19T00:50:00Z' }),
+      withImpact({ carbon_intensity_gco2e_per_kwh: '250', carbon_intensity_fallback: true, timestamp: '2026-10-19T00:59:00Z' }),
+    ])
+    expect(impact.intensity).toBe(250)
+    expect(impact.intensityFallback).toBe(true)
+  })
+
+  it('sem nenhum valor (coletas antigas ou campos ausentes) devolve null, nunca zero', () => {
+    const impact = summarizeImpact([collection(), collection({ energy_kwh: null, co2e_kg: null })])
+    expect(impact).toEqual({ energyKwh: null, co2eKg: null, intensity: null, intensityFallback: null, samples: 0 })
+  })
+
+  it('ignora coletas sem o valor em vez de tratá-las como zero', () => {
+    const impact = summarizeImpact([collection({ energy_kwh: null }), withImpact({ energy_kwh: 0.002 })])
+    expect(impact.energyKwh).toBeCloseTo(0.002, 8)
+    expect(impact.samples).toBe(1)
+  })
+
+  it('calcula o CO2e a partir dos gramas quando co2e_kg não vier', () => {
+    const impact = summarizeImpact([withImpact({ co2e_kg: null, co2e_g: '250' })])
+    expect(impact.co2eKg).toBeCloseTo(0.25, 8)
+  })
+
+  it('ignora valores não numéricos', () => {
+    expect(summarizeImpact([withImpact({ energy_kwh: 'abc', co2e_kg: '' })]).energyKwh).toBeNull()
+  })
+})
+
+describe('attachLatestMetrics: energia e CO2e por serviço', () => {
+  const active = () => ({ ...mapBackendService(base), backendId: 'uuid-1' })
+  const NOW = Date.parse('2026-10-19T01:00:00Z')
+  const rows = [
+    collection({ idCollections: 'a', timestamp: '2026-10-19T00:50:00Z', energy_kwh: 0.001, co2e_kg: '0.0004', carbon_intensity_gco2e_per_kwh: '400', carbon_intensity_fallback: false }),
+    collection({ idCollections: 'b', timestamp: '2026-10-19T00:59:30Z', energy_kwh: 0.002, co2e_kg: '0.0008', carbon_intensity_gco2e_per_kwh: '400', carbon_intensity_fallback: false }),
+  ]
+
+  it('preenche energia, CO2e e intensidade somando a janela', async () => {
+    const [s] = await attachLatestMetrics([active()], new Map(), { now: NOW, fetchHistory: async () => rows })
+    expect(s.energyKwh).toBeCloseTo(0.003, 8)
+    expect(s.co2eKg).toBeCloseTo(0.0012, 8)
+    expect(s.intensity).toBe(400)
+    expect(s.intensityFallback).toBe(false)
+  })
+
+  it('histórico sem energia deixa os valores nulos ("—")', async () => {
+    const [s] = await attachLatestMetrics([active()], new Map(), { now: NOW, fetchHistory: async () => [collection()] })
+    expect(s.energyKwh).toBeNull()
+    expect(s.co2eKg).toBeNull()
+    expect(s.intensity).toBeNull()
+  })
+
+  it('serviço que não está ativo não recebe energia nem CO2e', async () => {
+    const down = { ...mapBackendService({ ...base, status: 'UNAVAILABLE' }), backendId: 'uuid-1' }
+    const [s] = await attachLatestMetrics([down], new Map(), { now: NOW, fetchHistory: async () => rows })
+    expect(s.energyKwh).toBeNull()
+    expect(s.co2eKg).toBeNull()
+  })
+
+  it('se a consulta seguinte falhar, mantém os valores da última leitura', async () => {
+    const cache: LatestMetricsCache = new Map()
+    await attachLatestMetrics([active()], cache, { now: NOW, fetchHistory: async () => rows })
+    const failing = async () => {
+      throw new Error('rede')
+    }
+    const [s] = await attachLatestMetrics([active()], cache, { now: NOW + METRICS_TTL_MS, fetchHistory: failing })
+    expect(s.energyKwh).toBeCloseTo(0.003, 8)
+    expect(s.errorMessage).toContain('desatualizadas')
   })
 })
 

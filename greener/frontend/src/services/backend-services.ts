@@ -36,8 +36,8 @@ const STATUS_NOTE: Record<ServiceStatus, string | null> = {
 }
 
 /**
- * Converte um serviço do backend no formato da tela. Energia, CO2e e intensidade ficam nulos
- * (aparecem como "—") porque o backend ainda não calcula nem expõe esses valores.
+ * Converte um serviço do backend no formato da tela. Energia, CO2e e intensidade começam nulos
+ * (aparecem como "—") e são preenchidos por attachLatestMetrics a partir do histórico de coletas.
  */
 export function mapBackendService(service: BackendService): ServiceSnapshot {
   const status = STATUS_MAP[service.status] ?? 'no_metrics'
@@ -83,7 +83,72 @@ export interface BackendCollection {
   storage_usage: string | number | null
   /** GB. */
   network_io: string | number | null
+  /** Energia estimada da coleta, em kWh. Nula em coletas anteriores ao cálculo (ou se o cálculo falhou). */
+  energy_kwh?: string | number | null
+  /** Intensidade de carbono usada na coleta, em gCO2e/kWh. */
+  carbon_intensity_gco2e_per_kwh?: string | number | null
+  /** Emissão da coleta em gramas e em quilogramas de CO2e. */
+  co2e_g?: string | number | null
+  co2e_kg?: string | number | null
+  /** true quando a intensidade veio do valor padrão. */
+  carbon_intensity_fallback?: boolean | null
   timestamp: string
+}
+
+/** Energia e emissão de um serviço somadas sobre as coletas de uma janela. */
+export interface WindowImpact {
+  /** Soma de energy_kwh; null se nenhuma coleta da janela trouxe o valor (nunca zero por falta de dado). */
+  energyKwh: number | null
+  /** Soma de co2e_kg; null se nenhuma coleta da janela trouxe o valor. */
+  co2eKg: number | null
+  /** Intensidade (gCO2e/kWh) da coleta mais recente que a informou. */
+  intensity: number | null
+  intensityFallback: boolean | null
+  /** Quantas coletas da janela entraram na soma de energia. */
+  samples: number
+}
+
+/**
+ * Soma energia e CO2e das coletas recebidas. Coletas sem o valor são ignoradas (não valem zero);
+ * se nenhuma tiver o valor, o resultado é null e a tela mostra "—".
+ */
+export function summarizeImpact(records: BackendCollection[]): WindowImpact {
+  let energy = 0
+  let co2e = 0
+  let samples = 0
+  let co2eSamples = 0
+  let latest: BackendCollection | null = null
+  let latestAt = -Infinity
+
+  for (const record of records) {
+    const kwh = toNumber(record.energy_kwh ?? null)
+    if (kwh !== null) {
+      energy += kwh
+      samples++
+    }
+
+    const kg = toNumber(record.co2e_kg ?? null)
+    const grams = toNumber(record.co2e_g ?? null)
+    const emission = kg ?? (grams === null ? null : grams / 1000)
+    if (emission !== null) {
+      co2e += emission
+      co2eSamples++
+    }
+
+    const at = Date.parse(record.timestamp)
+    if (toNumber(record.carbon_intensity_gco2e_per_kwh ?? null) !== null && at >= latestAt) {
+      latest = record
+      latestAt = at
+    }
+  }
+
+  return {
+    energyKwh: samples > 0 ? energy : null,
+    co2eKg: co2eSamples > 0 ? co2e : null,
+    intensity: latest ? toNumber(latest.carbon_intensity_gco2e_per_kwh ?? null) : null,
+    intensityFallback: latest ? (latest.carbon_intensity_fallback ?? null) : null,
+    samples,
+  }
 }
 
 /** Converte uma coleta em métricas. Se qualquer valor faltar, devolve null (nunca preenche com zero). */
@@ -122,6 +187,8 @@ export const METRICS_TTL_MS = 10_000
 export interface LatestMetrics {
   metrics: Metrics | null
   at: string | null
+  /** Energia e CO2e somadas sobre as coletas da janela (LATEST_WINDOW_MS). */
+  impact: WindowImpact | null
   fetchedAt: number
 }
 export type LatestMetricsCache = Map<string, LatestMetrics>
@@ -133,7 +200,8 @@ interface AttachOptions {
 }
 
 /**
- * Preenche as métricas (CPU, memória, disco e rede) de cada serviço ativo com a coleta mais recente do histórico.
+ * Preenche cada serviço ativo com a coleta mais recente do histórico (CPU, memória, disco e rede) e com a energia
+ * e o CO2e somados sobre as coletas da janela de 15 minutos. A mesma resposta alimenta os dois, sem requisição extra.
  * Nunca lança em falha de rede (mantém a última leitura guardada; sem leitura, o valor fica nulo "—"),
  * exceto quando a requisição é explicitamente cancelada via AbortSignal.
  */
@@ -156,7 +224,12 @@ export async function attachLatestMetrics(
             (best, r) => (best === null || Date.parse(r.timestamp) >= Date.parse(best.timestamp) ? r : best),
             null,
           )
-          entry = { metrics: latest ? mapCollectionToMetrics(latest) : null, at: latest?.timestamp ?? null, fetchedAt: now }
+          entry = {
+            metrics: latest ? mapCollectionToMetrics(latest) : null,
+            at: latest?.timestamp ?? null,
+            impact: records.length > 0 ? summarizeImpact(records) : null,
+            fetchedAt: now,
+          }
           cache.set(id, entry)
         } catch (error) {
           if (signal?.aborted) throw error
@@ -169,6 +242,10 @@ export async function attachLatestMetrics(
         ...snapshot,
         metrics: entry.metrics,
         metricsAt: entry.at,
+        energyKwh: entry.impact?.energyKwh ?? null,
+        co2eKg: entry.impact?.co2eKg ?? null,
+        intensity: entry.impact?.intensity ?? null,
+        intensityFallback: entry.impact?.intensityFallback ?? null,
         errorMessage: failed
           ? 'Métricas desatualizadas: a última consulta falhou'
           : entry.metrics

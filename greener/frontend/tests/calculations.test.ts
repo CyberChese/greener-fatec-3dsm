@@ -8,6 +8,7 @@ import {
   haversineKm,
   hasCompleteMetrics,
   totalsByService,
+  totalsFromSnapshots,
 } from '@/lib/calculations'
 import { metrics, record, snapshot } from './fixtures'
 
@@ -97,6 +98,24 @@ describe('totais por serviço no período', () => {
     const totals = totalsByService(history, 1).get('svc')
     expect(totals?.energyKwh).toBe(3)
     expect(totals?.samples).toBe(2)
+  })
+})
+
+describe('totais por serviço no modo real', () => {
+  it('usa energia e CO₂e já somados no snapshot', () => {
+    const totals = totalsFromSnapshots([snapshot({ id: 'a', energyKwh: 0.003, co2eKg: 0.0012 })])
+    expect(totals.get('a')).toEqual({ energyKwh: 0.003, co2eKg: 0.0012, samples: 0 })
+  })
+
+  it('serviço sem energia ou sem CO₂e fica fora do mapa (a tela mostra "—", não zero)', () => {
+    const totals = totalsFromSnapshots([
+      snapshot({ id: 'sem-energia', energyKwh: null, co2eKg: 0.1 }),
+      snapshot({ id: 'sem-co2', energyKwh: 0.1, co2eKg: null }),
+      snapshot({ id: 'zero-real', energyKwh: 0, co2eKg: 0 }),
+    ])
+    expect(totals.has('sem-energia')).toBe(false)
+    expect(totals.has('sem-co2')).toBe(false)
+    expect(totals.get('zero-real')?.energyKwh).toBe(0)
   })
 })
 
