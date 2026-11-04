@@ -3,18 +3,21 @@ import type { ServiceSnapshot } from '@/lib/types'
 import { ApiError } from './apiError.ts'
 import { fetchBackendServices, fetchServiceHistory, type BackendCollection } from './backend-services.ts'
 import { publicApi } from './http.ts'
+import { getCollectionStatus } from './metrics.ts'
 
 /**
  * Resumo público consolidado do Observatório (TASK-024).
  *
- * Contrato esperado de GET /api/metrics/summary (a ser entregue pela TASK-023):
+ * Contrato real de GET /api/metrics/summary (TASK-023, `MetricsService.getSummary` no backend):
  * {
- *   "energy_kwh": 12.345678,
- *   "co2e_kg": 4.567891,
- *   "services": { "total": 5, "active": 3, "unavailable": 1, "no_metrics": 1 },
- *   "last_collection_at": "2026-11-02T12:00:00.000Z",   // ou null
- *   "period": { "from": "...", "to": "..." }            // opcional
+ *   "total_energy_kwh": 0.04692212,       // soma de energy_kwh de todas as coletas gravadas
+ *   "total_co2e_kg": 0.01007074489,       // soma de co2e_kg de todas as coletas gravadas
+ *   "services_count": { "active": 7, "unavailable": 1, "no_metrics": 0 }
  * }
+ * O backend não envia o total de serviços nem o horário da última coleta: o total é a soma das três contagens
+ * e o horário vem de GET /api/metrics/collection-config.
+ *
+ * `PublicSummary` abaixo é o formato interno usado pela tela (independente dos nomes do backend).
  */
 export interface PublicSummary {
   energy_kwh: number
@@ -57,57 +60,47 @@ function toNumber(value: unknown): number | null {
   return null
 }
 
-/** Valida a resposta da API. Lança erro se o formato não bater com o contrato (nunca inventa zeros). */
-export function parsePublicSummary(value: unknown): PublicSummary {
+/**
+ * Valida a resposta de GET /api/metrics/summary e a converte no formato interno.
+ * `lastCollectionAt` vem de GET /api/metrics/collection-config (o resumo não traz esse dado).
+ * Lança erro se o formato não bater com o contrato (nunca inventa zeros).
+ */
+export function parsePublicSummary(value: unknown, lastCollectionAt: string | null = null): PublicSummary {
   const invalid = () => new Error('A API retornou um resumo de indicadores inválido.')
-  if (!isRecord(value) || !isRecord(value.services)) throw invalid()
+  if (!isRecord(value) || !isRecord(value.services_count)) throw invalid()
 
-  const energy = toNumber(value.energy_kwh)
-  const co2e = toNumber(value.co2e_kg)
-  const { total, active, unavailable, no_metrics } = value.services
+  const energy = toNumber(value.total_energy_kwh)
+  const co2e = toNumber(value.total_co2e_kg)
+  const { active, unavailable, no_metrics } = value.services_count
 
   if (
     energy === null ||
     co2e === null ||
     !isNonNegative(energy) ||
     !isNonNegative(co2e) ||
-    !isCount(total) ||
     !isCount(active) ||
     !isCount(unavailable) ||
-    !isCount(no_metrics) ||
-    active > total
+    !isCount(no_metrics)
   ) {
     throw invalid()
   }
 
-  const rawLast = value.last_collection_at ?? null
-  let last: string | null = null
-  if (rawLast !== null) {
-    if (!isIsoDate(rawLast)) throw invalid()
-    last = rawLast
-  }
-
-  let period: PublicSummary['period'] = null
-  const rawPeriod = value.period
-  if (isRecord(rawPeriod)) {
-    const { from, to } = rawPeriod
-    if (isIsoDate(from) && isIsoDate(to)) period = { from, to }
-  }
+  if (lastCollectionAt !== null && !isIsoDate(lastCollectionAt)) throw invalid()
 
   return {
     energy_kwh: energy,
     co2e_kg: co2e,
-    services: { total, active, unavailable, no_metrics },
-    last_collection_at: last,
-    period,
+    services: { total: active + unavailable + no_metrics, active, unavailable, no_metrics },
+    last_collection_at: lastCollectionAt,
+    period: null,
   }
 }
 
-/** Janela usada quando o resumo precisa ser montado no navegador (endpoint ainda inexistente). */
+/** Janela usada quando o resumo precisa ser montado no navegador (backend sem o endpoint de resumo). */
 export const DERIVED_WINDOW_MS = 60 * 60_000
 
 /**
- * Monta o resumo a partir das rotas públicas que já existem (serviços + histórico de coletas).
+ * Plano B: monta o resumo a partir das rotas públicas de serviços e histórico, se o backend responder 404 no resumo.
  * Soma energy_kwh e co2e_g das coletas da janela; coletas sem esses valores são ignoradas (não viram zero).
  */
 export function deriveSummary(
@@ -161,14 +154,16 @@ async function fetchDerivedSummary(now = Date.now(), signal?: AbortSignal): Prom
 }
 
 /**
- * GET /api/metrics/summary (rota pública).
- * Enquanto a TASK-023 não publicar o endpoint (resposta 404), o resumo é montado com as rotas já existentes.
- * Quando o endpoint existir, ele passa a ser usado automaticamente, sem mudar a tela.
+ * GET /api/metrics/summary (rota pública) + GET /api/metrics/collection-config (horário da última coleta).
+ * Se o backend não tiver o endpoint de resumo (404), o resumo é montado com as rotas de serviços e histórico.
  */
 export async function fetchPublicSummary(signal?: AbortSignal): Promise<SummaryResult> {
   try {
-    const { data } = await publicApi.get<unknown>('/metrics/summary', { signal })
-    return { summary: parsePublicSummary(data), source: 'api' }
+    const [{ data }, collection] = await Promise.all([
+      publicApi.get<unknown>('/metrics/summary', { signal }),
+      getCollectionStatus(signal),
+    ])
+    return { summary: parsePublicSummary(data, collection.last_collection_at), source: 'api' }
   } catch (error) {
     if (signal?.aborted) throw error
     if (error instanceof ApiError && error.status === 404) {

@@ -21,6 +21,7 @@ Endpoints ainda não implementados aparecem separadamente em [Endpoints planejad
 | `GET` | `/api/services` | Público | Lista os serviços descobertos no Agregador e seus estados |
 | `GET` | `/api/services/:id/history` | Público | Histórico de coletas de métricas de um serviço |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta registrada |
+| `GET` | `/api/metrics/summary` | Público | Indicadores consolidados: energia (kWh), CO₂e (kg) e serviços por estado |
 
 ---
 
@@ -128,6 +129,7 @@ Exemplo: `GET /api/services/b9a3f744-1f9b-4e53-8b11-31d112a49c83/history?from=20
     "energy_kwh": 0.00042,
     "carbon_intensity_gco2e_per_kwh": "85.00000000",
     "co2e_g": "0.03570000",
+    "co2e_kg": "0.00003570000",
     "carbon_intensity_fallback": false,
     "timestamp": "2026-10-19T00:48:13.443Z"
   }
@@ -143,6 +145,7 @@ Exemplo: `GET /api/services/b9a3f744-1f9b-4e53-8b11-31d112a49c83/history?from=20
 | `energy_kwh` | kWh |
 | `carbon_intensity_gco2e_per_kwh` | gCO₂e/kWh |
 | `co2e_g` | gCO₂e |
+| `co2e_kg` | kgCO₂e (`co2e_g` ÷ 1000) |
 | `carbon_intensity_fallback` | `true` se o fator configurado de fallback foi usado; `false` se veio da API |
 | `timestamp` | instante em que a resposta da coleta foi recebida (UTC) |
 
@@ -168,6 +171,28 @@ Informa o intervalo de coleta configurado e o horário da última coleta registr
 `last_collection_at` é `null` enquanto nenhuma coleta tiver sido gravada.
 O intervalo vem de `METRICS_COLLECTION_INTERVAL_SECONDS` e é contado a partir do término de cada ciclo.
 
+### `GET /api/metrics/summary`
+
+Indicadores consolidados para o Observatório. Rota pública, sem parâmetros.
+
+**Resposta `200`:**
+
+```json
+{
+  "total_energy_kwh": 0.04692212,
+  "total_co2e_kg": 0.01007074489,
+  "services_count": { "active": 7, "unavailable": 1, "no_metrics": 0 }
+}
+```
+
+| Campo | Significado |
+|---|---|
+| `total_energy_kwh` | Soma de `energy_kwh` de todas as coletas gravadas (kWh). Vale `0` enquanto não houver coletas com energia calculada |
+| `total_co2e_kg` | Soma de `co2e_kg` de todas as coletas gravadas (kgCO₂e) |
+| `services_count` | Quantidade de serviços em cada estado (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`); estados sem serviço vêm como `0` |
+
+A resposta **não** traz o total de serviços (é a soma das três contagens) nem o horário da última coleta (use `GET /api/metrics/collection-config`). Os totais cobrem todo o histórico gravado, não um período.
+
 ---
 
 ## Endpoints planejados
@@ -176,7 +201,6 @@ Os endpoints abaixo **ainda não existem** no backend e estão previstos no [pla
 
 | Método | Rota prevista | Finalidade | Previsão |
 |---|---|---|---|
-| `GET` | `/api/metrics/summary` | Indicadores consolidados de energia (kWh) e CO₂e | Sprint 2 |
 | `PUT` | `/api/config/interval` | Alterar o intervalo de coleta (protegida por JWT) | Sprint 2 |
 | `POST` | `/api/services/refresh` | Forçar a redescoberta dos serviços (protegida por JWT) | Sprint 2 |
 | `GET` | `/api/metrics/ranking` | Ranking de serviços por consumo ou emissão | Sprint 3 |
