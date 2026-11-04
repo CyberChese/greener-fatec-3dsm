@@ -9,9 +9,11 @@ O Observatório e a Área do Administrador foram portados do protótipo visual d
   `GET /api/services/:id/history` (consulta com `from` dos últimos 15 min, repetida no máximo a cada 10 s, já que o worker
   coleta a cada ~30 s). Mostra nome, estado (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), localização e CPU/memória/disco/rede com
   o horário da coleta. A Área do Administrador lista o histórico real de um serviço (período à escolha) e exporta CSV.
-  O horário exibido é o horário real. O backend já persiste energia, CO₂e, intensidade de carbono e o uso de fallback no
-  histórico; esses campos ainda aparecem como "—" no frontend enquanto o adaptador real não os mapeia. Potência, gráfico
-  de evolução e ranking também ainda não são apresentados no modo `api`.
+  O horário exibido é o horário real. O backend persiste energia, CO₂e, intensidade de carbono e o uso de fallback em cada
+  coleta; o frontend soma energia e CO₂e das coletas dos últimos 15 min de cada serviço (a mesma resposta do histórico, sem
+  requisição extra) e mostra a intensidade da coleta mais recente. Coleta sem o valor (por exemplo, anterior ao cálculo) não
+  entra na soma, e serviço sem nenhum valor continua aparecendo como "—", nunca como zero. Potência, gráfico de evolução e
+  ranking ainda não são apresentados no modo `api`.
 - **`simulated`**: simulação no navegador para demonstração (coleta acelerada, cada coleta ≙ 15 min simulados, e por isso
   o horário da tabela avança de 15 em 15 min enquanto o relógio do topo mostra a hora real).
 
@@ -31,7 +33,7 @@ ficar no backend.
 |---|---|---|
 | Lista de serviços, estado e localização | **Real** (`GET /api/services`) | já existe |
 | Métricas da última coleta por serviço (CPU, memória, disco, rede) | **Real** (última linha de `GET /api/services/:id/history`) | já existe; um `GET /api/services/:id/latest` evitaria 1 consulta por serviço |
-| Energia, CO2e e intensidade (gCO2e/kWh) por coleta | Persistidos no histórico pelo worker; ainda não mapeados pelo adaptador | `GET /api/services/:id/history` |
+| Energia, CO2e e intensidade (gCO2e/kWh) por serviço | **Real** (soma dos últimos 15 min de `GET /api/services/:id/history`; intensidade da coleta mais recente) | já existe |
 | % renovável por serviço e período | falta | API atual não persiste esse dado |
 | Resumo agregado por período | falta | `GET /api/dashboard/summary?period=` (proposta) |
 | Série temporal para o gráfico e o ranking | falta | `GET /api/dashboard/series?period=` |

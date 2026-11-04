@@ -2,8 +2,7 @@ import { RefreshCw, ServerCrash } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import type { UseMetricsResult } from '@/hooks/use-metrics'
-import { haversineKm, totalsByService } from '@/lib/calculations'
-import type { PeriodTotals } from '@/lib/calculations'
+import { haversineKm, totalsByService, totalsFromSnapshots } from '@/lib/calculations'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { cn } from '@/lib/utils'
 import { CollectionStatusPanel } from './collection-status-panel'
@@ -64,10 +63,11 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
       ? `últimas ${Math.min(10, tick)} coletas${IS_SIMULATED ? ` (${Math.min(10, tick) * 15} min simulados)` : ''}`
       : `sessão inteira (${tick} coletas)`
 
-  // No modo real não há energia/CO2e por serviço ainda: o mapa vazio faz a tela mostrar "—" em vez de zero.
+  // Simulado: soma o histórico do período escolhido. Real: usa a soma dos últimos 15 minutos que o backend já calculou;
+  // serviço sem valor fica fora do mapa e a tela mostra "—" em vez de zero.
   const periodTotals = useMemo(
-    () => (IS_SIMULATED ? totalsByService(history, fromTick) : new Map<string, PeriodTotals>()),
-    [history, fromTick],
+    () => (IS_SIMULATED ? totalsByService(history, fromTick) : totalsFromSnapshots(snapshots)),
+    [history, fromTick, snapshots],
   )
   const simulatedSummary = useMemo(
     () => (IS_SIMULATED && tick > 0 ? { summary: summaryFromSnapshots(snapshots, lastUpdated), source: 'simulated' as const } : null),

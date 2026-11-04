@@ -59,8 +59,11 @@ export interface ServiceSnapshot {
   status: ServiceStatus
   metrics: Metrics | null
   intensity: number | null
+  /** true quando a intensidade veio do valor padrão (a API de intensidade não respondeu para a região). */
+  intensityFallback?: boolean | null
   renewableShare: number | null
   powerWatts: number | null
+  /** Modo real: soma das coletas dos últimos 15 minutos. Modo simulado: valor da coleta atual. */
   energyKwh: number | null
   co2eKg: number | null
   errorMessage: string | null

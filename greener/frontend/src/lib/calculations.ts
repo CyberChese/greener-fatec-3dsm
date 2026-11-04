@@ -98,6 +98,19 @@ export function totalsByService(records: CollectionRecord[], fromTick: number): 
   return totals
 }
 
+/**
+ * Modo real: energia e CO₂e de cada serviço já chegam somadas no snapshot (janela de 15 minutos do histórico).
+ * Serviço sem um dos dois valores fica fora do mapa, e a tela mostra "—" (nunca zero por falta de dado).
+ */
+export function totalsFromSnapshots(snapshots: ServiceSnapshot[]): Map<string, PeriodTotals> {
+  const totals = new Map<string, PeriodTotals>()
+  for (const s of snapshots) {
+    if (s.energyKwh == null || s.co2eKg == null) continue
+    totals.set(s.id, { energyKwh: s.energyKwh, co2eKg: s.co2eKg, samples: 0 })
+  }
+  return totals
+}
+
 const EARTH_RADIUS_KM = 6371
 
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {

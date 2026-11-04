@@ -187,7 +187,7 @@ Origem dos dados, escolhida por `VITE_DATA_SOURCE`:
 
 | Valor | O que mostra |
 |---|---|
-| `api` (padrão) | Serviços, estados e localização **reais**, lidos de `GET /api/services`. Energia, CO₂e, intensidade, gráfico de evolução e ranking aparecem como "—" ou como aviso, porque o backend ainda não calcula nem expõe esses valores. |
+| `api` (padrão) | Serviços, estados e localização **reais**, lidos de `GET /api/services`. Energia e CO₂e por serviço (soma dos últimos 15 min) e a intensidade de carbono vêm do histórico de coletas; sem dado, aparecem como "—". Gráfico de evolução e ranking ainda aparecem como aviso. |
 | `simulated` | Simulação no navegador (demonstração), com coleta acelerada: cada coleta equivale a 15 min simulados. |
 
 O login é sempre o real (`POST /api/auth/login`). O que o backend precisa expor para o painel mostrar tudo com dados reais
