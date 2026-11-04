@@ -1,6 +1,6 @@
 # 🌱 GreenER — Sprint 2: Estimativas Ambientais e Dashboard
 
-> **Situação:** 🟡 Planejada — a sprint ainda não começou. O Sprint Backlog detalhado (tasks, responsáveis, pontos e critérios de aceite) será registrado aqui no início da sprint.
+> **Situação:** 🟡 Em andamento — há entregas integradas em `dev`, como os PRs [#101](https://github.com/CyberChese/greener-fatec-3dsm/pull/101) e [#104](https://github.com/CyberChese/greener-fatec-3dsm/pull/104). Acompanhamento e responsáveis estão no [board](https://github.com/orgs/CyberChese/projects/2/views/3); não foi encontrada tag de fechamento da Sprint 2 na consulta de 04/11/2026.
 
 ## 🎯 Objetivo previsto
 
@@ -35,6 +35,16 @@ Ver [Retrospectiva da Sprint 1](sprint-1.md#-retrospectiva). A aplicação de ca
 | Atualizar a documentação junto com cada PR | Item do checklist da Definition of Done | A iniciar |
 | Revisar critérios de aceite quando a implementação mudar | Registrar a alteração e a justificativa na própria história | A iniciar |
 | Rodar os testes no mesmo ambiente documentado no README | Ajuste da imagem Docker | A iniciar |
+
+## Processo de PR e registro da entrega
+
+Aplicar o [processo de contribuição](../processo-contribuicao.md) e o [template de Pull Request](../../../.github/PULL_REQUEST_TEMPLATE.md) em todas as entregas: escopo pequeno, critérios de aceite e CI evidenciados, análise técnica substantiva por integrante diferente do autor e integração por PR. A evidência consultada em 04/11/2026 indica `main` e `dev` protegidas, mas os requisitos específicos da proteção não puderam ser lidos sem autenticação; consulte as [ações pendentes de permissão e registro de tag](../processo-contribuicao.md#estado-observado-no-github).
+
+Nenhuma tag ou release da Sprint 2 foi encontrada na consulta de 04/11/2026. Criar e registrar a tag somente após a Sprint Review e o corte da release. Registrar dailies e decisões de escopo no board, com issue relacionada, conforme o [formato curto de ata](../processo-contribuicao.md#daily-e-decisoes-de-escopo).
+
+Uma decisão de escopo existente foi consolidada em [registros curtos da Sprint 2](../atas/decisoes-sprint-2.md). Na amostra de PRs integrados, seis têm review técnico não vazio; o PR #102 tem apenas “Aprovado.” e segue como lacuna a corrigir, conforme o [registro de evidências e ações pendentes](../processo-contribuicao.md#estado-observado-no-github).
+
+**TASK-039:** template e política estão registrados; não marcar a task como concluída enquanto o review do PR #102, a verificação de regras pelo responsável com acesso e a tag da release da Sprint 2 permanecerem pendentes. O detalhamento está na [matriz de critérios](../processo-contribuicao.md#estado-dos-criterios-da-task-039-em-04112026).
 
 ## Seções a preencher durante a sprint
 
