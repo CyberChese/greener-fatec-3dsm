@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
-> **Versão atual:** Sprint 1 (tag `sprint-1`) — fundação, autenticação, descoberta de serviços e coleta de métricas.
+> **Versão atual:** Sprint 2 — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
 
 ---
 
@@ -25,7 +25,7 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 
 ## ✅ Funcionalidades
 
-### Implementadas (Sprint 1)
+### Implementadas (Sprint 2)
 
 - Ambiente completo com Docker Compose: frontend, backend e PostgreSQL.
 - Esquema do banco (`users`, `services`, `metric_collections`) criado por migrações TypeORM.
@@ -35,18 +35,14 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 - Coleta periódica de métricas de CPU, memória, armazenamento e rede, com histórico consultável por período.
 - Tratamento de falhas: serviços inalcançáveis ficam `UNAVAILABLE`, serviços sem métricas válidas ficam `NO_METRICS`, e a falha de um serviço não interrompe a coleta dos demais.
 - Frontend com Observatório público (intervalo e última coleta), modal de login e Área do Administrador protegida.
-- 20 testes unitários (coletor, descoberta, cliente do Agregador e autenticação).
+- Testes unitários com Jest para coleta, descoberta, autenticação, cálculo ambiental e integrações HTTP simuladas.
+- Documentação interativa Swagger em `/api/docs`.
 
 ### Previstas
 
 | Funcionalidade | Sprint |
 |---|---|
-| Descoberta periódica de serviços | 2 |
-| Integração com o serviço de intensidade de carbono | 2 |
-| Cálculo de energia (kWh) e CO₂e | 2 |
-| Dashboard com mapa, cartões e tabela de serviços | 2 |
 | Configuração do intervalo de coleta pela Área do Administrador | 2 |
-| Swagger em `/api/docs` | 2 |
 | Ranking e comparação entre serviços | 3 |
 
 Distribuição completa no [plano de entregas](greener/docs/plano-de-entregas.md).
@@ -183,6 +179,8 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    |---|---|
    | Frontend | <http://localhost:3000> |
    | API | <http://localhost:3001/api> |
+| Swagger UI | <http://localhost:3001/api/docs> |
+| OpenAPI JSON | <http://localhost:3001/api/docs/openapi.json> |
    | PostgreSQL | `localhost:5432` |
 
 7. **Encerrar:**
@@ -199,6 +197,8 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | Clicar em "Área do Administrador" e entrar com o usuário local configurado | Acesso à Área do Administrador com a sessão autenticada |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
 | `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
+| `GET http://localhost:3001/api/metrics/summary` | Totais de energia, CO₂e e serviços por estado |
+| Abrir <http://localhost:3001/api/docs> | Swagger UI com rotas, parâmetros, schemas e respostas |
 | `GET http://localhost:3001/api/auth/profile` sem token | HTTP `401` |
 
 ---
@@ -221,6 +221,9 @@ Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 | `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
 | `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
 | `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (s) | `30` |
+| `CARBON_INTENSITY_API_URL` | URL base da API de intensidade de carbono | `https://carbon.unilaunch.org` |
+| `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da API de intensidade de carbono (ms) | `5000` |
+| `CARBON_INTENSITY_FALLBACK_G_PER_KWH` | Fator de fallback aprovado, em gCO₂e/kWh | Definido localmente |
 | `VITE_API_URL` | Endereço da API acessado pelo **navegador** | `http://localhost:3001/api` |
 | `FRONTEND_ORIGIN` | Origem permitida pelo CORS do backend | `http://localhost:3000` |
 
@@ -248,7 +251,7 @@ Contrato completo: [`greener/docs/contrato-agregador.md`](greener/docs/contrato-
 
 ## 🔌 Endpoints da API
 
-Rotas implementadas na Sprint 1 (prefixo `/api`):
+Rotas implementadas na Sprint 2 (prefixo `/api`):
 
 | Método | Endpoint | Acesso | Descrição |
 | :--- | :--- | :--- | :--- |
@@ -258,6 +261,9 @@ Rotas implementadas na Sprint 1 (prefixo `/api`):
 | `GET` | `/api/services` | Público | Serviços monitorados e seus estados (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`) |
 | `GET` | `/api/services/:id/history?from=&to=` | Público | Histórico de coletas do serviço (datas ISO-8601, limites inclusivos) |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta |
+| `GET` | `/api/metrics/summary` | Público | Totais de energia, CO₂e e contagem por estado |
+
+A documentação interativa está disponível em <http://localhost:3001/api/docs>. Ela descreve os parâmetros, schemas, respostas de sucesso e erros. Use o botão **Authorize** para informar um JWT nas rotas protegidas.
 
 As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
@@ -269,15 +275,15 @@ Parâmetros, respostas, códigos de erro e endpoints planejados: [`greener/docs/
 
 * **`users`**: id (UUID), nome, e-mail (único), hash da senha (bcrypt), data de criação.
 * **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
-* **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, instante da coleta.
+* **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, energia em kWh, intensidade de carbono, CO₂e em gramas e quilogramas, fallback utilizado e instante da coleta.
 
-Os campos de estimativa de energia e CO₂e serão adicionados na Sprint 2. DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).
+O cálculo de energia usa CPU, memória e duração: `energy_kwh = potência_total × duração_segundos ÷ 3.600.000`. A emissão usa `co2e_g = energy_kwh × intensidade_gco2e_por_kwh` e `co2e_kg = co2e_g ÷ 1.000`. As fórmulas detalhadas estão em [`greener/docs/calculos.md`](greener/docs/calculos.md). DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).
 
 ---
 
 ## 🧪 Testes
 
-O backend tem 51 testes unitários (Jest, 10 suítes) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação e o limite de tentativas, a configuração, o cálculo de energia e o cliente de intensidade de carbono. Os testes substituem o banco e o Agregador por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
+O backend possui testes unitários com Jest que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação e o limite de tentativas, a configuração, os motores de energia e carbono e o fallback de intensidade. Os testes substituem o banco e as APIs externas por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
 
 Os testes exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A política de runtime do projeto é **Node 24 LTS** em todos os lugares: imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` (`^24.15.0`) e CI.
 
