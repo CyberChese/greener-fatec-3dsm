@@ -43,6 +43,52 @@ describe('EnergyEngineService', () => {
 
     expect(result).toBeGreaterThan(0);
     expect(result).toBeCloseTo(0.00033333, 6);
+    expect(result).toBe(0.00033333);
+  });
+
+  it('calculates the reference including disk and network rates', () => {
+    const result = service.calculatekWh({
+      cpuUsagePercent: 100,
+      memoryUsedMb: 1024,
+      diskIoMBps: 100,
+      networkIoMBps: 100,
+      durationSeconds: 3600,
+    });
+
+    // (100W + 0.375W + 0.1W + 0.5W) * 3600 / 3600000.
+    expect(result).toBe(0.100975);
+  });
+
+  it.each([
+    ['CPU below range', { cpuUsagePercent: -1 }],
+    ['CPU above range', { cpuUsagePercent: 101 }],
+    ['CPU NaN', { cpuUsagePercent: Number.NaN }],
+    ['negative memory', { memoryUsedMb: -1 }],
+    ['infinite memory', { memoryUsedMb: Number.POSITIVE_INFINITY }],
+    ['negative disk', { diskIoMBps: -1 }],
+    ['network NaN', { networkIoMBps: Number.NaN }],
+    ['zero duration', { durationSeconds: 0 }],
+    ['negative duration', { durationSeconds: -1 }],
+    ['missing duration', { durationSeconds: undefined }],
+  ])('rejects %s', (_caseName, override) => {
+    expect(() =>
+      service.calculatekWh({
+        cpuUsagePercent: 50,
+        memoryUsedMb: 1024,
+        durationSeconds: 60,
+        ...override,
+      } as any),
+    ).toThrow();
+  });
+
+  it('rejects energy above the persistence limit', () => {
+    expect(() =>
+      service.calculatekWh({
+        cpuUsagePercent: 100,
+        memoryUsedMb: 0,
+        durationSeconds: 360_000_000,
+      }),
+    ).toThrow('exceeds the metric_collections.energy_kwh limit');
   });
 
   it('deve rejeitar métricas obrigatórias ausentes ou inválidas', () => {
