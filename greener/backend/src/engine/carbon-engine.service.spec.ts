@@ -71,6 +71,60 @@ describe('CarbonEngineService', () => {
     expect(secondResult.co2e_kg).toBe('0.20000000000');
   });
 
+  it('preserves documented precision and rounds intensity before calculating', () => {
+    const { service } = createService();
+    const energyKwh = 1.23456789;
+    const intensity = 85.123456789;
+    const appliedIntensity = 85.12345679;
+    const expectedGrams = energyKwh * appliedIntensity;
+
+    const result = service.calculateEmission(energyKwh, intensity);
+
+    expect(result.intensityGco2ePerKwh).toBe('85.12345679');
+    expect(Number(result.emissionGrams)).toBeCloseTo(expectedGrams, 8);
+    expect(Number(result.emissionKilograms)).toBeCloseTo(
+      expectedGrams / 1000,
+      11,
+    );
+    expect(result.emissionGrams).toMatch(/^\d+\.\d{8}$/);
+    expect(result.emissionKilograms).toMatch(/^\d+\.\d{11}$/);
+  });
+
+  it('calculates zero energy and intensity', () => {
+    const { service } = createService();
+
+    expect(service.calculateEmission(0, 0)).toEqual({
+      intensityGco2ePerKwh: '0.00000000',
+      emissionGrams: '0.00000000',
+      emissionKilograms: '0.00000000000',
+    });
+  });
+
+  it.each([
+    ['null energy', null, 400],
+    ['undefined energy', undefined, 400],
+    ['infinite energy', Number.POSITIVE_INFINITY, 400],
+    ['negative intensity', 0.5, -1],
+    ['infinite intensity', 0.5, Number.POSITIVE_INFINITY],
+  ])('rejects %s', (_caseName, energy, intensity) => {
+    const { service } = createService();
+
+    expect(() =>
+      service.calculateEmission(energy as any, intensity as any),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects values above persistence limits', () => {
+    const { service } = createService();
+
+    expect(() => service.calculateEmission(1_000_000_000_000, 1)).toThrow(
+      RangeError,
+    );
+    expect(() => service.calculateEmission(1, 1_000_000_000_000)).toThrow(
+      RangeError,
+    );
+  });
+
   it('informa quando a coleta não existe sem tentar salvá-la', async () => {
     const { repository, service } = createService();
     repository.findOneBy.mockResolvedValue(null);
@@ -78,6 +132,20 @@ describe('CarbonEngineService', () => {
     await expect(
       service.reprocessCollection(collection.idCollections),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(repository.save).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['energy', { energy_kwh: null }],
+    ['carbon intensity', { carbon_intensity_gco2e_per_kwh: null }],
+    ['fallback flag', { carbon_intensity_fallback: null }],
+  ])('rejects reprocessing without persisted %s', async (_caseName, override) => {
+    const { repository, service } = createService();
+    repository.findOneBy.mockResolvedValue({ ...collection, ...override });
+
+    await expect(
+      service.reprocessCollection(collection.idCollections),
+    ).rejects.toBeInstanceOf(RangeError);
     expect(repository.save).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { of } from 'rxjs';
+import { AxiosError } from 'axios';
+import { of, throwError } from 'rxjs';
+import {
+  AggregatorHttpError,
+  AggregatorTimeoutError,
+} from './aggregator.errors';
 import { AggregatorClientService } from './aggregator-client.service';
 
 describe('AggregatorClientService', () => {
@@ -49,5 +54,29 @@ describe('AggregatorClientService', () => {
       isComplete: false,
       services: [{ externalId: 'billing-api' }],
     });
+  });
+
+  it('converts a timeout into an AggregatorTimeoutError', async () => {
+    httpService.get.mockReturnValueOnce(
+      throwError(() => new AxiosError('timeout', 'ECONNABORTED')),
+    );
+
+    await expect(client.fetchDiscoveredServices()).rejects.toBeInstanceOf(
+      AggregatorTimeoutError,
+    );
+  });
+
+  it('converts an HTTP failure into an AggregatorHttpError', async () => {
+    httpService.get.mockReturnValueOnce(
+      throwError(() =>
+        Object.assign(new AxiosError('server failure'), {
+          response: { status: 503 },
+        }),
+      ),
+    );
+
+    await expect(client.fetchDiscoveredServices()).rejects.toBeInstanceOf(
+      AggregatorHttpError,
+    );
   });
 });

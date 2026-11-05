@@ -269,6 +269,32 @@ describe('MetricsService', () => {
     loggerError.mockRestore();
   });
 
+  it.each([
+    ['null CPU', { cpu_percent: null }],
+    ['null memory', { memory_gb: null }],
+    ['null disk', { disk_gb: null }],
+    ['null network', { network_gb: null }],
+  ])('marks %s as NO_METRICS without persisting it', async (_caseName, override) => {
+    aggregatorClient.fetchMetrics.mockResolvedValue({
+      collection_interval_seconds: 27,
+      metrics: {
+        cpu_percent: 62.67,
+        memory_gb: 3.17,
+        disk_gb: 19.26,
+        network_gb: 0.45,
+        ...override,
+      },
+    });
+
+    await metricsService.collectCycle();
+
+    expect(collections.save).not.toHaveBeenCalled();
+    expect(services.update).toHaveBeenCalledWith(
+      { idServices: service.idServices },
+      { status: ServiceStatus.NO_METRICS },
+    );
+  });
+
   it('skips active services without a discovered metrics endpoint', async () => {
     services.find.mockResolvedValue([{ ...service, endpoint: null }]);
 
