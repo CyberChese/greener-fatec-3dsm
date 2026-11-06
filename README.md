@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
-> **Versão atual:** Sprint 2 — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
+> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
 
 ---
 
@@ -38,14 +38,7 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 - Testes unitários com Jest para coleta, descoberta, autenticação, cálculo ambiental e integrações HTTP simuladas.
 - Documentação interativa Swagger em `/api/docs`.
 
-### Previstas
-
-| Funcionalidade | Sprint |
-|---|---|
-| Configuração do intervalo de coleta pela Área do Administrador | 2 |
-| Ranking e comparação entre serviços | 3 |
-
-Distribuição completa no [plano de entregas](greener/docs/plano-de-entregas.md).
+Distribuição das entregas no [plano de entregas](greener/docs/plano-de-entregas.md).
 
 ---
 
@@ -152,7 +145,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    cd greener-fatec-3dsm
    ```
 
-2. **Criar o arquivo de variáveis de ambiente** a partir do modelo. Configure `POSTGRES_PASSWORD` e gere `JWT_SECRET` com pelo menos 32 bytes aleatórios antes de iniciar o backend:
+2. **Criar o arquivo de variáveis de ambiente** a partir do modelo. Configure `POSTGRES_PASSWORD`, informe `CARBON_INTENSITY_FALLBACK_G_PER_KWH` com o fator aprovado para o ambiente e gere `JWT_SECRET` com pelo menos 32 bytes aleatórios antes de iniciar o backend:
    ```bash
    cp .env.example .env
    ```
@@ -179,8 +172,8 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    |---|---|
    | Frontend | <http://localhost:3000> |
    | API | <http://localhost:3001/api> |
-| Swagger UI | <http://localhost:3001/api/docs> |
-| OpenAPI JSON | <http://localhost:3001/api/docs/openapi.json> |
+   | Swagger UI | <http://localhost:3001/api/docs> |
+   | OpenAPI JSON | <http://localhost:3001/api/docs/openapi.json> |
    | PostgreSQL | `localhost:5432` |
 
 7. **Encerrar:**
@@ -234,7 +227,7 @@ O arquivo `.env` não é versionado (está no `.gitignore`).
 * O primeiro ciclo começa `METRICS_COLLECTION_INTERVAL_SECONDS` após a inicialização do backend, e cada ciclo seguinte começa esse mesmo tempo depois do término do anterior, sem sobreposição.
 * Para cada serviço com endpoint de métricas, o coletor chama `GET {AGGREGATOR_API_URL}{metrics_path}`.
 * Resposta válida grava a coleta e define `ACTIVE`; resposta sem métricas válidas define `NO_METRICS`; timeout, falha de conexão, HTTP 404 ou HTTP 500 define `UNAVAILABLE`. As transições não apagam o histórico.
-* A descoberta de serviços é executada na inicialização do backend (a execução periódica está prevista para a Sprint 2).
+* A descoberta de serviços é executada na inicialização do backend.
 
 Mapeamento dos campos do Agregador:
 
@@ -267,7 +260,7 @@ A documentação interativa está disponível em <http://localhost:3001/api/docs
 
 As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
-Parâmetros, respostas, códigos de erro e endpoints planejados: [`greener/docs/api.md`](greener/docs/api.md).
+Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/api.md).
 
 ---
 
