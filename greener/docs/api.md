@@ -1,13 +1,13 @@
 # API REST do GreenER
 
-Documentação dos endpoints **implementados** no backend NestJS na versão da Sprint 1.
+Documentação dos endpoints **implementados** no backend NestJS na versão da Sprint 2.
 Endpoints ainda não implementados aparecem separadamente em [Endpoints planejados](#endpoints-planejados).
 
 - **URL base (Docker):** `http://localhost:3001/api`
 - **Prefixo global:** todas as rotas começam com `/api` (`app.setGlobalPrefix('api')` em [`main.ts`](../backend/src/main.ts)).
 - **Formato:** JSON.
 - **Validação:** `ValidationPipe` global com `whitelist`, `forbidNonWhitelisted` e `transform`. Campos não previstos no DTO geram `400`.
-- **Swagger:** ainda não configurado (previsto para a Sprint 2).
+- **Swagger:** documentação interativa em <http://localhost:3001/api/docs> e especificação OpenAPI em <http://localhost:3001/api/docs/openapi.json>.
 
 ---
 
