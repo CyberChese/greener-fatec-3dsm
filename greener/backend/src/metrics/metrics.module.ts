@@ -5,11 +5,15 @@ import { Service } from '../entities/service.entity';
 import { AggregatorModule } from '../modules/aggregator/aggregator.module';
 import { MetricsController, ServiceMetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
+import { EngineModule } from '../engine/engine.module';
+import { CarbonIntensityModule } from '../modules/carbon-intensity/carbon-intensity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Service, MetricCollection]),
     AggregatorModule,
+    EngineModule,
+    CarbonIntensityModule,
   ],
   controllers: [MetricsController, ServiceMetricsController],
   providers: [MetricsService],

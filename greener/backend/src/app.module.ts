@@ -7,12 +7,14 @@ import { ServicesModule } from './services/services.module';
 import { AuthModule } from './auth/auth.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { AggregatorModule } from './modules/aggregator/aggregator.module';
+import { validateEnvironment } from './config/configuration';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../.env'],
+      validate: validateEnvironment,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

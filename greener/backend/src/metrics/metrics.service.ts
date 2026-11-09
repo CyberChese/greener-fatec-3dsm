@@ -25,8 +25,23 @@ import {
   AggregatorUnavailableError,
 } from '../modules/aggregator/aggregator.errors';
 
+import { EnergyEngineService } from '../engine/energy-engine.service';
+import { CarbonEngineService } from '../engine/carbon-engine.service';
+import { CarbonIntensityClientService } from '../modules/carbon-intensity/carbon-intensity-client.service';
+
 const DEFAULT_COLLECTION_INTERVAL_SECONDS = 30;
+const HTTP_NOT_FOUND = 404;
 const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
+
+export interface MetricsSummary {
+  total_energy_kwh: number;
+  total_co2e_kg: number;
+  services_count: {
+    active: number;
+    unavailable: number;
+    no_metrics: number;
+  };
+}
 
 interface AggregatorMetrics {
   cpu_percent: number;
@@ -67,8 +82,9 @@ function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
 
   if (
     typeof collectionIntervalSeconds !== 'number' ||
-    !Number.isInteger(collectionIntervalSeconds) ||
-    collectionIntervalSeconds < 0 ||
+    !Number.isSafeInteger(collectionIntervalSeconds) ||
+    collectionIntervalSeconds <= 0 ||
+    collectionIntervalSeconds > MAX_INTERVAL_SECONDS ||
     !isNonNegativeNumber(cpu_percent) ||
     cpu_percent > 100 ||
     !isNonNegativeNumber(memory_gb) ||
@@ -89,6 +105,32 @@ function parseMetricsResponse(value: unknown): AggregatorMetricsResponse {
       network_gb,
     },
   };
+}
+
+/**
+ * Regra de estado persistido para falhas ao buscar as métricas de um serviço.
+ *
+ * - HTTP 404: o Agregador respondeu, mas informa que o serviço foi removido ou
+ *   não tem métricas (OpenAPI). O serviço é alcançável, portanto não fica
+ *   `UNAVAILABLE`: passa a `NO_METRICS`.
+ * - Timeout, falha de conexão ou HTTP 5xx/outros: o Agregador não entregou
+ *   uma resposta utilizável. O serviço passa a `UNAVAILABLE`.
+ *
+ * Em ambos os casos o histórico é preservado e o serviço volta a `ACTIVE` no
+ * primeiro ciclo seguinte que receber métricas válidas.
+ */
+function statusForFetchError(error: unknown): ServiceStatus | undefined {
+  if (error instanceof AggregatorHttpError && error.statusCode === HTTP_NOT_FOUND) {
+    return ServiceStatus.NO_METRICS;
+  }
+  if (
+    error instanceof AggregatorHttpError ||
+    error instanceof AggregatorTimeoutError ||
+    error instanceof AggregatorUnavailableError
+  ) {
+    return ServiceStatus.UNAVAILABLE;
+  }
+  return undefined;
 }
 
 function parseDateParameter(value: string | undefined, name: string): Date | undefined {
@@ -115,8 +157,11 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     private readonly serviceRepository: Repository<Service>,
     @InjectRepository(MetricCollection)
     private readonly collectionRepository: Repository<MetricCollection>,
+    private readonly energyEngineService: EnergyEngineService,
+    private readonly carbonEngineService: CarbonEngineService,
     configService: ConfigService,
     private readonly aggregatorClient: AggregatorClientService,
+    private readonly carbonIntensityClient: CarbonIntensityClientService,
   ) {
     const configuredInterval = configService.get<string>(
       'METRICS_COLLECTION_INTERVAL_SECONDS',
@@ -155,6 +200,52 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  async getSummary(): Promise<MetricsSummary> {
+    const [totals, statusRows] = await Promise.all([
+      this.collectionRepository
+        .createQueryBuilder('collection')
+        .select(
+          'COALESCE(SUM(collection.energy_kwh), 0)',
+          'total_energy_kwh',
+        )
+        .addSelect('COALESCE(SUM(collection.co2e_kg), 0)', 'total_co2e_kg')
+        .getRawOne<{
+          total_energy_kwh: string | number | null;
+          total_co2e_kg: string | number | null;
+        }>(),
+      this.serviceRepository
+        .createQueryBuilder('service')
+        .select('service.status', 'status')
+        .addSelect('COUNT(service.idServices)', 'count')
+        .groupBy('service.status')
+        .getRawMany<{ status: ServiceStatus; count: string | number }>(),
+    ]);
+
+    const servicesCount = {
+      active: 0,
+      unavailable: 0,
+      no_metrics: 0,
+    };
+
+    for (const row of statusRows) {
+      const count = Number(row.count);
+
+      if (row.status === ServiceStatus.ACTIVE) {
+        servicesCount.active = count;
+      } else if (row.status === ServiceStatus.UNAVAILABLE) {
+        servicesCount.unavailable = count;
+      } else if (row.status === ServiceStatus.NO_METRICS) {
+        servicesCount.no_metrics = count;
+      }
+    }
+
+    return {
+      total_energy_kwh: Number(totals?.total_energy_kwh ?? 0),
+      total_co2e_kg: Number(totals?.total_co2e_kg ?? 0),
+      services_count: servicesCount,
+    };
+  }
+
   async collectCycle(): Promise<void> {
     const activeServices = await this.serviceRepository.find({
       where: { status: In(Object.values(ServiceStatus)) },
@@ -172,9 +263,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.collectService(service, service.endpoint);
       } catch (error) {
-        if (error instanceof AggregatorHttpError && error.statusCode === 404) {
+        if (
+          error instanceof AggregatorHttpError &&
+          error.statusCode === HTTP_NOT_FOUND
+        ) {
           this.logger.warn(
-            `Metrics endpoint for service "${service.external_id}" returned HTTP 404; service remains unavailable and will be retried.`,
+            `Metrics endpoint for service "${service.external_id}" returned HTTP 404; service marked as NO_METRICS and will be retried.`,
           );
           continue;
         }
@@ -264,20 +358,32 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         await this.aggregatorClient.fetchMetrics(metricsPath),
       );
     } catch (error) {
-      if (error instanceof MetricsContractError) {
-        await this.updateServiceStatus(service, ServiceStatus.NO_METRICS);
-      } else if (
-        error instanceof AggregatorHttpError ||
-        error instanceof AggregatorTimeoutError ||
-        error instanceof AggregatorUnavailableError
-      ) {
-        await this.updateServiceStatus(service, ServiceStatus.UNAVAILABLE);
+      const status =
+        error instanceof MetricsContractError
+          ? ServiceStatus.NO_METRICS
+          : statusForFetchError(error);
+      if (status) {
+        await this.updateServiceStatus(service, status);
       }
       throw error;
     }
 
     const { metrics } = metricsResponse;
     const timestamp = new Date();
+
+    const energyKwh = this.energyEngineService.calculatekWh({
+      cpuUsagePercent: metrics.cpu_percent,
+      memoryUsedMb: metrics.memory_gb * 1024,
+      // O Agregador informa disco e rede em GB, sem janela para derivar taxas MB/s.
+      durationSeconds: metricsResponse.collection_interval_seconds,
+    });
+    const carbonIntensity = await this.carbonIntensityClient.getIntensity(
+      service.region_code,
+    );
+    const carbonEmission = this.carbonEngineService.calculateEmission(
+      energyKwh,
+      carbonIntensity.intensityGco2ePerKwh,
+    );
 
     await this.collectionRepository.save(
       this.collectionRepository.create({
@@ -287,6 +393,12 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
         memory_usage: String(metrics.memory_gb),
         storage_usage: String(metrics.disk_gb),
         network_io: String(metrics.network_gb),
+        energy_kwh: Number(energyKwh),
+        carbon_intensity_gco2e_per_kwh:
+          carbonEmission.intensityGco2ePerKwh,
+        co2e_g: carbonEmission.emissionGrams,
+        co2e_kg: carbonEmission.emissionKilograms,
+        carbon_intensity_fallback: carbonIntensity.usedFallback,
         timestamp,
       }),
     );

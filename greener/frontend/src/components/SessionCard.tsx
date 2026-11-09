@@ -29,10 +29,12 @@ export function SessionCard({ session }: SessionCardProps) {
         </p>
       </div>
       <dl className="flex flex-col gap-0.5 text-sm text-ink-muted sm:text-right">
-        <div>
-          <dt className="inline">Papel: </dt>
-          <dd className="inline text-ink">{session?.role ?? '—'}</dd>
-        </div>
+        {session?.role && (
+          <div>
+            <dt className="inline">Papel: </dt>
+            <dd className="inline text-ink">{session.role}</dd>
+          </div>
+        )}
         {session?.expiresAt && (
           <div>
             <dt className="inline">Expira em: </dt>

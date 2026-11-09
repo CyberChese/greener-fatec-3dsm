@@ -14,5 +14,5 @@ export function useLoginRedirect(): string {
   ) {
     return state.from
   }
-  return '/config'
+  return '/admin'
 }

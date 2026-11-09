@@ -112,7 +112,7 @@ export function LoginModal() {
         // Clique no fundo escurecido (o alvo é o próprio <dialog>) fecha o modal.
         if (event.target === dialogRef.current) close()
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70"
+      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black"
     >
       <div className="flex flex-col gap-6 p-8">
         <div className="flex items-start gap-4">

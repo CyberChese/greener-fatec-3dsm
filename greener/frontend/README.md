@@ -20,15 +20,18 @@ Sem Docker (apenas para desenvolvimento local):
 
 ```bash
 cd greener/frontend
-npm install
+npm ci
 npm run dev
 ```
+
+Requer Node.js 24.15 ou superior dentro da linha 24 (`^24.15.0`, declarado em `engines`), a mesma versão usada na imagem Docker.
 
 ## Variáveis de ambiente
 
 | Variável | Para que serve | Valor padrão |
 |---|---|---|
 | `VITE_API_URL` | Endereço do backend, acessado pelo **navegador** | `http://localhost:3001/api` |
+| `VITE_DATA_SOURCE` | Seleciona a origem dos dados do dashboard (`api` ou `simulated`) | `api` |
 
 O Vite só expõe ao código as variáveis que começam com `VITE_`, e **tudo o que começa com `VITE_` fica
 visível no navegador**. Nunca coloque senha, chave ou segredo em variável `VITE_`.
@@ -42,22 +45,39 @@ vem do `compose.yaml`, que lê o `.env` da raiz do repositório (veja o `.env.ex
 | `npm run dev` | Servidor de desenvolvimento com hot reload |
 | `npm run build` | Checa os tipos (`tsc -b`) e gera a versão de produção |
 | `npm run lint` | Executa o ESLint |
+| `npm test` | Executa os testes unitários (Vitest) |
 | `npm run preview` | Serve a versão de produção localmente |
 
 Para checar só os tipos use `npx tsc -p tsconfig.app.json --noEmit`.
 O `tsconfig.json` da raiz apenas referencia os demais, então `npx tsc --noEmit` sozinho não verifica nada.
+
+## Testes
+
+Os testes ficam em `tests/` e rodam com o Vitest, no Node 24 da imagem Docker. Pelo Docker (forma oficial), com os containers no ar:
+
+```bash
+docker compose exec greener-frontend npm test
+```
+
+Sem Docker:
+
+```bash
+cd greener/frontend
+npm ci
+npm test
+```
 
 ## Estrutura de pastas
 
 ```
 src/
 ├── components/   # Peças reutilizáveis (AppLayout, LoginModal, SessionCard, StatusBadge...)
-├── pages/        # Telas completas, uma por rota (HomePage, AdminPage, ComparePage...)
+├── pages/        # Telas completas (HomePage, MapPage, AdminPage, NotFoundPage)
 ├── services/     # Comunicação com o backend (http, apiError, session, authApi, jwt)
 ├── hooks/        # Hooks reutilizáveis (useAuth, useLogout, useLoginRedirect...)
 ├── contexts/     # Contexts do React (AuthContext)
 ├── providers/    # AppProviders: roteador + todos os contexts num único ponto
-├── types/        # Tipos TypeScript compartilhados (ex.: ServiceState)
+├── lib/          # Tipos, cálculos, formatação, CSV, mapa e origem dos dados
 ├── styles/       # CSS global e tokens de tema (index.css)
 ├── App.tsx       # Definição das rotas
 └── main.tsx      # Ponto de entrada
@@ -68,22 +88,23 @@ Convenções:
 - Componentes e páginas em `PascalCase.tsx`; hooks em `useAlgo.ts`; serviços e tipos em `camelCase.ts`.
 - Uma página só compõe componentes e chama hooks; a comunicação com a API fica em `services/`.
 - Estado compartilhado entre telas fica em `contexts/` e é registrado em `providers/AppProviders.tsx`.
-- Evite `any`. Tipos dos dados da API ficam em `types/`.
+- Evite `any`. Tipos dos dados da API ficam em `lib/` e nos serviços correspondentes.
 
 ## Rotas
 
 | Rota | Acesso | Tela |
 |---|---|---|
 | `/` | Pública | Observatório |
-| `/comparar` | Pública | Comparação de serviços (ainda sem link no menu) |
+| `/mapa` | Pública | Mapa geográfico |
 | `/login` | Pública | **Modal** de login, aberto sobre o Observatório |
-| `/config` | **Protegida** | Área do Administrador |
+| `/admin` | **Protegida** | Área do Administrador |
+| `/config` | Protegida | Redireciona para `/admin` |
 | qualquer outra | Pública | Página não encontrada |
 
 A consulta ao dashboard é pública. A rota protegida (`ProtectedRoute`) só controla a **navegação na
 interface**: quem barra de verdade é o backend, que valida o JWT em cada rota protegida.
 
-Abrir `/config` sem sessão leva a `/login`; depois do login a pessoa volta para a tela que tentou abrir.
+Abrir `/admin` sem sessão leva a `/login`; depois do login a pessoa volta para a tela que tentou abrir.
 
 ## Chamadas HTTP (Axios)
 
@@ -114,6 +135,16 @@ POST /auth/login   { "email": "...", "password": "..." }
 
 Documentação completa da API em [`docs/api.md`](../docs/api.md).
 
+Principais chamadas usadas pelo frontend:
+
+| Método | Endpoint | Uso |
+|---|---|---|
+| `POST` | `/api/auth/login` | Login administrativo |
+| `GET` | `/api/services` | Serviços, estados e localização |
+| `GET` | `/api/services/:id/history` | Histórico e indicadores ambientais por serviço |
+| `GET` | `/api/metrics/summary` | Totais públicos de energia, CO₂e e serviços |
+| `GET` | `/api/metrics/collection-config` | Intervalo e última coleta |
+
 Como funciona:
 
 - O login é um **modal** (`<dialog>` nativo: foco preso, Esc fecha, fundo inerte), com validação dos campos,
@@ -142,19 +173,44 @@ Os valores foram **estimados a partir dos esboços do Figma** e devem ser confer
 | `brand`, `on-brand` | Verde-limão da marca e a cor do texto sobre ele |
 | `state-ok`, `state-warn`, `state-down`, `state-removed` | Estados dos serviços |
 
-## Acessibilidade da informação (RNF02)
+## Acessibilidade da informação (RNF01)
 
 Os estados dos serviços **nunca dependem só da cor**. O `StatusBadge` combina cor, forma e texto:
 círculo (Ativo), losango (Sem métricas), triângulo (Indisponível) e quadrado (Removido).
 Erros de formulário aparecem como texto (e o campo recebe `aria-invalid`), e o aviso do login usa `role="alert"`.
 Mantenha esse padrão em novos componentes (mapa, tabelas, alertas).
 
-## O que ainda vem
+## Status atual
 
-- Alinhar `src/types/service.ts` aos estados do backend (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`) quando o dashboard passar a consumir `GET /api/services`. Hoje a tela inicial mostra apenas a legenda dos estados.
-- O campo "Papel" da sessão aparece como "—", porque o JWT do backend ainda não inclui o papel do usuário.
+O frontend está integrado ao backend real por padrão. O dashboard exibe serviços, estados, localização,
+energia, CO₂e e intensidade de carbono quando esses dados estão disponíveis. Cards, ranking, comparação e
+popups do mapa usam os valores reais recebidos do backend; o marcador `—` indica ausência de uma medição,
+e não um valor fictício.
 
-- Parâmetros de coleta (RF16) e histórico de coletas (RF10) na Área do Administrador: dependem das rotas
-  protegidas do backend.
-- A barra de status do topo (agregador operacional, última atualização, intervalo, pausar) e o Observatório completo.
-- Testes automatizados do frontend, quando houver um executor de testes configurado.
+O modo `simulated` permanece disponível para demonstrações locais e testes visuais, sem substituir o login real.
+
+## Observatório e origem dos dados
+
+A tela inicial (`/`) é o painel público do Observatório: indicadores, filtros, mapa-múndi, evolução, ranking, serviços
+(cartões ou tabela), comparação e eventos. A Área do Administrador (`/admin`, protegida) tem a sessão, a configuração do
+monitoramento (RF16) e o histórico de coletas com exportação em CSV (RF10).
+
+Origem dos dados, escolhida por `VITE_DATA_SOURCE`:
+
+| Valor | O que mostra |
+|---|---|
+| `api` (padrão) | Serviços, estados e localização reais, lidos de `GET /api/services`. Energia, CO₂e e intensidade de carbono por serviço vêm do histórico de coletas; quando não há medição disponível, aparece `—`. O resumo público vem de `GET /api/metrics/summary`. |
+| `simulated` | Simulação no navegador (demonstração), com coleta acelerada: cada coleta equivale a 15 min simulados. |
+
+O login é sempre o real (`POST /api/auth/login`). O que o backend precisa expor para o painel mostrar tudo com dados reais
+está em `greener/docs/frontend-dados-simulados.md`.
+
+```
+src/lib/         regras puras: cálculos, formatação, CSV, validação de configurações, tipos, origem dos dados
+src/services/    backend-services.ts (backend real), simulação (metrics-aggregator, carbon-intensity, collector), http.ts, authApi.ts
+src/hooks/       use-metrics (coleta periódica), useAuth, useSettings, useMetricsContext
+src/components/  dashboard/ (painel) e admin/ (configuração e histórico)
+tests/           testes unitários (npm test)
+```
+
+Scripts: `npm run lint`, `npm run build`, `npm test`.

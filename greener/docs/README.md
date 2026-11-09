@@ -8,9 +8,11 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | Documento | Conteúdo |
 |---|---|
 | [Plano de entregas](plano-de-entregas.md) | Distribuição dos critérios da rubrica nas três sprints, responsáveis, evidências, pendências e participação dos integrantes |
+| [Processo de contribuição e entrega](processo-contribuicao.md) | Checklist de PR, revisão técnica, fluxo de branches, evidências de proteção/tags e registro de daily/escopo |
 | [Sprint 1](sprints/sprint-1.md) | Objetivo, backlog, histórias e critérios de aceite, DoD, situação das tasks, Sprint Review e retrospectiva |
-| [Sprint 2](sprints/sprint-2.md) | Planejamento previsto e pendências herdadas |
-| [Sprint 3](sprints/sprint-3.md) | Planejamento previsto |
+| [Sprint 2](sprints/sprint-2.md) | Objetivo, entregas realizadas, pendências herdadas e situação da sprint |
+| [Sprint 3](sprints/sprint-3.md) | Planejamento da Sprint 3 |
+| [Registros de decisões da Sprint 2](atas/decisoes-sprint-2.md) | Decisões de escopo já registradas, com fonte e contexto |
 | [Kanban, User Stories e Tasks](https://github.com/orgs/CyberChese/projects/2/views/3) | Quadro do GitHub Projects com o acompanhamento das atividades |
 
 ## 🏗️ Técnico
@@ -18,9 +20,10 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | Documento | Conteúdo |
 |---|---|
 | [Arquitetura](arquitetura.md) | Componentes, responsabilidades, fluxo de dados e decisões arquiteturais |
-| [API](api.md) | Endpoints implementados, parâmetros, respostas e endpoints planejados |
-| [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e (Sprint 2) |
+| [API](api.md) | Endpoints implementados, parâmetros, respostas e códigos de erro |
+| [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e |
 | [Contrato do Agregador](contrato-agregador.md) | Contrato da API de Métricas da UniLaunch usado pelo backend |
+| [Contrato da API de Intensidade de Carbono](contrato-intensidade-carbono.md) | Contrato oficial da consulta regional, unidade, validação e fallback |
 
 ## 🎨 Design e Usabilidade
 

@@ -88,7 +88,8 @@ Todas as chaves primárias são UUID. O DER está em [`diagramas/DER_GreenER.png
 |---|---|
 | Resposta válida | Grava a coleta e muda o estado para `ACTIVE` |
 | Resposta fora do contrato ou serviço sem endpoint | Muda o estado para `NO_METRICS` |
-| Timeout, falha de conexão, HTTP 404 ou 500 | Muda o estado para `UNAVAILABLE` |
+| HTTP 404 (serviço removido ou sem métricas, segundo a OpenAPI) | Muda o estado para `NO_METRICS` |
+| Timeout, falha de conexão ou HTTP 500 | Muda o estado para `UNAVAILABLE` |
 
 5. A falha de um serviço é registrada em log e **não interrompe** a coleta dos demais.
 

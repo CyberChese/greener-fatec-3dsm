@@ -337,7 +337,7 @@ docker compose exec greener-backend npm run seed
 | Verificação | Resultado esperado |
 |---|---|
 | Abrir `http://localhost:3000` | Observatório com intervalo de coleta e última coleta |
-| Entrar com `teste@greener.com` / `senha123` | Acesso à Área do Administrador |
+| Entrar com o usuário local configurado no `.env` | Acesso à Área do Administrador |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos com seus estados |
 | `GET http://localhost:3001/api/services/{id}/history` | Coletas gravadas do serviço |
 | `GET http://localhost:3001/api/auth/profile` sem token | HTTP `401` |
@@ -420,5 +420,4 @@ Alterações feitas nos critérios de aceite durante a sprint para refletir deci
 ---
 
 **GreenER — Plataforma para Estimativa do Impacto Ambiental de Aplicações de Software**
-
 

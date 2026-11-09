@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
-> **Versão atual:** Sprint 1 (tag `sprint-1`) — fundação, autenticação, descoberta de serviços e coleta de métricas.
+> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
 
 ---
 
@@ -25,7 +25,7 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 
 ## ✅ Funcionalidades
 
-### Implementadas (Sprint 1)
+### Implementadas (Sprint 2)
 
 - Ambiente completo com Docker Compose: frontend, backend e PostgreSQL.
 - Esquema do banco (`users`, `services`, `metric_collections`) criado por migrações TypeORM.
@@ -35,21 +35,10 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 - Coleta periódica de métricas de CPU, memória, armazenamento e rede, com histórico consultável por período.
 - Tratamento de falhas: serviços inalcançáveis ficam `UNAVAILABLE`, serviços sem métricas válidas ficam `NO_METRICS`, e a falha de um serviço não interrompe a coleta dos demais.
 - Frontend com Observatório público (intervalo e última coleta), modal de login e Área do Administrador protegida.
-- 20 testes unitários (coletor, descoberta, cliente do Agregador e autenticação).
+- Testes unitários com Jest para coleta, descoberta, autenticação, cálculo ambiental e integrações HTTP simuladas.
+- Documentação interativa Swagger em `/api/docs`.
 
-### Previstas
-
-| Funcionalidade | Sprint |
-|---|---|
-| Descoberta periódica de serviços | 2 |
-| Integração com o serviço de intensidade de carbono | 2 |
-| Cálculo de energia (kWh) e CO₂e | 2 |
-| Dashboard com mapa, cartões e tabela de serviços | 2 |
-| Configuração do intervalo de coleta pela Área do Administrador | 2 |
-| Swagger em `/api/docs` | 2 |
-| Ranking e comparação entre serviços | 3 |
-
-Distribuição completa no [plano de entregas](greener/docs/plano-de-entregas.md).
+Distribuição das entregas no [plano de entregas](greener/docs/plano-de-entregas.md).
 
 ---
 
@@ -109,8 +98,9 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | **Backend** | NestJS 12 + TypeScript | API REST organizada em módulos, controllers e services |
 | **Banco de Dados** | PostgreSQL 15 + TypeORM | Persistência com migrações versionadas |
 | **Autenticação** | JWT (Passport) + bcrypt | Proteção das rotas administrativas |
-| **Testes** | Jest | Testes unitários do backend |
+| **Testes** | Jest (backend) e Vitest (frontend) | Testes unitários executáveis dentro dos containers |
 | **Containerização** | Docker & Docker Compose | Execução unificada dos três serviços |
+| **Runtime** | Node.js 24 LTS (`^24.15.0`) | Imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` e CI |
 
 ---
 
@@ -155,7 +145,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    cd greener-fatec-3dsm
    ```
 
-2. **Criar o arquivo de variáveis de ambiente** a partir do modelo (troque `POSTGRES_PASSWORD` e `JWT_SECRET`):
+2. **Criar o arquivo de variáveis de ambiente** a partir do modelo. Configure `POSTGRES_PASSWORD`, informe `CARBON_INTENSITY_FALLBACK_G_PER_KWH` com o fator aprovado para o ambiente e gere `JWT_SECRET` com pelo menos 32 bytes aleatórios antes de iniciar o backend:
    ```bash
    cp .env.example .env
    ```
@@ -170,11 +160,11 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    docker compose exec greener-backend npm run migration:run
    ```
 
-5. **Criar o usuário de teste** para o login:
+5. **Opcionalmente, criar um usuário local** para o login: no `.env`, habilite `LOCAL_DEVELOPMENT_SEED_ENABLED=true` e informe `LOCAL_DEVELOPMENT_SEED_EMAIL` e `LOCAL_DEVELOPMENT_SEED_PASSWORD` com valores próprios. O seed só funciona com `NODE_ENV=development`.
    ```bash
    docker compose exec greener-backend npm run seed
    ```
-   Credenciais criadas: `teste@greener.com` / `senha123` (somente para desenvolvimento).
+   As credenciais são lidas somente pelo backend e nunca são impressas pelo seed.
 
 6. **Acessar:**
 
@@ -182,6 +172,8 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    |---|---|
    | Frontend | <http://localhost:3000> |
    | API | <http://localhost:3001/api> |
+   | Swagger UI | <http://localhost:3001/api/docs> |
+   | OpenAPI JSON | <http://localhost:3001/api/docs/openapi.json> |
    | PostgreSQL | `localhost:5432` |
 
 7. **Encerrar:**
@@ -195,9 +187,11 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | Verificação | Resultado esperado |
 |---|---|
 | Abrir <http://localhost:3000> | Observatório com o intervalo de coleta e a última coleta registrada |
-| Clicar em "Área do Administrador" e entrar com o usuário de teste | Acesso à Área do Administrador com a sessão autenticada |
+| Clicar em "Área do Administrador" e entrar com o usuário local configurado | Acesso à Área do Administrador com a sessão autenticada |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
 | `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
+| `GET http://localhost:3001/api/metrics/summary` | Totais de energia, CO₂e e serviços por estado |
+| Abrir <http://localhost:3001/api/docs> | Swagger UI com rotas, parâmetros, schemas e respostas |
 | `GET http://localhost:3001/api/auth/profile` sem token | HTTP `401` |
 
 ---
@@ -210,12 +204,19 @@ Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 |---|---|---|
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Credenciais e nome do banco | `greener_user`, `troque_esta_senha_local`, `greener_db` |
 | `POSTGRES_HOST`, `POSTGRES_PORT` | Endereço do banco visto pelo backend | `greener-postgres`, `5432` |
-| `JWT_SECRET` | Chave de assinatura do JWT (troque por um valor próprio) | `seu_segredo_jwt_aqui` |
+| `JWT_SECRET` | Chave aleatória de pelo menos 32 bytes para assinatura do JWT; obrigatória fora de testes | Definida localmente; nunca no frontend |
 | `JWT_EXPIRATION` | Validade do token | `1d` |
+| `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | Tentativas de login por origem ou identidade (padrão `5`) | `5` |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Janela do limite de login em segundos (padrão `60`) | `60` |
+| `LOCAL_DEVELOPMENT_SEED_ENABLED` | Habilita explicitamente o seed local (exige `NODE_ENV=development`) | `false` |
+| `LOCAL_DEVELOPMENT_SEED_EMAIL`, `LOCAL_DEVELOPMENT_SEED_PASSWORD` | Credenciais locais fornecidas ao seed | Vazias no modelo |
 | `AGGREGATOR_API_URL` | URL base do Agregador de Métricas | `https://metrics.unilaunch.org` |
 | `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
 | `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
 | `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (s) | `30` |
+| `CARBON_INTENSITY_API_URL` | URL base da API de intensidade de carbono | `https://carbon.unilaunch.org` |
+| `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da API de intensidade de carbono (ms) | `5000` |
+| `CARBON_INTENSITY_FALLBACK_G_PER_KWH` | Fator de fallback aprovado, em gCO₂e/kWh | Definido localmente |
 | `VITE_API_URL` | Endereço da API acessado pelo **navegador** | `http://localhost:3001/api` |
 | `FRONTEND_ORIGIN` | Origem permitida pelo CORS do backend | `http://localhost:3000` |
 
@@ -226,7 +227,7 @@ O arquivo `.env` não é versionado (está no `.gitignore`).
 * O primeiro ciclo começa `METRICS_COLLECTION_INTERVAL_SECONDS` após a inicialização do backend, e cada ciclo seguinte começa esse mesmo tempo depois do término do anterior, sem sobreposição.
 * Para cada serviço com endpoint de métricas, o coletor chama `GET {AGGREGATOR_API_URL}{metrics_path}`.
 * Resposta válida grava a coleta e define `ACTIVE`; resposta sem métricas válidas define `NO_METRICS`; timeout, falha de conexão, HTTP 404 ou HTTP 500 define `UNAVAILABLE`. As transições não apagam o histórico.
-* A descoberta de serviços é executada na inicialização do backend (a execução periódica está prevista para a Sprint 2).
+* A descoberta de serviços é executada na inicialização do backend.
 
 Mapeamento dos campos do Agregador:
 
@@ -243,7 +244,7 @@ Contrato completo: [`greener/docs/contrato-agregador.md`](greener/docs/contrato-
 
 ## 🔌 Endpoints da API
 
-Rotas implementadas na Sprint 1 (prefixo `/api`):
+Rotas implementadas na Sprint 2 (prefixo `/api`):
 
 | Método | Endpoint | Acesso | Descrição |
 | :--- | :--- | :--- | :--- |
@@ -253,10 +254,13 @@ Rotas implementadas na Sprint 1 (prefixo `/api`):
 | `GET` | `/api/services` | Público | Serviços monitorados e seus estados (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`) |
 | `GET` | `/api/services/:id/history?from=&to=` | Público | Histórico de coletas do serviço (datas ISO-8601, limites inclusivos) |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta |
+| `GET` | `/api/metrics/summary` | Público | Totais de energia, CO₂e e contagem por estado |
+
+A documentação interativa está disponível em <http://localhost:3001/api/docs>. Ela descreve os parâmetros, schemas, respostas de sucesso e erros. Use o botão **Authorize** para informar um JWT nas rotas protegidas.
 
 As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
-Parâmetros, respostas, códigos de erro e endpoints planejados: [`greener/docs/api.md`](greener/docs/api.md).
+Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/api.md).
 
 ---
 
@@ -264,25 +268,33 @@ Parâmetros, respostas, códigos de erro e endpoints planejados: [`greener/docs/
 
 * **`users`**: id (UUID), nome, e-mail (único), hash da senha (bcrypt), data de criação.
 * **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
-* **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, instante da coleta.
+* **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, energia em kWh, intensidade de carbono, CO₂e em gramas e quilogramas, fallback utilizado e instante da coleta.
 
-Os campos de estimativa de energia e CO₂e serão adicionados na Sprint 2. DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).
+O cálculo de energia usa CPU, memória e duração: `energy_kwh = potência_total × duração_segundos ÷ 3.600.000`. A emissão usa `co2e_g = energy_kwh × intensidade_gco2e_por_kwh` e `co2e_kg = co2e_g ÷ 1.000`. As fórmulas detalhadas estão em [`greener/docs/calculos.md`](greener/docs/calculos.md). DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).
 
 ---
 
 ## 🧪 Testes
 
-O backend tem 20 testes unitários (Jest) que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador e a autenticação. Os testes substituem o banco e o Agregador por *doubles*.
+O backend possui testes unitários com Jest que cobrem a coleta de métricas e as transições de estado, a descoberta de serviços, o cliente do Agregador, a autenticação e o limite de tentativas, a configuração, os motores de energia e carbono e o fallback de intensidade. Os testes substituem o banco e as APIs externas por *doubles*. O frontend tem testes unitários com Vitest, em `greener/frontend/tests`.
 
-Os testes exigem **Node.js 24.9 ou superior**:
+Os testes exigem **Node.js 24.15 ou superior**, porque o NestJS 12 é distribuído como ESM. A política de runtime do projeto é **Node 24 LTS** em todos os lugares: imagens Docker (`node:24-alpine`), campo `engines` dos dois `package.json` (`^24.15.0`) e CI.
+
+Pelo Docker (forma oficial), com os containers no ar:
 
 ```bash
-cd greener/backend
-npm install
-npm test
+docker compose exec greener-backend npm test
+docker compose exec greener-frontend npm test
 ```
 
-> **Limitação conhecida:** a imagem Docker do backend usa Node 22, por isso `npm test` ainda não roda dentro do container. A atualização da imagem está prevista para a Sprint 2.
+Sem Docker:
+
+```bash
+cd greener/backend && npm ci && npm test
+cd ../frontend && npm ci && npm test
+```
+
+> Depois de trocar a versão do Node das imagens, suba de novo com `docker compose up --build -d --renew-anon-volumes`, para o `node_modules` do container ser recriado.
 
 ---
 

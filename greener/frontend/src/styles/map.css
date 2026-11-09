@@ -1,0 +1,28 @@
+/* Mapa geográfico (Leaflet): marcadores e popup no tema escuro. */
+.geo-marker { background: transparent; border: 0; }
+.geo-marker__dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: var(--c);
+  color: #09090b;
+  font: 700 12px/1 system-ui, sans-serif;
+  border: 2px solid rgba(9, 9, 11, 0.85);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent);
+}
+.geo-map.leaflet-container { background: #09090b; }
+/* Escurece só o mapa-base; marcadores e popups ficam fora do filtro. */
+.geo-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.5); }
+.geo-map .leaflet-popup-content-wrapper,
+.geo-map .leaflet-popup-tip { background: #18181b; color: #f4f4f5; border: 1px solid rgba(255, 255, 255, 0.1); }
+.geo-map .leaflet-popup-content { margin: 12px 14px; font-size: 13px; }
+.geo-map .leaflet-container a.leaflet-popup-close-button { color: #a1a1aa; }
+.geo-popup { display: flex; max-height: 260px; flex-direction: column; gap: 14px; overflow-y: auto; }
+.geo-popup__item { display: flex; flex-direction: column; gap: 6px; }
+.geo-popup__item + .geo-popup__item { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; }
+.geo-popup__title { margin: 0; font-size: 14px; font-weight: 600; }
+.geo-popup__list { display: grid; gap: 4px; margin: 0; }
+.geo-popup__list dt { color: #a1a1aa; font-size: 11px; }
+.geo-popup__list dd { margin: 0; }
