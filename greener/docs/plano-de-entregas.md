@@ -79,7 +79,7 @@ Quadro do projeto: [GitHub Projects](https://github.com/orgs/CyberChese/projects
 | Persistir o `region_code` do Agregador, necessário para a intensidade de carbono | DW02 | Concluída na Sprint 2 | Manter cobertura de testes e documentação |
 | Atualizar a imagem do backend para Node 24, permitindo rodar os testes dentro do container | DW07, TP04 | Concluída na Sprint 2 | Manter Node 24 como runtime oficial |
 | Criar a camada de repositories e separar responsabilidades do `MetricsService` | DW03, TP01 | Parcial: ainda há responsabilidades concentradas nos services | Planejar refatoração futura |
-| Remover código sem uso (`modules/coletas.*`, `services/entities/service.entity.ts`) | TP03 | Pendente: os arquivos ainda existem no backend | Planejar limpeza técnica |
+| Remover código sem uso (`modules/coletas.*`, `services/entities/service.entity.ts`) | TP03 | Concluído: arquivos removidos; nenhum era importado (build, lint e testes verificados) | Nenhuma |
 | Configurar Swagger em `/api/docs` | DW07 | Concluída na Sprint 2 pela TASK-031 | Manter documentação sincronizada com as rotas |
 
 ### Integrantes e contribuições — Sprint 1
