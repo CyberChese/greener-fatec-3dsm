@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
-> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
+> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, exibição de energia e CO₂e, fallback de carbono e documentação Swagger.
 
 ---
 
@@ -260,6 +260,13 @@ A documentação interativa está disponível em <http://localhost:3001/api/docs
 
 As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
+As seguintes rotas administrativas ainda não estão implementadas e permanecem planejadas:
+
+| Método | Endpoint | Acesso | Finalidade |
+| :--- | :--- | :--- | :--- |
+| `PUT` | `/api/config/interval` | JWT | Alterar o intervalo de coleta |
+| `POST` | `/api/services/refresh` | JWT | Forçar a redescoberta dos serviços |
+
 Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/api.md).
 
 ---
@@ -267,7 +274,7 @@ Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/
 ## 🗄️ Modelo de Dados
 
 * **`users`**: id (UUID), nome, e-mail (único), hash da senha (bcrypt), data de criação.
-* **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
+* **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, `region_code` opcional, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
 * **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, energia em kWh, intensidade de carbono, CO₂e em gramas e quilogramas, fallback utilizado e instante da coleta.
 
 O cálculo de energia usa CPU, memória e duração: `energy_kwh = potência_total × duração_segundos ÷ 3.600.000`. A emissão usa `co2e_g = energy_kwh × intensidade_gco2e_por_kwh` e `co2e_kg = co2e_g ÷ 1.000`. As fórmulas detalhadas estão em [`greener/docs/calculos.md`](greener/docs/calculos.md). DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).

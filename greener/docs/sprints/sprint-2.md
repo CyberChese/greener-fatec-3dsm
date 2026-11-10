@@ -1,5 +1,7 @@
 # 🌱 GreenER — Sprint 2: Estimativas Ambientais e Dashboard
 
+> **Situação:** ✅ Concluída — a TASK-040 foi integrada à `dev`, incluindo a exibição visual de energia e CO₂e por serviço.
+
 Sprint dedicada a transformar as métricas coletadas em estimativas ambientais de consumo energético e emissões de CO₂e. O trabalho contempla a integração com a API de intensidade de carbono por região, o uso de fallback configurável, a persistência dos dados ambientais, a criação de indicadores públicos e a evolução do dashboard com cards, mapa, comparação e atualização dinâmica. Também foram fortalecidos os testes, a documentação Swagger e README, a compatibilidade do ambiente Docker, a segurança e o fluxo de integração.
 
 Acompanhamento, responsáveis e status das tasks estão no [GitHub Projects](https://github.com/orgs/CyberChese/projects/2/views/3).
