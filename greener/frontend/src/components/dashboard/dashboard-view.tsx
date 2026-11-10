@@ -17,6 +17,7 @@ import { ExecutiveHeader, ExecutiveHeaderView } from './executive-header'
 import { DashboardSkeleton, EmptyServices } from './loading-state'
 import { ServicesSection } from './services-section'
 import { WorldMap } from './world-map'
+import { IMPACT_WINDOW_LABEL } from '@/services/backend-services'
 import { summaryFromSnapshots } from '@/services/summary'
 
 const EMPTY_FILTERS: DashboardFilters = {
@@ -58,9 +59,11 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
   const [highlightId, setHighlightId] = useState<string | null>(null)
 
   const fromTick = period === 'last10' ? Math.max(1, tick - 9) : 1
-  const periodLabel =
-    period === 'last10'
-      ? `últimas ${Math.min(10, tick)} coletas${IS_SIMULATED ? ` (${Math.min(10, tick) * 15} min simulados)` : ''}`
+  // Real: a janela é fixa (últimos 15 min do histórico do backend); o seletor de período vale só para o modo simulado.
+  const periodLabel = !IS_SIMULATED
+    ? IMPACT_WINDOW_LABEL
+    : period === 'last10'
+      ? `últimas ${Math.min(10, tick)} coletas (${Math.min(10, tick) * 15} min simulados)`
       : `sessão inteira (${tick} coletas)`
 
   // Simulado: soma o histórico do período escolhido. Real: usa a soma dos últimos 15 minutos que o backend já calculou;
@@ -97,17 +100,23 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
             Energia e emissões de CO₂e dos serviços monitorados, estimadas a partir das métricas de infraestrutura.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-zinc-400">
-          Período
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as Period)}
-            className="h-10 rounded-lg border border-edge bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60"
-          >
-            <option value="last10">Últimas 10 coletas</option>
-            <option value="session">Sessão inteira</option>
-          </select>
-        </label>
+        {IS_SIMULATED ? (
+          <label className="flex items-center gap-2 text-sm text-zinc-400">
+            Período
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as Period)}
+              className="h-10 rounded-lg border border-edge bg-zinc-900/70 px-3 text-sm text-zinc-100 outline-none focus-visible:border-lime-400/60"
+            >
+              <option value="last10">Últimas 10 coletas</option>
+              <option value="session">Sessão inteira</option>
+            </select>
+          </label>
+        ) : (
+          <p className="text-sm text-zinc-400">
+            Energia e CO₂e por serviço: <span className="font-medium text-zinc-200">{IMPACT_WINDOW_LABEL}</span>
+          </p>
+        )}
       </div>
 
       {IS_SIMULATED ? (
@@ -141,8 +150,9 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         <div role="note" className="flex items-start gap-3 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
           <ServerCrash className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
-            Serviços, estados e métricas (CPU, memória, disco e rede) reais, vindos do backend. Os indicadores consolidados
-            acima vêm do resumo público; energia e CO₂e por serviço ainda aparecem como “—” no restante do painel.
+            Serviços, estados e métricas (CPU, memória, disco e rede) reais, vindos do backend. A energia e o CO₂e de cada
+            serviço somam as coletas dos {IMPACT_WINDOW_LABEL}; os indicadores consolidados acima somam todas as coletas
+            registradas. “—” indica ausência de medição.
           </p>
         </div>
       ) : null}
@@ -181,6 +191,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         <WorldMap
           services={filtered}
           periodTotals={periodTotals}
+          periodLabel={periodLabel}
           point={filters.point}
           selectedId={highlightId}
           onPickPoint={(latitude, longitude) =>
@@ -200,25 +211,23 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         {IS_SIMULATED ? (
-          <>
-            <EvolutionChart series={series} />
-            <ImpactRanking
-              services={filtered}
-              periodTotals={periodTotals}
-              metric={rankingMetric}
-              onMetricChange={setRankingMetric}
-              periodLabel={periodLabel}
-            />
-          </>
+          <EvolutionChart series={series} />
         ) : (
-          <GlassCard className="flex flex-col gap-2 xl:col-span-2" aria-labelledby="pending-title">
-            <CardHeading eyebrow="Evolução e ranking de impacto" title="Disponível quando o backend expuser energia e CO₂e" id="pending-title" />
+          <GlassCard className="flex flex-col gap-2" aria-labelledby="pending-title">
+            <CardHeading eyebrow="Evolução temporal" title="Ainda não disponível com dados reais" id="pending-title" />
             <p className="text-sm text-zinc-400">
-              O gráfico de evolução temporal e o ranking de maior impacto dependem dos valores de energia e emissão por coleta,
-              que o worker do backend ainda vai calcular e gravar.
+              O gráfico de evolução ainda não lê a série histórica do backend. Enquanto isso, o ranking ao lado e os cartões
+              mostram a energia e o CO₂e dos {IMPACT_WINDOW_LABEL}.
             </p>
           </GlassCard>
         )}
+        <ImpactRanking
+          services={filtered}
+          periodTotals={periodTotals}
+          metric={rankingMetric}
+          onMetricChange={setRankingMetric}
+          periodLabel={periodLabel}
+        />
       </div>
 
       <ServicesSection
@@ -243,4 +252,4 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
       </div>
     </div>
   )
-}
+}

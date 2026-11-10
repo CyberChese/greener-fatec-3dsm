@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Container-Docker%20%26%20Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens)](https://jwt.io/)
 
-> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, fallback de carbono e documentação Swagger.
+> **Entrega atual:** Sprint 2 concluída — autenticação, descoberta, coleta, cálculo ambiental, exibição de energia e CO₂e, fallback de carbono e documentação Swagger.
 
 ---
 
@@ -36,6 +36,10 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 - Tratamento de falhas: serviços inalcançáveis ficam `UNAVAILABLE`, serviços sem métricas válidas ficam `NO_METRICS`, e a falha de um serviço não interrompe a coleta dos demais.
 - Frontend com Observatório público (intervalo e última coleta), modal de login e Área do Administrador protegida.
 - Testes unitários com Jest para coleta, descoberta, autenticação, cálculo ambiental e integrações HTTP simuladas.
+- Cálculo de energia (kWh) e emissão de CO₂e por coleta, com intensidade de carbono por região e valor padrão (fallback) quando a API de intensidade não responde.
+- Endpoint público de resumo (`GET /api/metrics/summary`) e histórico por serviço (`GET /api/services/:id/history`).
+- Dashboard com indicadores consolidados, cards por serviço, mapa, comparação e ranking de impacto, atualizados por consulta periódica (30 s) e com estados de carregamento, ausência de dados e erro.
+- Energia e CO₂e por serviço somam as coletas dos últimos 15 minutos; o total consolidado soma todas as coletas registradas.
 - Documentação interativa Swagger em `/api/docs`.
 
 Distribuição das entregas no [plano de entregas](greener/docs/plano-de-entregas.md).
@@ -187,6 +191,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | Verificação | Resultado esperado |
 |---|---|
 | Abrir <http://localhost:3000> | Observatório com o intervalo de coleta e a última coleta registrada |
+| Rolar o Observatório até os cards de serviços | Cada card mostra energia e emissão com o período (últimos 15 min); `—` indica ausência de medição |
 | Clicar em "Área do Administrador" e entrar com o usuário local configurado | Acesso à Área do Administrador com a sessão autenticada |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
 | `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
@@ -260,6 +265,13 @@ A documentação interativa está disponível em <http://localhost:3001/api/docs
 
 As rotas protegidas exigem o cabeçalho `Authorization: Bearer <token>`.
 
+As seguintes rotas administrativas ainda não estão implementadas e permanecem planejadas:
+
+| Método | Endpoint | Acesso | Finalidade |
+| :--- | :--- | :--- | :--- |
+| `PUT` | `/api/config/interval` | JWT | Alterar o intervalo de coleta |
+| `POST` | `/api/services/refresh` | JWT | Forçar a redescoberta dos serviços |
+
 Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/api.md).
 
 ---
@@ -267,7 +279,7 @@ Parâmetros, respostas e códigos de erro: [`greener/docs/api.md`](greener/docs/
 ## 🗄️ Modelo de Dados
 
 * **`users`**: id (UUID), nome, e-mail (único), hash da senha (bcrypt), data de criação.
-* **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
+* **`services`**: id (UUID), identificador externo (único), nome, endpoint de métricas, `region_code` opcional, status (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`), país, região, cidade, latitude, longitude, data de criação, última vez observado na descoberta.
 * **`metric_collections`**: id (UUID), serviço (FK), CPU, memória, armazenamento, rede, energia em kWh, intensidade de carbono, CO₂e em gramas e quilogramas, fallback utilizado e instante da coleta.
 
 O cálculo de energia usa CPU, memória e duração: `energy_kwh = potência_total × duração_segundos ÷ 3.600.000`. A emissão usa `co2e_g = energy_kwh × intensidade_gco2e_por_kwh` e `co2e_kg = co2e_g ÷ 1.000`. As fórmulas detalhadas estão em [`greener/docs/calculos.md`](greener/docs/calculos.md). DER em [`greener/docs/diagramas/DER_GreenER.png`](greener/docs/diagramas/DER_GreenER.png).

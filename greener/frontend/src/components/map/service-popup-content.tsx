@@ -1,5 +1,7 @@
+import { IS_SIMULATED } from '@/lib/dataSource'
 import { formatKg } from '@/lib/format'
 import { CLOUD_PROVIDER_UNKNOWN, type LocationGroup } from '@/lib/map-groups'
+import { IMPACT_WINDOW_LABEL } from '@/services/backend-services'
 import { StatusBadge } from '../dashboard/status-badge'
 
 /** Conteúdo do popup de um marcador (TASK-026): nome, provedor, cidade/país e pegada de carbono atual. */
@@ -23,10 +25,10 @@ export function ServicePopupContent({ group }: { group: LocationGroup }) {
               <dd>{[s.location.city ?? 'cidade não informada', s.location.country].filter(Boolean).join(' / ')}</dd>
             </div>
             <div>
-              <dt>Pegada de carbono atual</dt>
+              <dt>{IS_SIMULATED ? 'Pegada de carbono atual' : `Emissão de CO₂e (${IMPACT_WINDOW_LABEL})`}</dt>
               <dd>
                 {formatKg(s.co2eKg)} kgCO₂e
-                {s.co2eKg == null ? ' (ainda não calculada pelo backend)' : ''}
+                {s.co2eKg == null ? ' (sem medição no período)' : ''}
               </dd>
             </div>
           </dl>

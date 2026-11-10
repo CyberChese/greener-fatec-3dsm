@@ -37,7 +37,7 @@ src/
 Cada módulo separa responsabilidades: os **controllers** recebem as requisições e validam parâmetros, os **services** concentram as regras de negócio e a **persistência** é feita pelo `Repository` do TypeORM, recebido por injeção de dependência.
 Detalhes em [`docs/arquitetura.md`](../docs/arquitetura.md).
 
-> Os arquivos `src/modules/coletas.*` e `src/services/entities/service.entity.ts` permanecem como pendência técnica e não são utilizados pela aplicação atual.
+> Os arquivos vazios `src/modules/coletas.*` e a entidade duplicada `src/services/entities/service.entity.ts` foram removidos (TP03). A única entidade de serviço é `src/entities/service.entity.ts`.
 
 ## Variáveis de ambiente
 

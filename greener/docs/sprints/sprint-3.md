@@ -8,7 +8,7 @@ Concluir os recursos de ranking e comparação entre serviços, avaliar a usabil
 
 ## 📦 Entregas previstas
 
-Conforme o [plano de entregas](../plano-de-entregas.md#sprint-3--planejamento-previsto):
+Conforme o [plano de entregas](../plano-de-entregas.md#sprint-3--planejamento):
 
 - Ranking e comparação de serviços por consumo e emissão.
 - Avaliação de usabilidade com usuários representativos, com roteiro, tarefas e resultados, preservando os dados pessoais dos participantes (IHC05).

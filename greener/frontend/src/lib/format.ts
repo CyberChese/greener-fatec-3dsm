@@ -2,12 +2,23 @@ const decimal = (digits: number) =>
   new Intl.NumberFormat('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
 const fmt2 = decimal(2)
-const fmt3 = decimal(3)
 const fmt1 = decimal(1)
 const fmt0 = decimal(0)
 
-export const formatKwh = (value: number | null) => (value == null ? '—' : fmt3.format(value))
-export const formatKg = (value: number | null) => (value == null ? '—' : fmt3.format(value))
+const significant = new Intl.NumberFormat('pt-BR', { maximumSignificantDigits: 2 })
+
+/**
+ * Energia e emissão: casas decimais fixas, mas um valor pequeno que viraria zero (ex.: 0,0004 kWh) mantém 2 algarismos
+ * significativos. Assim "0,000" só aparece quando o valor é realmente zero, e a ausência de dado continua sendo "—".
+ */
+export const formatImpact = (value: number | null, digits = 3) => {
+  if (value == null || !Number.isFinite(value)) return '—'
+  if (value !== 0 && Math.abs(value) < 0.5 * 10 ** -digits) return significant.format(value)
+  return decimal(digits).format(value)
+}
+
+export const formatKwh = (value: number | null) => formatImpact(value, 3)
+export const formatKg = (value: number | null) => formatImpact(value, 3)
 export const formatPercent = (value: number | null) => (value == null ? '—' : `${fmt1.format(value)}%`)
 export const formatWatts = (value: number | null) => (value == null ? '—' : `${fmt1.format(value)} W`)
 export const formatGb = (value: number | null) => (value == null ? '—' : `${fmt2.format(value)} GB`)

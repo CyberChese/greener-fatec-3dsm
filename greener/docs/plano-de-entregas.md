@@ -22,7 +22,7 @@ Os critérios e suas pontuações não foram alterados.
 | DW03 — Estrutura do backend e API REST | ✔ módulos iniciais | ✔ repositories e novos recursos | ✔ revisão final |
 | DW04 — Persistência com PostgreSQL e ORM | ✔ | ✔ novas tabelas | |
 | DW05 — Organização e integração do frontend | ✔ | ✔ dashboard | |
-| DW06 — Autenticação e proteção | ✔ RF16 | ✔ RF17 | |
+| DW06 — Autenticação e proteção | ✔ RF16 | Parcial — RF17 (rotas administrativas) ainda não implementado | |
 | DW07 — Execução e documentação da API | ✔ | ✔ | ✔ |
 | TP01 — Responsabilidades e SOLID | | ✔ | |
 | TP02 — Injeção de dependências | ✔ | | |
@@ -79,7 +79,7 @@ Quadro do projeto: [GitHub Projects](https://github.com/orgs/CyberChese/projects
 | Persistir o `region_code` do Agregador, necessário para a intensidade de carbono | DW02 | Concluída na Sprint 2 | Manter cobertura de testes e documentação |
 | Atualizar a imagem do backend para Node 24, permitindo rodar os testes dentro do container | DW07, TP04 | Concluída na Sprint 2 | Manter Node 24 como runtime oficial |
 | Criar a camada de repositories e separar responsabilidades do `MetricsService` | DW03, TP01 | Parcial: ainda há responsabilidades concentradas nos services | Planejar refatoração futura |
-| Remover código sem uso (`modules/coletas.*`, `services/entities/service.entity.ts`) | TP03 | Pendente: os arquivos ainda existem no backend | Planejar limpeza técnica |
+| Remover código sem uso (`modules/coletas.*`, `services/entities/service.entity.ts`) | TP03 | Concluído: arquivos removidos; nenhum era importado (build, lint e testes verificados) | Nenhuma |
 | Configurar Swagger em `/api/docs` | DW07 | Concluída na Sprint 2 pela TASK-031 | Manter documentação sincronizada com as rotas |
 
 ### Integrantes e contribuições — Sprint 1
@@ -111,10 +111,10 @@ Detalhamento das tasks, histórias e critérios de aceite: [`sprints/sprint-2.md
 | DW03 | RP02 | Novos endpoints de consulta e organização dos módulos | Conferir módulos e [`api.md`](api.md) | Parcial — endpoints concluídos; camada completa de repositories ainda pendente |
 | DW04 | RP03 | Migrações para os dados de estimativa | Aplicar as migrações em banco vazio | Concluído |
 | DW05 | Dashboard | Dashboard com serviços, estados e indicadores consumindo a API | Executar o frontend | Concluído |
-| DW06 | RF17 | Rotas administrativas protegidas por JWT | Chamar as rotas com e sem token | Concluído |
+| DW06 | RF16, RF17 | Rotas administrativas protegidas por JWT | Chamar as rotas com e sem token | Parcial — login com JWT, `GET /api/auth/profile` protegido, limite de tentativas e exigência de segredo forte concluídos; as rotas administrativas previstas (`PUT /api/config/interval`, `POST /api/services/refresh`) ainda não existem e o RF17 ainda não está detalhado em documento próprio |
 | DW07 | RNF08 | Swagger e documentação atualizada | Abrir `/api/docs` | Concluído |
 | TP01 | RP02 | Separar agendamento, validação de contrato e persistência do coletor | Conferir as classes | Parcial — a separação completa em repositories ainda está pendente |
-| TP03 | — | Remover `any` e código sem uso | Conferir o código | Parcial — permanece limpeza técnica pendente |
+| TP03 | — | Remover `any` e código sem uso | Conferir o código | Concluído — arquivos sem uso removidos (PR #114); não há `any` explícito no código-fonte |
 | TP04 | — | Testes das regras de cálculo de energia e CO₂e | Executar `npm test` | Concluído |
 | IHC03 | — | Indicadores com unidade, período e última atualização | Conferir as telas | Concluído |
 | IHC04 | — | Estados de carregamento, ausência de dados, indisponibilidade e erro; verificação de responsividade | Conferir as telas e [`interface.md`](interface.md) | Concluído |

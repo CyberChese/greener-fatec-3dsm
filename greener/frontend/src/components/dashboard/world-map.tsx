@@ -50,6 +50,8 @@ type Layer = 'energy' | 'co2e'
 interface WorldMapProps {
   services: ServiceSnapshot[]
   periodTotals: Map<string, { energyKwh: number; co2eKg: number }>
+  /** Período a que energia e emissão se referem (IHC03). */
+  periodLabel: string
   point: QueryPoint
   selectedId: string | null
   onPickPoint: (latitude: number, longitude: number) => void
@@ -82,7 +84,7 @@ function RadiusOverlay({ point }: { point: QueryPoint }) {
   )
 }
 
-export function WorldMap({ services, periodTotals, point, selectedId, onPickPoint, onSelectService }: WorldMapProps) {
+export function WorldMap({ services, periodTotals, periodLabel, point, selectedId, onPickPoint, onSelectService }: WorldMapProps) {
   const [zoom, setZoom] = useState(1)
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER)
   const [layer, setLayer] = useState<Layer>('co2e')
@@ -298,7 +300,8 @@ export function WorldMap({ services, periodTotals, point, selectedId, onPickPoin
             <p className="mt-1.5 inline-flex items-center gap-1" style={{ color: STATUS_META[hovered.status].hex }}>
               {STATUS_META[hovered.status].label}
             </p>
-            <dl className="mt-1.5 grid grid-cols-2 gap-1 font-mono text-zinc-300">
+            <p className="mt-1.5 text-ink-subtle">Período: {periodLabel}</p>
+            <dl className="mt-1 grid grid-cols-2 gap-1 font-mono text-zinc-300">
               <dt className="text-ink-subtle">kWh</dt>
               <dd className="text-right">{formatKwh(periodTotals.get(hovered.id)?.energyKwh ?? null)}</dd>
               <dt className="text-ink-subtle">kgCO₂e</dt>
