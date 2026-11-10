@@ -187,6 +187,8 @@ energia, CO₂e e intensidade de carbono quando esses dados estão disponíveis.
 popups do mapa usam os valores reais recebidos do backend; o marcador `—` indica ausência de uma medição,
 e não um valor fictício.
 
+Com dados reais, energia e CO₂e por serviço somam as coletas dos **últimos 15 minutos** (período exibido nos cards, no mapa e no ranking). Os indicadores consolidados do topo somam todas as coletas registradas. O seletor de período e o gráfico de evolução temporal só funcionam no modo `simulated`; com dados reais o gráfico aparece como "ainda não disponível".
+
 O modo `simulated` permanece disponível para demonstrações locais e testes visuais, sem substituir o login real.
 
 ## Observatório e origem dos dados
@@ -199,7 +201,7 @@ Origem dos dados, escolhida por `VITE_DATA_SOURCE`:
 
 | Valor | O que mostra |
 |---|---|
-| `api` (padrão) | Serviços, estados e localização reais, lidos de `GET /api/services`. Energia, CO₂e e intensidade de carbono por serviço vêm do histórico de coletas; quando não há medição disponível, aparece `—`. O resumo público vem de `GET /api/metrics/summary`. |
+| `api` (padrão) | Serviços, estados e localização reais, lidos de `GET /api/services`. Energia, CO₂e e intensidade de carbono por serviço vêm do histórico de coletas; soma dos últimos 15 minutos; quando não há medição no período, aparece `—`. O resumo público vem de `GET /api/metrics/summary`. |
 | `simulated` | Simulação no navegador (demonstração), com coleta acelerada: cada coleta equivale a 15 min simulados. |
 
 O login é sempre o real (`POST /api/auth/login`). O que o backend precisa expor para o painel mostrar tudo com dados reais

@@ -179,8 +179,12 @@ export async function fetchServiceHistory(
   return data
 }
 
-/** Janela consultada para achar a coleta mais recente de cada serviço. */
+/** Janela do histórico consultada para achar a coleta mais recente e somar energia e CO2e de cada serviço. */
 export const LATEST_WINDOW_MS = 15 * 60_000
+
+/** Texto do período de referência de energia e CO2e por serviço no modo real (IHC03). */
+export const IMPACT_WINDOW_LABEL = `últimos ${LATEST_WINDOW_MS / 60_000} min`
+
 /** O worker coleta a cada ~30 s; consultar o histórico com mais frequência não traz dado novo. */
 export const METRICS_TTL_MS = 10_000
 
