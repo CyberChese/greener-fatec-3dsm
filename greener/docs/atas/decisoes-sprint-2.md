@@ -12,4 +12,4 @@ Este arquivo registra decisões de escopo já documentadas no fluxo de entrega. 
 
 ## Como registrar novas dailies e decisões
 
-Para uma daily, use a pauta breve em [Processo de contribuição e entrega](../processo-contribuicao.md#daily-e-decisoes-de-escopo). Para decisões de escopo, acrescente data, decisão, motivo, participantes somente quando conhecidos e link da issue/PR. Atualize também os critérios de aceite da task quando a decisão os alterar. Não crie registros retroativos.
+Para uma daily, use a pauta breve em [Processo de contribuição e entrega](../processo-contribuicao.md#daily-e-decisões-de-escopo). Para decisões de escopo, acrescente data, decisão, motivo, participantes somente quando conhecidos e link da issue/PR. Atualize também os critérios de aceite da task quando a decisão os alterar. Não crie registros retroativos.

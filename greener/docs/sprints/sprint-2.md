@@ -109,6 +109,9 @@ Ver [Retrospectiva da Sprint 1](sprint-1.md#-retrospectiva).
 ## 🔗 Notas de execução
 
 - A TASK-040 foi dividida em dois PRs: camada de dados e camada visual.
+- O PR #104 (camada de dados) foi nomeado como TASK-033 por engano; ele corresponde à **TASK-040 (1/2)**. A TASK-033 é a persistência do `region_code`. O PR das telas (#112, 2/2) cita a TASK-040.
+- O commit `feat-task-020 Algoritmo de Conversão…` corresponde à TASK-022. Nos próximos PRs, o commit deve citar a task correta.
+- Evidência de planejamento anterior ao fechamento: issues e cards do [GitHub Projects](https://github.com/orgs/CyberChese/projects/2/views/3), com as datas de criação registradas no próprio GitHub.
 - As branches da TASK-040 devem usar o identificador correto da task:
   - `feat/TASK-040-exibir-energia-co2e-dados`
   - `feat/TASK-040-exibir-energia-co2e-telas`
@@ -150,7 +153,7 @@ As evidências de proteção de branches, reviews, tag e release devem ser regis
 | Burndown da Sprint 2 | 75 pontos realizados; linha de realizado chegou a zero em 09/11/2026 |
 | Vídeo da Sprint Review | [Demonstração da Sprint 2](https://youtu.be/1soOS-lRddQ) |
 | Testes do backend | 83 testes aprovados |
-| Testes do frontend | 102 testes aprovados |
+| Testes do frontend | 123 testes aprovados (inclui os testes das telas da TASK-040) |
 | Build do backend e frontend | Aprovado |
 | Lint do backend e frontend | Aprovado, com avisos preexistentes no backend |
 | Configuração do Docker Compose | `docker compose config` aprovado |

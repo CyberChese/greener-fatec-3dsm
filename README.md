@@ -36,6 +36,10 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 - Tratamento de falhas: serviços inalcançáveis ficam `UNAVAILABLE`, serviços sem métricas válidas ficam `NO_METRICS`, e a falha de um serviço não interrompe a coleta dos demais.
 - Frontend com Observatório público (intervalo e última coleta), modal de login e Área do Administrador protegida.
 - Testes unitários com Jest para coleta, descoberta, autenticação, cálculo ambiental e integrações HTTP simuladas.
+- Cálculo de energia (kWh) e emissão de CO₂e por coleta, com intensidade de carbono por região e valor padrão (fallback) quando a API de intensidade não responde.
+- Endpoint público de resumo (`GET /api/metrics/summary`) e histórico por serviço (`GET /api/services/:id/history`).
+- Dashboard com indicadores consolidados, cards por serviço, mapa, comparação e ranking de impacto, atualizados por consulta periódica (30 s) e com estados de carregamento, ausência de dados e erro.
+- Energia e CO₂e por serviço somam as coletas dos últimos 15 minutos; o total consolidado soma todas as coletas registradas.
 - Documentação interativa Swagger em `/api/docs`.
 
 Distribuição das entregas no [plano de entregas](greener/docs/plano-de-entregas.md).
@@ -187,6 +191,7 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
 | Verificação | Resultado esperado |
 |---|---|
 | Abrir <http://localhost:3000> | Observatório com o intervalo de coleta e a última coleta registrada |
+| Rolar o Observatório até os cards de serviços | Cada card mostra energia e emissão com o período (últimos 15 min); `—` indica ausência de medição |
 | Clicar em "Área do Administrador" e entrar com o usuário local configurado | Acesso à Área do Administrador com a sessão autenticada |
 | `GET http://localhost:3001/api/services` | Lista de serviços descobertos e seus estados |
 | `GET http://localhost:3001/api/metrics/collection-config` | Intervalo de coleta e horário da última coleta |
