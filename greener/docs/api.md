@@ -201,11 +201,11 @@ A resposta **não** traz o total de serviços (é a soma das três contagens) ne
 
 ## Endpoints planejados
 
-Os endpoints abaixo **ainda não existem** no backend e estão previstos no [plano de entregas](plano-de-entregas.md):
+Os endpoints abaixo **ainda não existem** no backend. Eles permanecem como pendências e estão previstos no [plano de entregas](plano-de-entregas.md):
 
-| Método | Rota prevista | Finalidade | Previsão |
+| Método | Rota prevista | Finalidade | Situação |
 |---|---|---|---|
-| `PUT` | `/api/config/interval` | Alterar o intervalo de coleta (protegida por JWT) | Sprint 2 |
-| `POST` | `/api/services/refresh` | Forçar a redescoberta dos serviços (protegida por JWT) | Sprint 2 |
+| `PUT` | `/api/config/interval` | Alterar o intervalo de coleta (protegida por JWT) | Pendente |
+| `POST` | `/api/services/refresh` | Forçar a redescoberta dos serviços (protegida por JWT) | Pendente |
 | `GET` | `/api/metrics/ranking` | Ranking de serviços por consumo ou emissão | Sprint 3 |
 | `GET` | `/api/metrics/compare` | Comparação entre serviços em um período | Sprint 3 |

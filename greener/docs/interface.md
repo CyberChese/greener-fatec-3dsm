@@ -20,10 +20,10 @@ Documento de Interação Humano-Computador (IHC): usuários e tarefas, protótip
 | T2 | Conferir a sessão ativa e sair com segurança | Administrador | Área do Administrador | Implementada (Sprint 1) |
 | T3 | Saber de quanto em quanto tempo os dados são coletados e quando foi a última coleta | Todos | Observatório | Implementada (Sprint 1) |
 | T4 | Entender o significado dos estados de um serviço (ativo, sem métricas, indisponível) | Analista | Observatório | Implementada (Sprint 1) |
-| T5 | Localizar um serviço indisponível e onde ele está hospedado | Analista | Dashboard (mapa, cartões e tabela) | Prevista (Sprint 2) |
-| T6 | Consultar consumo de energia e emissão de CO₂e por serviço | Gestor de sustentabilidade | Dashboard | Prevista (Sprint 2) |
-| T7 | Consultar o histórico de coletas de um serviço | Administrador | Área do Administrador | Prevista (Sprint 2) |
-| T8 | Alterar o intervalo de coleta | Administrador | Área do Administrador | Prevista (Sprint 2) |
+| T5 | Localizar um serviço indisponível e onde ele está hospedado | Analista | Dashboard (mapa, cartões e tabela) | Implementada (Sprint 2) |
+| T6 | Consultar consumo de energia e emissão de CO₂e por serviço | Gestor de sustentabilidade | Dashboard | Implementada (Sprint 2) |
+| T7 | Consultar o histórico de coletas de um serviço | Administrador | Histórico público por serviço; acesso disponível na aplicação | Parcial (Sprint 2; rota pública implementada) |
+| T8 | Alterar o intervalo de coleta | Administrador | Área do Administrador | Pendente: rota administrativa ainda não implementada |
 | T9 | Comparar serviços e ver o ranking de impacto | Gestor de sustentabilidade | Comparar serviços | Prevista (Sprint 3) |
 
 ## 2. Protótipos e fluxo de navegação
@@ -67,7 +67,7 @@ Login · modal
 
 | Decisão | Onde | Motivo |
 |---|---|---|
-| Estados dos serviços com **cor, forma e texto** (círculo, losango, triângulo, quadrado) | [`StatusBadge.tsx`](../frontend/src/components/StatusBadge.tsx) | A informação não depende só da cor |
+| Estados dos serviços com **cor, forma e texto** (círculo, losango, triângulo, quadrado) | [`status-badge.tsx`](../frontend/src/components/dashboard/status-badge.tsx) | A informação não depende só da cor |
 | Login em modal `<dialog>` nativo, com foco preso, Esc para fechar e fundo inerte | [`LoginModal.tsx`](../frontend/src/components/LoginModal.tsx) | Acessibilidade por teclado e leitor de tela |
 | Mensagens de erro diferentes para credencial inválida e servidor fora do ar | `LoginModal.tsx` | O usuário entende se deve corrigir a senha ou tentar mais tarde |
 | Mensagem de credencial genérica ("E-mail ou senha incorretos.") | `LoginModal.tsx` | Não revela se o e-mail existe |
