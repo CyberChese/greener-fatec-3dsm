@@ -6,7 +6,7 @@ import type { ServicesTableProps } from './services-table'
 export const SERVICES_GRID_CLASSES = 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
 
 /** Grade de cartões dos serviços monitorados (TASK-025). */
-export function ServicesGrid({ services, periodTotals, selectedIds, onToggle, highlightId }: ServicesTableProps) {
+export function ServicesGrid({ services, periodTotals, periodLabel, selectedIds, onToggle, highlightId }: ServicesTableProps) {
   if (services.length === 0) {
     return (
       <GlassCard className="text-center text-sm text-zinc-400">Nenhum serviço corresponde aos filtros aplicados.</GlassCard>
@@ -20,6 +20,7 @@ export function ServicesGrid({ services, periodTotals, selectedIds, onToggle, hi
           <ServiceCard
             service={s}
             totals={periodTotals.get(s.id)}
+            periodLabel={periodLabel}
             selected={selectedIds.includes(s.id)}
             highlighted={highlightId === s.id}
             onToggle={onToggle}

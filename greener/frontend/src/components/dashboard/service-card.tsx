@@ -9,6 +9,8 @@ export interface ServiceCardProps {
   service: ServiceSnapshot
   /** Energia e emissão acumuladas no período; ausente quando o backend ainda não as fornece. */
   totals?: { energyKwh: number; co2eKg: number }
+  /** Período a que energia e emissão se referem (IHC03). */
+  periodLabel?: string
   selected: boolean
   highlighted: boolean
   onToggle: (id: string) => void
@@ -18,7 +20,7 @@ export interface ServiceCardProps {
  * Cartão de um serviço (TASK-025). O estado aparece em selo colorido com ícone e texto
  * (nunca só pela cor, RNF02) e a explicação do estado fica sempre visível.
  */
-export function ServiceCard({ service: s, totals, selected, highlighted, onToggle }: ServiceCardProps) {
+export function ServiceCard({ service: s, totals, periodLabel, selected, highlighted, onToggle }: ServiceCardProps) {
   const hasCoords = s.location.latitude != null && s.location.longitude != null
   const meta = STATUS_META[s.status]
 
@@ -99,6 +101,7 @@ export function ServiceCard({ service: s, totals, selected, highlighted, onToggl
           </p>
         </div>
       </div>
+      {periodLabel ? <p className="text-xs text-ink-subtle">Energia e emissão: {periodLabel}</p> : null}
       <p className="text-xs text-ink-subtle">
         Intensidade da região: <span className="font-mono text-zinc-300">{formatIntensity(s.intensity)}</span> gCO₂e/kWh
       </p>

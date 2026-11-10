@@ -1,5 +1,5 @@
 import { Cloud, Zap } from 'lucide-react'
-import { formatNumber } from '@/lib/format'
+import { formatImpact } from '@/lib/format'
 import type { RankingMetric, ServiceSnapshot } from '@/lib/types'
 import { CardHeading, GlassCard } from './glass-card'
 import { STATUS_META } from './status-meta'
@@ -13,7 +13,10 @@ interface ImpactRankingProps {
 }
 
 export function ImpactRanking({ services, periodTotals, metric, onMetricChange, periodLabel }: ImpactRankingProps) {
-  const rows = services
+  // Serviço sem medição no período não entra no ranking (não vale zero); a quantidade omitida é informada abaixo.
+  const measured = services.filter((s) => periodTotals.has(s.id))
+  const omitted = services.length - measured.length
+  const rows = measured
     .map((s) => {
       const totals = periodTotals.get(s.id)
       return { service: s, value: metric === 'energy' ? (totals?.energyKwh ?? 0) : (totals?.co2eKg ?? 0) }
@@ -52,8 +55,10 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
       />
       <p className="-mt-2 mb-4 text-xs text-ink-subtle">Período considerado: {periodLabel}</p>
 
-      {rows.length === 0 ? (
+      {services.length === 0 ? (
         <p className="text-sm text-ink-subtle">Nenhum serviço corresponde aos filtros.</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-ink-subtle">Nenhum serviço tem medição de energia e CO₂e no período.</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {rows.map(({ service, value }, index) => {
@@ -68,7 +73,7 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
                     <Icon className="size-3.5 shrink-0" style={{ color: meta.hex }} aria-label={meta.label} />
                   </span>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-zinc-300">
-                    {formatNumber(value, metric === 'energy' ? 3 : 4)} {unit}
+                    {formatImpact(value, metric === 'energy' ? 3 : 4)} {unit}
                   </span>
                 </div>
                 <div
@@ -93,6 +98,11 @@ export function ImpactRanking({ services, periodTotals, metric, onMetricChange, 
           })}
         </ol>
       )}
+      {omitted > 0 && rows.length > 0 ? (
+        <p className="mt-4 text-xs text-ink-subtle">
+          {omitted} serviço(s) sem medição no período não aparecem no ranking.
+        </p>
+      ) : null}
     </GlassCard>
   )
 }

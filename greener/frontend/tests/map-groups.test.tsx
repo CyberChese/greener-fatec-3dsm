@@ -49,14 +49,15 @@ describe('ServicePopupContent (TASK-026)', () => {
     expect(html).toContain('Provedor de nuvem')
     expect(html).toContain('região br-sudeste')
     expect(html).toContain('Sao Paulo / Brazil')
-    expect(html).toContain('Pegada de carbono atual')
+    expect(html).toContain('Emissão de CO₂e (últimos 15 min)')
     expect(html).toContain('1,234 kgCO₂e')
   })
 
-  it('não inventa a pegada quando o backend ainda não calculou', () => {
+  it('não inventa a pegada quando não há medição no período', () => {
     const html = render([snapshot({ co2eKg: null, location: at(1, 2) })])
     expect(html).toContain('—')
-    expect(html).toContain('ainda não calculada pelo backend')
+    expect(html).toContain('sem medição no período')
+    expect(html).not.toContain('ainda não calculada pelo backend')
   })
 
   it('lista todos os serviços do mesmo ponto', () => {
