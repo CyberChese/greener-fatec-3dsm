@@ -213,7 +213,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         {IS_SIMULATED ? (
           <EvolutionChart series={series} />
         ) : (
-          <GlassCard className="flex flex-col gap-2" aria-labelledby="pending-title">
+          <GlassCard className="flex flex-col gap-2 self-start" aria-labelledby="pending-title">
             <CardHeading eyebrow="Evolução temporal" title="Ainda não disponível com dados reais" id="pending-title" />
             <p className="text-sm text-zinc-400">
               O gráfico de evolução ainda não lê a série histórica do backend. Enquanto isso, o ranking ao lado e os cartões

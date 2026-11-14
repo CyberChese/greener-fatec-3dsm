@@ -189,6 +189,8 @@ e não um valor fictício.
 
 Com dados reais, energia e CO₂e por serviço somam as coletas dos **últimos 15 minutos** (período exibido nos cards, no mapa e no ranking). Os indicadores consolidados do topo somam todas as coletas registradas. O seletor de período e o gráfico de evolução temporal só funcionam no modo `simulated`; com dados reais o gráfico aparece como "ainda não disponível".
 
+O **ranking de impacto** é uma tabela com posição, serviço, status, consumo (kWh) e emissão (kgCO₂e). O 1º lugar recebe o selo "1º · Maior impacto" (número e texto, não só cor), e os botões "Maior consumo (kWh)" e "Maior emissão (CO₂e)" reordenam a lista sem recarregar a página. Serviços sem medição no período ficam fora do ranking, e a quantidade omitida é informada. O ranking usa os totais por serviço que o frontend já recebe; a troca por um endpoint dedicado depende da TASK-041.
+
 O modo `simulated` permanece disponível para demonstrações locais e testes visuais, sem substituir o login real.
 
 ## Observatório e origem dos dados
