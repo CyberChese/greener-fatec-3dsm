@@ -7,6 +7,7 @@ import { MetricsController, ServiceMetricsController } from './metrics.controlle
 import { MetricsService } from './metrics.service';
 import { EngineModule } from '../engine/engine.module';
 import { CarbonIntensityModule } from '../modules/carbon-intensity/carbon-intensity.module';
+import { AnalyticsService } from './analytics.service';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { CarbonIntensityModule } from '../modules/carbon-intensity/carbon-intens
     CarbonIntensityModule,
   ],
   controllers: [MetricsController, ServiceMetricsController],
-  providers: [MetricsService],
-  exports: [MetricsService],
+  providers: [MetricsService, AnalyticsService],
+  exports: [MetricsService, AnalyticsService],
 })
 export class MetricsModule {}
