@@ -98,6 +98,20 @@ export function totalsByService(records: CollectionRecord[], fromTick: number): 
   return totals
 }
 
+export function totalsInRange(records: CollectionRecord[], fromMs: number, toMs: number): Map<string, PeriodTotals> {
+  const totals = new Map<string, PeriodTotals>()
+  for (const r of records) {
+    const at = Date.parse(r.simulatedAt)
+    if (Number.isNaN(at) || at < fromMs || at > toMs) continue
+    const current = totals.get(r.serviceId) ?? { energyKwh: 0, co2eKg: 0, samples: 0 }
+    current.energyKwh += r.energyKwh ?? 0
+    current.co2eKg += r.co2eKg ?? 0
+    if (r.status === 'active') current.samples++
+    totals.set(r.serviceId, current)
+  }
+  return totals
+}
+
 /**
  * Modo real: energia e CO₂e de cada serviço já chegam somadas no snapshot (janela de 15 minutos do histórico).
  * Serviço sem um dos dois valores fica fora do mapa, e a tela mostra "—" (nunca zero por falta de dado).

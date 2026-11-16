@@ -231,8 +231,45 @@ function RetryButton({ onRetry, busy }: { onRetry: () => void; busy: boolean }) 
 
 /* ---------- versão conectada à API ---------- */
 
+export interface PeriodSummary {
+  energyKwh: number
+  co2eKg: number
+  from: string
+  to: string
+}
+
+interface ExecutiveHeaderProps {
+  intervalMs: number
+  period?: PeriodSummary | null
+  periodError?: string | null
+}
+
 /** Header executivo ligado ao resumo público (GET /api/metrics/summary). */
-export function ExecutiveHeader({ intervalMs }: { intervalMs: number }) {
+export function ExecutiveHeader({ intervalMs, period, periodError = null }: ExecutiveHeaderProps) {
   const { retry, ...state } = usePublicSummary({ intervalMs })
-  return <ExecutiveHeaderView {...state} onRetry={retry} />
+  if (period === undefined) return <ExecutiveHeaderView {...state} onRetry={retry} />
+
+  const data: SummaryResult | null =
+    state.data && period
+      ? {
+          source: 'api',
+          summary: {
+            ...state.data.summary,
+            energy_kwh: period.energyKwh,
+            co2e_kg: period.co2eKg,
+            period: { from: period.from, to: period.to },
+          },
+        }
+      : null
+  const error = state.error ?? periodError
+
+  return (
+    <ExecutiveHeaderView
+      {...state}
+      data={data}
+      error={error}
+      initialLoading={state.initialLoading || (!period && !error)}
+      onRetry={retry}
+    />
+  )
 }
