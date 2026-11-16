@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { MetricsController } from './metrics.controller';
@@ -38,6 +38,11 @@ describe('MetricsController', () => {
 
     app = module.createNestApplication();
     app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }));
     await app.init();
   });
 
