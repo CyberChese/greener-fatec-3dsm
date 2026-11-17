@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { CollectionStatusPanel } from './collection-status-panel'
 import type { DashboardFilters, Period, RankingMetric, ServiceSnapshot } from '@/lib/types'
 import { ComparisonPanel } from './comparison-panel'
+import { MAX_COMPARED_SERVICES, toggleComparisonSelection } from './comparison-data'
 import { CardHeading, GlassCard } from './glass-card'
 import { EvolutionChart } from './evolution-chart'
 import { EventsFeed } from './events-feed'
@@ -55,7 +56,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
     setPeriod(settings.defaultPeriod)
   }
   const [rankingMetric, setRankingMetric] = useState<RankingMetric>('co2e')
-  const [selectedIds, setSelectedIds] = useState<string[]>(['billing-api', 'auth-api', 'search-api'])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [highlightId, setHighlightId] = useState<string | null>(null)
 
   const fromTick = period === 'last10' ? Math.max(1, tick - 9) : 1
@@ -80,8 +81,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
   const filtered = useMemo(() => snapshots.filter((s) => matchesFilters(s, filters)), [snapshots, filters])
   const compared = snapshots.filter((s) => selectedIds.includes(s.id))
 
-  const toggle = (id: string) =>
-    setSelectedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+  const toggle = (id: string) => setSelectedIds((ids) => toggleComparisonSelection(ids, id))
 
   const apiErrors = [aggregatorError, carbonError].filter(Boolean) as string[]
 
@@ -236,7 +236,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
         periodLabel={periodLabel}
         selectedIds={selectedIds}
         onToggle={toggle}
-        onToggleAll={setSelectedIds}
+        onToggleAll={(ids) => setSelectedIds(ids.slice(0, MAX_COMPARED_SERVICES))}
         highlightId={highlightId}
       />
 
@@ -245,6 +245,8 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
           services={compared}
           periodTotals={periodTotals}
           periodLabel={periodLabel}
+          simulatedHistory={history.filter((record) => record.tick >= fromTick)}
+          simulated={IS_SIMULATED}
           onRemove={toggle}
           onClear={() => setSelectedIds([])}
         />
