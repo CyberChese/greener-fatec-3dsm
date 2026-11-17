@@ -1,5 +1,7 @@
 const DEFAULT_LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
 const DEFAULT_LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60;
+const DEFAULT_SERVICE_DISCOVERY_INTERVAL_SECONDS = 300;
+const MAX_INTERVAL_SECONDS = Math.floor(2_147_483_647 / 1000);
 
 function parsePositiveInteger(
   name: string,
@@ -54,10 +56,22 @@ export function validateEnvironment(
     );
   }
 
+  const serviceDiscoveryIntervalSeconds = parsePositiveInteger(
+    'SERVICE_DISCOVERY_INTERVAL_SECONDS',
+    environment['SERVICE_DISCOVERY_INTERVAL_SECONDS'],
+    DEFAULT_SERVICE_DISCOVERY_INTERVAL_SECONDS,
+  );
+  if (serviceDiscoveryIntervalSeconds > MAX_INTERVAL_SECONDS) {
+    throw new Error(
+      `SERVICE_DISCOVERY_INTERVAL_SECONDS must be at most ${MAX_INTERVAL_SECONDS}.`,
+    );
+  }
+
   return {
     ...environment,
     ...(typeof jwtSecret === 'string' ? { JWT_SECRET: jwtSecret.trim() } : {}),
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: loginRateLimitMaxAttempts,
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: loginRateLimitWindowSeconds,
+    SERVICE_DISCOVERY_INTERVAL_SECONDS: serviceDiscoveryIntervalSeconds,
   };
 }
