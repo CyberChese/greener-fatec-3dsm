@@ -1,4 +1,4 @@
-import { Crosshair, Search, X } from 'lucide-react'
+import { Crosshair, X } from 'lucide-react'
 import type { DashboardFilters, ServiceStatus } from '@/lib/types'
 import { CardHeading, GlassCard } from './glass-card'
 
@@ -30,7 +30,7 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
     <GlassCard aria-labelledby="filters-title" className="flex flex-col gap-5">
       <CardHeading
         eyebrow="Consulta"
-        title="Filtros e ponto de consulta"
+        title="Estado e ponto de consulta"
         id="filters-title"
         aside={
           <span className="rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-xs text-zinc-300">
@@ -38,23 +38,6 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
           </span>
         }
       />
-
-      <div>
-        <label htmlFor="filter-search" className={labelClass}>
-          Buscar serviço
-        </label>
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
-          <input
-            id="filter-search"
-            type="search"
-            value={filters.search}
-            onChange={(e) => onChange({ ...filters, search: e.target.value })}
-            placeholder="Serviço, cidade, país ou região…"
-            className={`${inputClass} pl-9`}
-          />
-        </div>
-      </div>
 
       <div>
         <label htmlFor="filter-status" className={labelClass}>
@@ -151,7 +134,7 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-edge text-sm font-medium text-zinc-300 transition-colors hover:border-lime-400/40 hover:text-zinc-50"
       >
         <X className="size-4" aria-hidden="true" />
-        Limpar filtros
+        Limpar estado e ponto
       </button>
     </GlassCard>
   )

@@ -1,12 +1,31 @@
 import { LoaderCircle, RefreshCw, ServerCrash } from 'lucide-react'
+import { useMemo } from 'react'
+import { FiltersBar } from '@/components/dashboard/filters-bar'
 import { CardHeading, GlassCard } from '@/components/dashboard/glass-card'
 import { GeographicMapComponent } from '@/components/map/geographic-map-component'
+import { useDashboardFilters } from '@/hooks/use-dashboard-filters'
+import { usePeriodTotals } from '@/hooks/use-period-totals'
 import { useMetricsContext } from '@/hooks/useMetricsContext'
+import { describePeriod, matchesSearch } from '@/lib/dashboard-filters'
+import { IS_SIMULATED } from '@/lib/dataSource'
 import { cn } from '@/lib/utils'
 
 // Consulta pública: o mapa não exige login.
 export function MapPage() {
-  const { snapshots, tick, aggregatorError, refreshing, retry } = useMetricsContext()
+  const { snapshots, tick, aggregatorError, refreshing, retry, lastUpdated } = useMetricsContext()
+  const filterControls = useDashboardFilters()
+  const timeFilters = filterControls.filters
+  const period = usePeriodTotals(timeFilters, lastUpdated, !IS_SIMULATED)
+  const periodLabel = describePeriod(timeFilters)
+
+  const visible = useMemo(() => {
+    const matched = snapshots.filter((s) => matchesSearch(s, timeFilters.search))
+    if (IS_SIMULATED) return matched
+    return matched.map((s) => {
+      const totals = period.totals?.get(s.id)
+      return { ...s, energyKwh: totals?.energyKwh ?? null, co2eKg: totals?.co2eKg ?? null }
+    })
+  }, [snapshots, timeFilters.search, period.totals])
 
   return (
     <div className="flex flex-col gap-5">
@@ -18,6 +37,15 @@ export function MapPage() {
           pegada de carbono.
         </p>
       </div>
+
+      <FiltersBar
+        {...filterControls}
+        periodLabel={IS_SIMULATED ? 'coleta atual (modo de demonstração)' : periodLabel}
+        loading={period.loading}
+        error={period.error}
+        resultCount={tick === 0 ? undefined : visible.length}
+        totalCount={tick === 0 ? undefined : snapshots.length}
+      />
 
       {tick > 0 && snapshots.length > 0 && aggregatorError ? (
         <div
@@ -52,8 +80,13 @@ export function MapPage() {
           <CardHeading title="Nenhum serviço para exibir no mapa" id="map-empty" />
           <p className="text-sm text-zinc-400">{aggregatorError ?? 'Nenhum serviço foi descoberto até o momento.'}</p>
         </GlassCard>
+      ) : visible.length === 0 ? (
+        <GlassCard role="status" aria-labelledby="map-no-match">
+          <CardHeading title="Nenhum serviço corresponde à busca" id="map-no-match" />
+          <p className="text-sm text-zinc-400">Altere o nome buscado ou limpe a busca para ver todos os marcadores.</p>
+        </GlassCard>
       ) : (
-        <GeographicMapComponent services={snapshots} />
+        <GeographicMapComponent services={visible} periodLabel={periodLabel} />
       )}
     </div>
   )

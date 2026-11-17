@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { useMetricsContext } from '@/hooks/useMetricsContext'
-import { IMPACT_WINDOW_LABEL } from '@/services/backend-services'
 import { AppHeader } from './dashboard/app-header.tsx'
 
 export function AppLayout() {
@@ -41,8 +40,8 @@ export function AppLayout() {
           ) : (
             <>
               Serviços, estados e métricas vindos do backend do GreenER, consultados a cada {metrics.intervalMs / 1000} s (o
-              worker coleta em intervalo próprio). A energia e o CO₂e de cada serviço somam as coletas dos {IMPACT_WINDOW_LABEL};
-              os indicadores consolidados do topo somam todas as coletas registradas. “—” indica ausência de medição.
+              worker coleta em intervalo próprio). A energia e o CO₂e de cada serviço e os indicadores consolidados do topo
+              somam as coletas do período selecionado na barra de filtros. “—” indica ausência de medição.
             </>
           )}
         </footer>
