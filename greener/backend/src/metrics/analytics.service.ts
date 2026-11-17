@@ -2,24 +2,15 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  Optional,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  In,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Repository,
-  type FindOptionsWhere,
-} from 'typeorm';
+import { parseDateRange } from '../common/date-range';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service } from '../entities/service.entity';
+import { MetricCollectionRepository } from '../repositories/metric-collection.repository';
+import { ServiceRepository } from '../repositories/service.repository';
 import { CompareQueryDto } from './dto/compare-query.dto';
 import { RankingQueryDto } from './dto/ranking-query.dto';
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DEFAULT_BUCKET_SECONDS = 30;
 
 export interface RankingItem {
@@ -100,57 +91,21 @@ function extractCo2eKg(collection: MetricCollection): number | null {
 @Injectable()
 export class AnalyticsService {
   constructor(
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
-    @Optional()
-    @InjectRepository(MetricCollection)
-    private readonly collectionRepository?: Repository<MetricCollection>,
+    private readonly serviceRepository: ServiceRepository,
+    private readonly collectionRepository: MetricCollectionRepository,
   ) {}
 
   async getRanking(query: RankingQueryDto): Promise<RankingResult> {
-    const startDate = this.parseDate(query.startDate, 'startDate');
-    const endDate = this.parseDate(query.endDate, 'endDate');
-    if (startDate && endDate && startDate > endDate) {
-      throw new BadRequestException('"startDate" must be earlier than or equal to "endDate".');
-    }
-
-    // Names are selected from a fixed allowlist; query values remain bound parameters.
-    const metricColumn = query.metric === 'energy' ? 'collection.energy_kwh' : 'collection.co2e_kg';
-    const joinConditions = ['collection.service_id = service.idServices'];
-    const parameters: Record<string, Date> = {};
-    if (startDate) {
-      joinConditions.push('collection.timestamp >= :startDate');
-      parameters.startDate = startDate;
-    }
-    if (endDate) {
-      joinConditions.push('collection.timestamp <= :endDate');
-      parameters.endDate = endDate;
-    }
+    const range = parseDateRange(query.startDate, query.endDate, 'startDate', 'endDate');
 
     const [rows, total] = await Promise.all([
-      this.serviceRepository
-        .createQueryBuilder('service')
-        .leftJoin(MetricCollection, 'collection', joinConditions.join(' AND '), parameters)
-        .select('service.idServices', 'service_id')
-        .addSelect('service.external_id', 'external_id')
-        .addSelect('service.nameServices', 'name')
-        .addSelect('service.status', 'status')
-        .addSelect(`COALESCE(SUM(${metricColumn}), 0)`, 'metric_value')
-        .groupBy('service.idServices')
-        .addGroupBy('service.external_id')
-        .addGroupBy('service.nameServices')
-        .addGroupBy('service.status')
-        .orderBy('metric_value', query.order.toUpperCase() as 'ASC' | 'DESC')
-        .addOrderBy('service.nameServices', 'ASC')
-        .offset((query.page - 1) * query.limit)
-        .limit(query.limit)
-        .getRawMany<{
-          service_id: string;
-          external_id: string;
-          name: string;
-          status: Service['status'];
-          metric_value: string | number;
-        }>(),
+      this.serviceRepository.findImpactRanking({
+        metric: query.metric,
+        order: query.order,
+        page: query.page,
+        limit: query.limit,
+        ...range,
+      }),
       this.serviceRepository.count(),
     ]);
 
@@ -162,7 +117,6 @@ export class AnalyticsService {
       items: rows.map((row, index) => ({
         rank: (query.page - 1) * query.limit + index + 1,
         ...row,
-        metric_value: Number(row.metric_value),
       })),
       pagination: {
         page: query.page,
@@ -185,11 +139,7 @@ export class AnalyticsService {
       );
     }
 
-    const startDate = this.parseDate(query.startDate, 'startDate');
-    const endDate = this.parseDate(query.endDate, 'endDate');
-    if (startDate && endDate && startDate > endDate) {
-      throw new BadRequestException('"startDate" must be earlier than or equal to "endDate".');
-    }
+    const range = parseDateRange(query.startDate, query.endDate, 'startDate', 'endDate');
 
     const bucketSeconds = query.bucketSeconds ?? DEFAULT_BUCKET_SECONDS;
     if (!Number.isInteger(bucketSeconds) || bucketSeconds <= 0) {
@@ -197,17 +147,9 @@ export class AnalyticsService {
     }
     const bucketMs = bucketSeconds * 1000;
 
-    const uuidIds = query.serviceIds.filter((id) => UUID_REGEX.test(id));
-    const whereConditions: FindOptionsWhere<Service>[] = [
-      { external_id: In(query.serviceIds) },
-    ];
-    if (uuidIds.length > 0) {
-      whereConditions.unshift({ idServices: In(uuidIds) });
-    }
-
-    const foundServices = await this.serviceRepository.find({
-      where: whereConditions,
-    });
+    const foundServices = await this.serviceRepository.findByIdentifiers(
+      query.serviceIds,
+    );
 
     const orderedServices: Service[] = [];
     const missingIds: string[] = [];
@@ -235,23 +177,10 @@ export class AnalyticsService {
       );
     }
 
-    const collectionWhere: FindOptionsWhere<MetricCollection> = {
-      service_id: In(resolvedIds),
-    };
-    if (startDate && endDate) {
-      collectionWhere.timestamp = Between(startDate, endDate);
-    } else if (startDate) {
-      collectionWhere.timestamp = MoreThanOrEqual(startDate);
-    } else if (endDate) {
-      collectionWhere.timestamp = LessThanOrEqual(endDate);
-    }
-
-    const collections = this.collectionRepository
-      ? await this.collectionRepository.find({
-          where: collectionWhere,
-          order: { timestamp: 'ASC' },
-        })
-      : [];
+    const collections = await this.collectionRepository.findByServices(
+      resolvedIds,
+      range,
+    );
 
     interface BucketAccumulator {
       cpuSum: number;
@@ -448,14 +377,5 @@ export class AnalyticsService {
       series,
       summary,
     };
-  }
-
-  private parseDate(value: string | undefined, name: string): Date | undefined {
-    if (value === undefined) return undefined;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException(`Query parameter "${name}" must be a valid date.`);
-    }
-    return date;
   }
 }

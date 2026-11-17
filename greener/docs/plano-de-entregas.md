@@ -78,7 +78,7 @@ Quadro do projeto: [GitHub Projects](https://github.com/orgs/CyberChese/projects
 | Validar a descoberta periódica de serviços no ambiente de implantação | DW02 | Implementada na TASK-048; intervalo configurável e logs estruturados | Verificar os ciclos no backend e confirmar a sincronização no PostgreSQL |
 | Persistir o `region_code` do Agregador, necessário para a intensidade de carbono | DW02 | Concluída na Sprint 2 | Manter cobertura de testes e documentação |
 | Atualizar a imagem do backend para Node 24, permitindo rodar os testes dentro do container | DW07, TP04 | Concluída na Sprint 2 | Manter Node 24 como runtime oficial |
-| Criar a camada de repositories e separar responsabilidades do `MetricsService` | DW03, TP01 | Parcial: ainda há responsabilidades concentradas nos services | Planejar refatoração futura |
+| Criar a camada de repositories e separar responsabilidades do `MetricsService` | DW03, TP01 | Concluído na TASK-049: acesso ao banco isolado em `src/repositories`; services sem consultas TypeORM | Manter novas consultas dentro dos repositories |
 | Remover código sem uso (`modules/coletas.*`, `services/entities/service.entity.ts`) | TP03 | Concluído: arquivos removidos; nenhum era importado (build, lint e testes verificados) | Nenhuma |
 | Configurar Swagger em `/api/docs` | DW07 | Concluída na Sprint 2 pela TASK-031 | Manter documentação sincronizada com as rotas |
 

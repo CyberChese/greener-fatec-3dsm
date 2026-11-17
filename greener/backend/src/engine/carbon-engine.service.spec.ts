@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
+import { MetricCollectionRepository } from '../repositories/metric-collection.repository';
 import { CarbonEngineService } from './carbon-engine.service';
 
 describe('CarbonEngineService', () => {
@@ -16,13 +16,13 @@ describe('CarbonEngineService', () => {
 
   const createService = () => {
     const repository = {
-      findOneBy: jest.fn(),
+      findById: jest.fn(),
       save: jest.fn(),
     };
     return {
       repository,
       service: new CarbonEngineService(
-        repository as unknown as Repository<MetricCollection>,
+        repository as unknown as MetricCollectionRepository,
       ),
     };
   };
@@ -48,7 +48,7 @@ describe('CarbonEngineService', () => {
 
   it('reprocessa a mesma coleta sem criar outra linha', async () => {
     const { repository, service } = createService();
-    repository.findOneBy.mockResolvedValue(collection);
+    repository.findById.mockResolvedValue(collection);
     repository.save.mockImplementation(async (value: MetricCollection) => value);
 
     const firstResult = await service.reprocessCollection(
@@ -58,10 +58,8 @@ describe('CarbonEngineService', () => {
       collection.idCollections,
     );
 
-    expect(repository.findOneBy).toHaveBeenCalledTimes(2);
-    expect(repository.findOneBy).toHaveBeenCalledWith({
-      idCollections: collection.idCollections,
-    });
+    expect(repository.findById).toHaveBeenCalledTimes(2);
+    expect(repository.findById).toHaveBeenCalledWith(collection.idCollections);
     expect(repository.save).toHaveBeenCalledTimes(2);
     expect(repository.save).toHaveBeenNthCalledWith(1, collection);
     expect(repository.save).toHaveBeenNthCalledWith(2, collection);
@@ -127,7 +125,7 @@ describe('CarbonEngineService', () => {
 
   it('informa quando a coleta não existe sem tentar salvá-la', async () => {
     const { repository, service } = createService();
-    repository.findOneBy.mockResolvedValue(null);
+    repository.findById.mockResolvedValue(null);
 
     await expect(
       service.reprocessCollection(collection.idCollections),
@@ -141,7 +139,7 @@ describe('CarbonEngineService', () => {
     ['fallback flag', { carbon_intensity_fallback: null }],
   ])('rejects reprocessing without persisted %s', async (_caseName, override) => {
     const { repository, service } = createService();
-    repository.findOneBy.mockResolvedValue({ ...collection, ...override });
+    repository.findById.mockResolvedValue({ ...collection, ...override });
 
     await expect(
       service.reprocessCollection(collection.idCollections),

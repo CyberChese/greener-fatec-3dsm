@@ -5,9 +5,8 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Service, ServiceStatus } from '../../entities/service.entity';
+import { ServiceStatus } from '../../entities/service.entity';
+import { ServiceRepository } from '../../repositories/service.repository';
 import { AggregatorClientService } from './aggregator-client.service';
 
 @Injectable()
@@ -22,8 +21,7 @@ export class ServiceDiscoveryService
   constructor(
     private readonly aggregatorClient: AggregatorClientService,
     configService: ConfigService,
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
+    private readonly serviceRepository: ServiceRepository,
   ) {
     const intervalSeconds = configService.get<number>(
       'SERVICE_DISCOVERY_INTERVAL_SECONDS',
@@ -41,7 +39,7 @@ export class ServiceDiscoveryService
       );
     }
 
-    const existingServices = await this.serviceRepository.find();
+    const existingServices = await this.serviceRepository.findAll();
     const existingByExternalId = new Map(
       existingServices.map(
         (service) => [service.external_id, service] as const,
@@ -78,23 +76,10 @@ export class ServiceDiscoveryService
       };
     });
 
-    if (rows.length > 0) {
-      await this.serviceRepository.upsert(rows, ['external_id']);
-    }
+    await this.serviceRepository.upsertByExternalId(rows);
 
     if (isComplete) {
-      const updateQuery = this.serviceRepository
-        .createQueryBuilder()
-        .update(Service)
-        .set({ status: ServiceStatus.UNAVAILABLE });
-
-      if (discoveredIds.size > 0) {
-        updateQuery.where('"external_id" NOT IN (:...discoveredIds)', {
-          discoveredIds: [...discoveredIds],
-        });
-      }
-
-      await updateQuery.execute();
+      await this.serviceRepository.markUnavailableExcept([...discoveredIds]);
     }
 
     return newServicesCount;

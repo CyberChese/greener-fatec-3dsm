@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -11,11 +10,11 @@ import { LoginRateLimitService } from './login-rate-limit.service';
 import { PasswordHasherService } from './password-hasher.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { User } from '../entities/user.entity';
+import { RepositoriesModule } from '../repositories/repositories.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    RepositoriesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

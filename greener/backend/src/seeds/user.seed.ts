@@ -1,5 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import dataSource from '../data-source';
+import { User } from '../entities/user.entity';
+import { UserRepository } from '../repositories/user.repository';
 
 interface LocalSeedCredentials {
   email: string;
@@ -38,12 +40,12 @@ async function runSeed(): Promise<void> {
     initialized = true;
 
     const passwordHash = await bcrypt.hash(password, 10);
-    await dataSource.query(
-      `INSERT INTO "users" ("nameUsers", "email", "password_hash")
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("email") DO NOTHING;`,
-      ['Usuário local', email, passwordHash],
-    );
+    const users = new UserRepository(dataSource.getRepository(User));
+    await users.insertIfAbsent({
+      nameUsers: 'Usuário local',
+      email,
+      password_hash: passwordHash,
+    });
 
     console.info('Local development seed completed.');
   } finally {

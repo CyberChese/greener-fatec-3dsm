@@ -35,12 +35,13 @@ O frontend **nunca** chama as APIs da UniLaunch diretamente: todo acesso externo
 | `ServicesModule` | [`services/`](../backend/src/services) | Consulta pública dos serviços cadastrados |
 | `AggregatorModule` | [`modules/aggregator/`](../backend/src/modules/aggregator) | Cliente HTTP do Agregador, validação do contrato da resposta e sincronização (*upsert*) dos serviços |
 | `MetricsModule` | [`metrics/`](../backend/src/metrics) | Ciclo periódico de coleta, gravação das coletas, atualização de estados e consulta de histórico |
+| `RepositoriesModule` | [`repositories/`](../backend/src/repositories) | Único ponto de acesso ao PostgreSQL: `ServiceRepository`, `MetricCollectionRepository` e `UserRepository` |
 
 Camadas dentro de cada módulo:
 
 - **Controllers** recebem a requisição, aplicam pipes de validação (`ValidationPipe`, `ParseUUIDPipe`) e devolvem JSON.
 - **Services** concentram as regras de negócio (autenticação, transições de estado, validação do contrato).
-- **Persistência** é feita pelo `Repository<Entity>` do TypeORM, recebido por injeção de dependência (`@InjectRepository`).
+- **Repositories** ([`repositories/`](../backend/src/repositories)) são a única camada que usa o TypeORM (`@InjectRepository`, consultas e *query builders*). Os services recebem esses repositories por injeção de dependência e não montam consultas.
 - **Entidades** ficam em [`entities/`](../backend/src/entities) e as **migrações** em [`migrations/`](../backend/src/migrations).
 
 ### 2.2 Frontend (`greener/frontend`)

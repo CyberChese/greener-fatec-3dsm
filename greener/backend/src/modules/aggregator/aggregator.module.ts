@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Service } from '../../entities/service.entity';
+import { RepositoriesModule } from '../../repositories/repositories.module';
 import { AggregatorClientService } from './aggregator-client.service';
 import { ServiceDiscoveryService } from './service-discovery.service';
 
@@ -10,7 +9,7 @@ import { ServiceDiscoveryService } from './service-discovery.service';
   imports: [
     HttpModule,
     ConfigModule,
-    TypeOrmModule.forFeature([Service]),
+    RepositoriesModule,
   ],
   providers: [AggregatorClientService, ServiceDiscoveryService],
   exports: [AggregatorClientService, ServiceDiscoveryService],

@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
+import { MetricCollectionRepository } from '../repositories/metric-collection.repository';
+import { ServiceRepository } from '../repositories/service.repository';
 import { AnalyticsService } from './analytics.service';
 import { CompareQueryDto } from './dto/compare-query.dto';
 import { RankingQueryDto } from './dto/ranking-query.dto';
@@ -10,39 +10,30 @@ import { RankingQueryDto } from './dto/ranking-query.dto';
 describe('AnalyticsService', () => {
   let analytics: AnalyticsService;
   let services: {
-    createQueryBuilder: jest.Mock;
+    findImpactRanking: jest.Mock;
     count: jest.Mock;
-    find: jest.Mock;
+    findByIdentifiers: jest.Mock;
   };
-  let collections: { find: jest.Mock };
-  let queryBuilder: Record<string, jest.Mock>;
+  let collections: { findByServices: jest.Mock };
 
   beforeEach(() => {
-    queryBuilder = {};
-    for (const method of ['leftJoin', 'select', 'addSelect', 'groupBy', 'addGroupBy', 'orderBy', 'addOrderBy', 'offset', 'limit']) {
-      queryBuilder[method] = jest.fn().mockReturnValue(queryBuilder);
-    }
-    queryBuilder.getRawMany = jest.fn().mockResolvedValue([
-      { service_id: 'service-1', external_id: 'billing', name: 'Billing', status: 'ACTIVE', metric_value: '1.25' },
-    ]);
     services = {
-      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      findImpactRanking: jest.fn().mockResolvedValue([
+        { service_id: 'service-1', external_id: 'billing', name: 'Billing', status: 'ACTIVE', metric_value: 1.25 },
+      ]),
       count: jest.fn().mockResolvedValue(12),
-      find: jest.fn().mockResolvedValue([]),
+      findByIdentifiers: jest.fn().mockResolvedValue([]),
     };
     collections = {
-      find: jest.fn().mockResolvedValue([]),
+      findByServices: jest.fn().mockResolvedValue([]),
     };
     analytics = new AnalyticsService(
-      services as unknown as Repository<Service>,
-      collections as unknown as Repository<MetricCollection>,
+      services as unknown as ServiceRepository,
+      collections as unknown as MetricCollectionRepository,
     );
   });
 
-  it.each([
-    ['energy', 'collection.energy_kwh'],
-    ['co2e', 'collection.co2e_kg'],
-  ] as const)('ranks by %s in the requested direction with database pagination', async (metric, column) => {
+  it.each(['energy', 'co2e'] as const)('ranks by %s through the repository with pagination', async (metric) => {
     const result = await analytics.getRanking({
       metric,
       order: 'desc',
@@ -52,17 +43,22 @@ describe('AnalyticsService', () => {
       endDate: '2026-11-10T00:00:00.000Z',
     } as RankingQueryDto);
 
-    expect(queryBuilder.addSelect).toHaveBeenCalledWith(`COALESCE(SUM(${column}), 0)`, 'metric_value');
-    expect(queryBuilder.orderBy).toHaveBeenCalledWith('metric_value', 'DESC');
-    expect(queryBuilder.offset).toHaveBeenCalledWith(5);
-    expect(queryBuilder.limit).toHaveBeenCalledWith(5);
-    expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
-      expect.anything(),
-      'collection',
-      expect.stringContaining('collection.timestamp >= :startDate'),
-      { startDate: new Date('2026-11-01T00:00:00.000Z'), endDate: new Date('2026-11-10T00:00:00.000Z') },
-    );
-    expect(result.items[0].metric_value).toBe(1.25);
+    expect(services.findImpactRanking).toHaveBeenCalledWith({
+      metric,
+      order: 'desc',
+      page: 2,
+      limit: 5,
+      from: new Date('2026-11-01T00:00:00.000Z'),
+      to: new Date('2026-11-10T00:00:00.000Z'),
+    });
+    expect(result.items[0]).toEqual({
+      rank: 6,
+      service_id: 'service-1',
+      external_id: 'billing',
+      name: 'Billing',
+      status: 'ACTIVE',
+      metric_value: 1.25,
+    });
     expect(result.pagination).toEqual({ page: 2, limit: 5, total: 12, totalPages: 3 });
   });
 
@@ -100,8 +96,8 @@ describe('AnalyticsService', () => {
     } as Service;
 
     it('returns temporally aligned paired series (CPU, kWh, CO2e) and efficiency summary for active services', async () => {
-      services.find.mockResolvedValue([serviceA, serviceB]);
-      collections.find.mockResolvedValue([
+      services.findByIdentifiers.mockResolvedValue([serviceA, serviceB]);
+      collections.findByServices.mockResolvedValue([
         {
           service_id: serviceA.idServices,
           cpu_usage: '80.000000',
@@ -207,8 +203,8 @@ describe('AnalyticsService', () => {
     });
 
     it('compares active services with a temporarily unavailable (UNAVAILABLE) service, filling missing buckets with null', async () => {
-      services.find.mockResolvedValue([serviceA, serviceB, serviceCUnavailable]);
-      collections.find.mockResolvedValue([
+      services.findByIdentifiers.mockResolvedValue([serviceA, serviceB, serviceCUnavailable]);
+      collections.findByServices.mockResolvedValue([
         // Bucket 1 (12:00:00): all 3 services collected before serviceC became UNAVAILABLE
         {
           service_id: serviceA.idServices,
@@ -301,8 +297,8 @@ describe('AnalyticsService', () => {
     });
 
     it('excludes an UNAVAILABLE service with zero samples in the period from being treated as least polluting with 0 CO2e', async () => {
-      services.find.mockResolvedValue([serviceA, serviceB, serviceCUnavailable]);
-      collections.find.mockResolvedValue([
+      services.findByIdentifiers.mockResolvedValue([serviceA, serviceB, serviceCUnavailable]);
+      collections.findByServices.mockResolvedValue([
         {
           service_id: serviceA.idServices,
           cpu_usage: '70.000000',
@@ -357,7 +353,7 @@ describe('AnalyticsService', () => {
         } as CompareQueryDto),
       ).rejects.toBeInstanceOf(BadRequestException);
 
-      services.find.mockResolvedValue([serviceA]);
+      services.findByIdentifiers.mockResolvedValue([serviceA]);
       await expect(
         analytics.compareServices({
           serviceIds: [serviceA.idServices, 'missing-service'],

@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MetricCollection } from '../entities/metric-collection.entity';
+import { RepositoriesModule } from '../repositories/repositories.module';
 import { CarbonEngineService } from './carbon-engine.service';
 import { EnergyEngineService } from './energy-engine.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MetricCollection])],
+  imports: [RepositoriesModule],
   providers: [EnergyEngineService, CarbonEngineService],
   exports: [EnergyEngineService, CarbonEngineService],
 })
