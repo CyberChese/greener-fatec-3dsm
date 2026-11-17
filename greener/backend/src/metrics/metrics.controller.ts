@@ -8,8 +8,13 @@ import {
 } from '@nestjs/swagger';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { CollectionConfigDto, MetricsSummaryDto } from './dto/metrics-summary.dto';
+import { CompareQueryDto } from './dto/compare-query.dto';
 import { RankingQueryDto } from './dto/ranking-query.dto';
-import { AnalyticsService, RankingResult } from './analytics.service';
+import {
+  AnalyticsService,
+  CompareResult,
+  RankingResult,
+} from './analytics.service';
 import { MetricsService, MetricsSummary } from './metrics.service';
 
 @Controller('metrics')
@@ -26,6 +31,24 @@ export class MetricsController {
   @ApiResponse({ status: 400, description: 'Invalid metric, order, pagination, or date filter.' })
   getRanking(@Query() query: RankingQueryDto): Promise<RankingResult> {
     return this.analyticsService.getRanking(query);
+  }
+
+  @Get('compare')
+  @ApiOperation({
+    summary: 'Compare 2 to 4 services over a sampling period with temporally aligned series',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Paired time series (CPU, kWh, CO2e) and statistical efficiency summary across the compared services.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid serviceIds count (must be 2 to 4 unique IDs) or date filter.',
+  })
+  @ApiResponse({ status: 404, description: 'One or more services were not found.' })
+  compareServices(@Query() query: CompareQueryDto): Promise<CompareResult> {
+    return this.analyticsService.compareServices(query);
   }
 
   @Get('summary')
