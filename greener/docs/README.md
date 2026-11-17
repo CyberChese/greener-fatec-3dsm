@@ -22,7 +22,6 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | [Arquitetura](arquitetura.md) | Componentes, responsabilidades, fluxo de dados e decisões arquiteturais |
 | [API](api.md) | Endpoints implementados, parâmetros, respostas e códigos de erro |
 | [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e |
-| [Índices e persistência (TASK-028)](../../docs/database/TASK-028-indices.md) | Decisão de índices do PostgreSQL para as consultas de coleta e resumo |
 | [Contrato do Agregador](contrato-agregador.md) | Contrato da API de Métricas da UniLaunch usado pelo backend |
 | [Contrato da API de Intensidade de Carbono](contrato-intensidade-carbono.md) | Contrato oficial da consulta regional, unidade, validação e fallback |
 
@@ -32,6 +31,9 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 |---|---|
 | [Interface](interface.md) | Usuários e tarefas, protótipos, fluxo de navegação e decisões de interface |
 | [Relatório de Usabilidade (IHC)](ihc/relatorio-usabilidade.md) | Metodologia, feedbacks, pontos de fricção e ajustes propostos para o protótipo navegável |
+| [Avaliação de usabilidade da Sprint 3 (IHC05)](ihc/avaliacao-usabilidade-sprint-3.md) | Plano, roteiro de tarefas, instrumentos, modelo de resultados e lista de problemas da avaliação com usuários |
+| [TCLE (modelo)](ihc/tcle-modelo.md) | Termo de consentimento em branco, com cláusulas de proteção de dados (LGPD) |
+| [Ficha de observação (modelo)](ihc/ficha-observacao-modelo.md) | Ficha por participante: tarefas, tempos, SEQ, SUS e problemas observados |
 
 ## 📐 Diagramas Técnicos
 
