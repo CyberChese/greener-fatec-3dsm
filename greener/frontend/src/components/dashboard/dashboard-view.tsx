@@ -66,6 +66,14 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
     return totalsInRange(history, simulatedRange.fromMs, simulatedRange.toMs)
   }, [period.totals, history, simulatedRange])
 
+  const simulatedHistory = useMemo(() => {
+    if (!simulatedRange) return history
+    return history.filter((r) => {
+      const at = Date.parse(r.simulatedAt)
+      return at >= simulatedRange.fromMs && at <= simulatedRange.toMs
+    })
+  }, [history, simulatedRange])
+
   const simulatedSeries = useMemo(() => {
     if (!simulatedRange) return series
     const ticks = new Set<number>()
@@ -260,8 +268,9 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
           services={compared}
           periodTotals={periodTotals}
           periodLabel={periodLabel}
-          simulatedHistory={history.filter((record) => record.tick >= fromTick)}
+          simulatedHistory={simulatedHistory}
           simulated={IS_SIMULATED}
+          timeFilters={timeFilters}
           onRemove={toggle}
           onClear={() => setSelectedIds([])}
         />

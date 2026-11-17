@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { comparisonWindow } from '@/hooks/use-service-comparison'
 import { totalsInRange } from '@/lib/calculations'
 import {
   DEFAULT_FILTERS,
@@ -123,6 +124,23 @@ describe('janela temporal (TASK-045)', () => {
     )
     expect(totals.get('svc')?.energyKwh).toBe(6)
     expect(totals.get('svc')?.co2eKg).toBeCloseTo(0.6)
+  })
+})
+
+describe('comparação acompanha o período (TASK-045)', () => {
+  it('sem filtros mantém a janela de 15 min com blocos de 30 s', () => {
+    expect(comparisonWindow(undefined, NOW)).toEqual({
+      startDate: new Date(NOW - 15 * 60_000).toISOString(),
+      bucketSeconds: 30,
+    })
+  })
+
+  it('usa a janela selecionada e aumenta os blocos para no máximo 120 pontos', () => {
+    const week = comparisonWindow(DEFAULT_FILTERS, NOW)
+    expect(week.startDate).toBe(new Date(NOW - 7 * DAY).toISOString())
+    expect(week.endDate).toBe(new Date(NOW).toISOString())
+    expect(week.bucketSeconds).toBe((7 * DAY) / 1000 / 120)
+    expect(comparisonWindow({ ...DEFAULT_FILTERS, preset: '24h' }, NOW).bucketSeconds).toBe(720)
   })
 })
 

@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import type { CollectionRecord, ServiceSnapshot } from '@/lib/types'
 import { formatDateTime, formatKg, formatKwh, formatNumber } from '@/lib/format'
 import { useServiceComparison } from '@/hooks/use-service-comparison'
+import type { TimeFilters } from '@/lib/dashboard-filters'
 import { CardHeading, GlassCard } from './glass-card'
 import { StatusBadge } from './status-badge'
 import {
@@ -22,6 +23,7 @@ interface ComparisonPanelProps {
   periodLabel: string
   simulatedHistory: CollectionRecord[]
   simulated: boolean
+  timeFilters?: TimeFilters
   onRemove: (id: string) => void
   onClear: () => void
 }
@@ -192,6 +194,7 @@ export function ComparisonPanel({
   periodLabel,
   simulatedHistory,
   simulated,
+  timeFilters,
   onRemove,
   onClear,
 }: ComparisonPanelProps) {
@@ -201,7 +204,7 @@ export function ComparisonPanel({
     hiddenIds: new Set(),
   })
   const hiddenIds = visibility.key === serviceKey ? visibility.hiddenIds : EMPTY_HIDDEN_IDS
-  const { result: realComparison, loading, error } = useServiceComparison(services, !simulated)
+  const { result: realComparison, loading, error } = useServiceComparison(services, !simulated, timeFilters)
   const points = useMemo(
     () => buildComparisonPoints(services, simulated ? simulatedHistory : [], simulated ? [] : realComparison?.series ?? []),
     [services, simulated, simulatedHistory, realComparison],
