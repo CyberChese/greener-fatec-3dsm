@@ -1,7 +1,8 @@
 import { Clock, LayoutDashboard, Leaf, LoaderCircle, Map as MapIcon, Menu, Pause, Play, ShieldCheck, Timer, TriangleAlert, X } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { NavLink } from 'react-router'
+import { NavLink, useSearchParams } from 'react-router'
+import { parseTimeFilters, writeTimeFilters } from '@/lib/dashboard-filters'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { formatDateTime, formatSimulatedClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -17,9 +18,9 @@ interface AppHeaderProps {
   reconnecting?: boolean
 }
 
-const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] = [
-  { to: '/', label: 'Observatório', icon: LayoutDashboard, end: true },
-  { to: '/mapa', label: 'Mapa', icon: MapIcon },
+const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; keepFilters?: boolean }[] = [
+  { to: '/', label: 'Observatório', icon: LayoutDashboard, end: true, keepFilters: true },
+  { to: '/mapa', label: 'Mapa', icon: MapIcon, keepFilters: true },
   { to: '/admin', label: 'Área do Administrador', icon: ShieldCheck },
 ]
 
@@ -27,6 +28,10 @@ const chipClass =
   'inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 px-3 py-1.5 text-zinc-300 ring-1 ring-inset ring-white/10'
 
 function NavTabs({ vertical, onNavigate }: { vertical?: boolean; onNavigate?: () => void }) {
+  const [params] = useSearchParams()
+  const query = writeTimeFilters(new URLSearchParams(), parseTimeFilters(params)).toString()
+  const filtersSearch = query ? `?${query}` : ''
+
   return (
     <nav aria-label="Seções">
       <div
@@ -35,10 +40,10 @@ function NavTabs({ vertical, onNavigate }: { vertical?: boolean; onNavigate?: ()
           vertical ? 'flex flex-col' : 'flex',
         )}
       >
-        {TABS.map(({ to, label, icon: Icon, end }) => (
+        {TABS.map(({ to, label, icon: Icon, end, keepFilters }) => (
           <NavLink
             key={to}
-            to={to}
+            to={keepFilters ? { pathname: to, search: filtersSearch } : to}
             end={end}
             onClick={onNavigate}
             className={({ isActive }) =>

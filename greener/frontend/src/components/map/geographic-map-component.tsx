@@ -44,7 +44,7 @@ const markerTitle = (group: LocationGroup) =>
  * Mapa geográfico interativo (Leaflet). Cada localização com coordenadas vira um marcador colorido pelo estado
  * (com contador quando há mais de um serviço no mesmo ponto); o clique abre o popup com os detalhes.
  */
-export function GeographicMapComponent({ services }: { services: ServiceSnapshot[] }) {
+export function GeographicMapComponent({ services, periodLabel }: { services: ServiceSnapshot[]; periodLabel?: string }) {
   const groups = useMemo(() => groupByLocation(services), [services])
   const missing = useMemo(() => servicesWithoutCoordinates(services), [services])
   const locations = useMemo(
@@ -75,7 +75,7 @@ export function GeographicMapComponent({ services }: { services: ServiceSnapshot
               title={markerTitle(group)}
             >
               <Popup maxWidth={320} minWidth={240}>
-                <ServicePopupContent group={group} />
+                <ServicePopupContent group={group} periodLabel={periodLabel} />
               </Popup>
             </Marker>
           ))}

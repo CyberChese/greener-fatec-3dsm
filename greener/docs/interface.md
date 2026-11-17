@@ -75,6 +75,9 @@ Login · modal
 | Indicador "Entrando…" e botão desabilitado durante o envio | `LoginModal.tsx` | Feedback de carregamento e prevenção de envio duplo |
 | Intervalo de coleta e última coleta exibidos no Observatório, com estados de carregamento e erro | [`HomePage.tsx`](../frontend/src/pages/HomePage.tsx) | O usuário sabe se os dados estão atualizados |
 | O token JWT nunca é exibido na tela; a Área do Administrador mostra só e-mail e expiração | [`SessionCard.tsx`](../frontend/src/components/SessionCard.tsx) | Segurança (ponto F4 do relatório de usabilidade) |
+| Barra de filtros no topo do Observatório e do Mapa, com atalhos de período (24h, 7 dias, 30 dias), intervalo personalizado confirmado por botão e busca por nome com debounce de 300 ms | [`filters-bar.tsx`](../frontend/src/components/dashboard/filters-bar.tsx) | O usuário escolhe a janela de análise sem disparar uma consulta a cada tecla (HU-17, RF12) |
+| Período e busca ficam nos parâmetros da URL (`period`, `from`, `to`, `q`); o padrão (7 dias, sem busca) não é gravado | [`dashboard-filters.ts`](../frontend/src/lib/dashboard-filters.ts) | O link copiado abre a tela com os mesmos filtros, e a navegação entre Observatório e Mapa os mantém |
+| Energia e CO₂e dos indicadores, mapa, ranking, cartões e comparação somam a janela selecionada, lida de `GET /api/metrics/ranking` com `startDate` e `endDate` | [`ranking.ts`](../frontend/src/services/ranking.ts) | Todas as visões mostram o mesmo período; CPU, memória, disco e rede continuam sendo a leitura mais recente |
 
 ## 4. Avaliação de usabilidade
 
