@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { publicApi } from '@/services/http'
 import { combineTotals, fetchPeriodTotals, parseRankingPage, sumTotals } from '@/services/ranking'
@@ -19,6 +20,9 @@ const item = (external_id: string, metric_value: number | string) => ({
   status: 'ACTIVE',
   metric_value,
 })
+
+const param = (config: AxiosRequestConfig | undefined, name: string) =>
+  (config?.params as Record<string, unknown> | undefined)?.[name]
 
 const range = { from: new Date('2026-11-09T12:00:00.000Z'), to: new Date('2026-11-16T12:00:00.000Z') }
 
@@ -56,9 +60,9 @@ describe('totais do período pelo ranking do backend (TASK-045)', () => {
   })
 
   it('consulta energia e CO₂e com a janela selecionada', async () => {
-    const get = vi.spyOn(publicApi, 'get').mockImplementation((_url: string, config?: { params?: { metric?: string } }) =>
+    const get = vi.spyOn(publicApi, 'get').mockImplementation((_url: string, config?: AxiosRequestConfig) =>
       Promise.resolve({
-        data: config?.params?.metric === 'energy' ? page([item('a', 3), item('b', 1)]) : page([item('a', 0.6), item('b', 0.2)]),
+        data: param(config, 'metric') === 'energy' ? page([item('a', 3), item('b', 1)]) : page([item('a', 0.6), item('b', 0.2)]),
       }),
     )
 
@@ -79,8 +83,8 @@ describe('totais do período pelo ranking do backend (TASK-045)', () => {
   })
 
   it('percorre todas as páginas do ranking', async () => {
-    const get = vi.spyOn(publicApi, 'get').mockImplementation((_url: string, config?: { params?: { page?: number } }) =>
-      Promise.resolve({ data: config?.params?.page === 1 ? page([item('a', 1)], 2) : page([item('b', 2)], 2) }),
+    const get = vi.spyOn(publicApi, 'get').mockImplementation((_url: string, config?: AxiosRequestConfig) =>
+      Promise.resolve({ data: param(config, 'page') === 1 ? page([item('a', 1)], 2) : page([item('b', 2)], 2) }),
     )
 
     const totals = await fetchPeriodTotals(range)
