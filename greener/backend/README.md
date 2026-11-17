@@ -53,6 +53,7 @@ O backend lê o `.env` da raiz do repositório (modelo em [`.env.example`](../..
 | `LOCAL_DEVELOPMENT_SEED_ENABLED` | Habilita o seed somente com `NODE_ENV=development` e valor `true` |
 | `LOCAL_DEVELOPMENT_SEED_EMAIL`, `LOCAL_DEVELOPMENT_SEED_PASSWORD` | Credenciais fornecidas para o seed local; não são registradas em logs |
 | `AGGREGATOR_API_URL`, `AGGREGATOR_SERVICES_PATH`, `AGGREGATOR_TIMEOUT` | Acesso ao Agregador de Métricas |
+| `SERVICE_DISCOVERY_INTERVAL_SECONDS` | Intervalo entre sincronizações da descoberta (segundos; padrão 300) |
 | `CARBON_INTENSITY_API_URL` | URL base da API oficial de intensidade de carbono |
 | `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da consulta de carbono (1 a 5000 ms; padrão 5000) |
 | `CARBON_INTENSITY_FALLBACK_G_PER_KWH` | Fator de fallback não negativo em gCO₂e/kWh; defina no ambiente para que indisponibilidades possam usar fallback |

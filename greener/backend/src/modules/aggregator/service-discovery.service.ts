@@ -1,20 +1,37 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Service, ServiceStatus } from '../../entities/service.entity';
 import { AggregatorClientService } from './aggregator-client.service';
 
 @Injectable()
-export class ServiceDiscoveryService implements OnModuleInit {
+export class ServiceDiscoveryService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(ServiceDiscoveryService.name);
+  private readonly discoveryIntervalMs: number;
+  private timer: NodeJS.Timeout | undefined;
+  private stopped = false;
 
   constructor(
     private readonly aggregatorClient: AggregatorClientService,
+    configService: ConfigService,
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
-  ) {}
+  ) {
+    const intervalSeconds = configService.get<number>(
+      'SERVICE_DISCOVERY_INTERVAL_SECONDS',
+    );
+    this.discoveryIntervalMs = (intervalSeconds ?? 300) * 1000;
+  }
 
-  async synchronize(): Promise<void> {
+  async synchronize(): Promise<number> {
     const { services, isComplete } =
       await this.aggregatorClient.fetchDiscoveredServices();
 
@@ -30,6 +47,10 @@ export class ServiceDiscoveryService implements OnModuleInit {
         (service) => [service.external_id, service] as const,
       ),
     );
+    const discoveredIds = new Set(services.map((service) => service.externalId));
+    const newServicesCount = services.filter(
+      (service) => !existingByExternalId.has(service.externalId),
+    ).length;
     const observedAt = new Date();
 
     const rows = services.map((discovered) => {
@@ -62,31 +83,62 @@ export class ServiceDiscoveryService implements OnModuleInit {
     }
 
     if (isComplete) {
-      const discoveredIds = services.map((service) => service.externalId);
-
       const updateQuery = this.serviceRepository
         .createQueryBuilder()
         .update(Service)
         .set({ status: ServiceStatus.UNAVAILABLE });
 
-      if (discoveredIds.length > 0) {
+      if (discoveredIds.size > 0) {
         updateQuery.where('"external_id" NOT IN (:...discoveredIds)', {
-          discoveredIds,
+          discoveredIds: [...discoveredIds],
         });
       }
 
       await updateQuery.execute();
     }
+
+    return newServicesCount;
   }
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
+    void this.runDiscoveryCycle();
+  }
+
+  onModuleDestroy(): void {
+    this.stopped = true;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+  }
+
+  private async runDiscoveryCycle(): Promise<void> {
+    const startedAt = Date.now();
     try {
-      await this.synchronize();
+      const newServicesCount = await this.synchronize();
+      this.logger.log(
+        JSON.stringify({
+          event: 'service_discovery_completed',
+          new_services_count: newServicesCount,
+          duration_ms: Date.now() - startedAt,
+        }),
+      );
     } catch (error) {
       this.logger.error(
-        'Não foi possível sincronizar os serviços na inicialização.',
-        error instanceof Error ? error.stack : String(error),
+        JSON.stringify({
+          event: 'service_discovery_failed',
+          new_services_count: null,
+          duration_ms: Date.now() - startedAt,
+          error: error instanceof Error ? error.message : String(error),
+        }),
       );
+    } finally {
+      if (!this.stopped) {
+        this.timer = setTimeout(
+          () => void this.runDiscoveryCycle(),
+          this.discoveryIntervalMs,
+        );
+      }
     }
   }
 }
