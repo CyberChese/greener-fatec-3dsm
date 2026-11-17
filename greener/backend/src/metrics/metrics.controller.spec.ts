@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -18,6 +19,7 @@ describe('MetricsController', () => {
     },
   };
   const getRanking = jest.fn((query: object) => Promise.resolve(query));
+  const compareServices = jest.fn((query: object) => Promise.resolve(query));
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -31,7 +33,7 @@ describe('MetricsController', () => {
         },
         {
           provide: AnalyticsService,
-          useValue: { getRanking },
+          useValue: { getRanking, compareServices },
         },
       ],
     }).compile();
@@ -70,6 +72,28 @@ describe('MetricsController', () => {
       .expect(400);
     await request(app.getHttpServer())
       .get('/api/metrics/ranking?metric=unknown')
+      .expect(400);
+  });
+
+  it('serves the multi-service comparison endpoint for 2 to 4 serviceIds', async () => {
+    await request(app.getHttpServer())
+      .get('/api/metrics/compare?serviceIds=billing-api,auth-api,search-api&bucketSeconds=60')
+      .expect(200)
+      .expect({
+        serviceIds: ['billing-api', 'auth-api', 'search-api'],
+        bucketSeconds: 60,
+      });
+  });
+
+  it('rejects compare requests with fewer than 2, more than 4, or duplicate serviceIds', async () => {
+    await request(app.getHttpServer())
+      .get('/api/metrics/compare?serviceIds=only-one')
+      .expect(400);
+    await request(app.getHttpServer())
+      .get('/api/metrics/compare?serviceIds=s1,s2,s3,s4,s5')
+      .expect(400);
+    await request(app.getHttpServer())
+      .get('/api/metrics/compare?serviceIds=s1,s1')
       .expect(400);
   });
 });

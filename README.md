@@ -218,6 +218,7 @@ Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 | `AGGREGATOR_API_URL` | URL base do Agregador de Métricas | `https://metrics.unilaunch.org` |
 | `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
 | `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
+| `SERVICE_DISCOVERY_INTERVAL_SECONDS` | Intervalo entre sincronizações da descoberta (s) | `300` |
 | `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (s) | `30` |
 | `CARBON_INTENSITY_API_URL` | URL base da API de intensidade de carbono | `https://carbon.unilaunch.org` |
 | `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da API de intensidade de carbono (ms) | `5000` |
@@ -232,7 +233,7 @@ O arquivo `.env` não é versionado (está no `.gitignore`).
 * O primeiro ciclo começa `METRICS_COLLECTION_INTERVAL_SECONDS` após a inicialização do backend, e cada ciclo seguinte começa esse mesmo tempo depois do término do anterior, sem sobreposição.
 * Para cada serviço com endpoint de métricas, o coletor chama `GET {AGGREGATOR_API_URL}{metrics_path}`.
 * Resposta válida grava a coleta e define `ACTIVE`; resposta sem métricas válidas define `NO_METRICS`; timeout, falha de conexão, HTTP 404 ou HTTP 500 define `UNAVAILABLE`. As transições não apagam o histórico.
-* A descoberta de serviços é executada na inicialização do backend.
+* A descoberta é executada em segundo plano na inicialização e repetida a cada `SERVICE_DISCOVERY_INTERVAL_SECONDS` (padrão 300 s). Cada ciclo começa após o anterior terminar, sem sobreposição.
 
 Mapeamento dos campos do Agregador:
 

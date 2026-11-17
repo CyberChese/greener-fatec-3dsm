@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { QueryRunner, Repository } from 'typeorm';
 import { Service, ServiceStatus } from '../../entities/service.entity';
 import { AddRegionCodeToServices1792082026000 } from '../../migrations/1792082026000-AddRegionCodeToServices';
@@ -40,8 +42,15 @@ describe('ServiceDiscoveryService', () => {
     };
     discoveryService = new ServiceDiscoveryService(
       aggregatorClient as unknown as AggregatorClientService,
+      { get: jest.fn().mockReturnValue(300) } as unknown as ConfigService,
       serviceRepository as unknown as Repository<Service>,
     );
+  });
+
+  afterEach(() => {
+    discoveryService.onModuleDestroy();
+    jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   it('marks omitted services unavailable after a complete discovery', async () => {
@@ -152,6 +161,85 @@ describe('ServiceDiscoveryService', () => {
     );
     expect(serviceRepository.createQueryBuilder).not.toHaveBeenCalled();
     expect(serviceRepository.upsert).not.toHaveBeenCalled();
+  });
+
+  it('runs discovery in the background and repeats after the configured interval', async () => {
+    jest.useFakeTimers();
+    const logger = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+
+    discoveryService.onModuleInit();
+    expect(aggregatorClient.fetchDiscoveredServices).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(0);
+    expect(logger).toHaveBeenCalledWith(
+      expect.stringContaining('"event":"service_discovery_completed"'),
+    );
+
+    await jest.advanceTimersByTimeAsync(299_999);
+    expect(aggregatorClient.fetchDiscoveredServices).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(aggregatorClient.fetchDiscoveredServices).toHaveBeenCalledTimes(2);
+    await jest.advanceTimersByTimeAsync(0);
+  });
+
+  it('keeps scheduling discovery after an aggregator failure', async () => {
+    jest.useFakeTimers();
+    const loggerError = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    aggregatorClient.fetchDiscoveredServices
+      .mockRejectedValueOnce(new Error('Aggregator unavailable'))
+      .mockResolvedValueOnce({ services: [], isComplete: false });
+
+    const result = discoveryService.onModuleInit();
+    expect(result).toBeUndefined();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(loggerError).toHaveBeenCalledWith(
+      expect.stringContaining('"event":"service_discovery_failed"'),
+    );
+
+    await jest.advanceTimersByTimeAsync(300_000);
+    expect(aggregatorClient.fetchDiscoveredServices).toHaveBeenCalledTimes(2);
+    await jest.advanceTimersByTimeAsync(0);
+  });
+
+  it('logs the number of newly discovered services as structured JSON', async () => {
+    jest.useFakeTimers();
+    const logger = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    aggregatorClient.fetchDiscoveredServices.mockResolvedValue({
+      services: [
+        {
+          externalId: 'new-service',
+          name: 'New Service',
+          location: { country: 'Brazil', lat: -23.5, lng: -46.6 },
+        },
+      ],
+      isComplete: false,
+    });
+
+    discoveryService.onModuleInit();
+    await jest.advanceTimersByTimeAsync(0);
+
+    const entry = JSON.parse(logger.mock.calls[0][0] as string) as {
+      event: string;
+      new_services_count: number;
+    };
+    expect(entry).toEqual(
+      expect.objectContaining({
+        event: 'service_discovery_completed',
+        new_services_count: 1,
+      }),
+    );
+    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          external_id: 'new-service',
+          status: ServiceStatus.NO_METRICS,
+          country: 'Brazil',
+          latitude: '-23.5',
+          longitude: '-46.6',
+        }),
+      ],
+      ['external_id'],
+    );
   });
 
   it('does not invent a region_code when location or region_code is absent and preserves synchronization', async () => {

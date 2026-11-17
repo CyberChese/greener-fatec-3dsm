@@ -95,6 +95,50 @@ export interface BackendCollection {
   timestamp: string
 }
 
+export interface BackendComparisonMetricPoint {
+  cpu_usage: number | null
+  energy_kwh: number | null
+  co2e_kg: number | null
+}
+
+export interface BackendComparisonSeriesPoint {
+  timestamp: string
+  values: Record<string, BackendComparisonMetricPoint>
+}
+
+export interface BackendComparisonService {
+  service_id: string
+  external_id: string
+  name: string
+  status: string
+  samples_count: number
+  avg_cpu_usage: number | null
+  total_energy_kwh: number
+  total_co2e_kg: number
+}
+
+export interface BackendComparisonResult {
+  startDate: string | null
+  endDate: string | null
+  bucketSeconds: number
+  services: BackendComparisonService[]
+  series: BackendComparisonSeriesPoint[]
+  summary: {
+    most_polluting_service_id: string | null
+    least_polluting_service_id: string | null
+    most_polluting_co2e_kg: number | null
+    least_polluting_co2e_kg: number | null
+    co2e_difference_kg: number | null
+    efficiency_difference_percent: number | null
+  }
+}
+
+export interface BackendComparisonRange {
+  startDate?: string
+  endDate?: string
+  bucketSeconds?: number
+}
+
 /** Energia e emissão de um serviço somadas sobre as coletas de uma janela. */
 export interface WindowImpact {
   /** Soma de energy_kwh; null se nenhuma coleta da janela trouxe o valor (nunca zero por falta de dado). */
@@ -174,6 +218,19 @@ export async function fetchServiceHistory(
 ): Promise<BackendCollection[]> {
   const { data } = await publicApi.get<BackendCollection[]>(`/services/${encodeURIComponent(backendId)}/history`, {
     params: range,
+    signal,
+  })
+  return data
+}
+
+/** GET /api/metrics/compare (rota pública), com séries alinhadas pelo backend. */
+export async function fetchServiceComparison(
+  serviceIds: string[],
+  range: BackendComparisonRange = {},
+  signal?: AbortSignal,
+): Promise<BackendComparisonResult> {
+  const { data } = await publicApi.get<BackendComparisonResult>('/metrics/compare', {
+    params: { ...range, serviceIds: serviceIds.join(',') },
     signal,
   })
   return data

@@ -12,6 +12,7 @@ export interface ServiceCardProps {
   /** Período a que energia e emissão se referem (IHC03). */
   periodLabel?: string
   selected: boolean
+  comparisonDisabled?: boolean
   highlighted: boolean
   onToggle: (id: string) => void
 }
@@ -20,7 +21,15 @@ export interface ServiceCardProps {
  * Cartão de um serviço (TASK-025). O estado aparece em selo colorido com ícone e texto
  * (nunca só pela cor, RNF02) e a explicação do estado fica sempre visível.
  */
-export function ServiceCard({ service: s, totals, periodLabel, selected, highlighted, onToggle }: ServiceCardProps) {
+export function ServiceCard({
+  service: s,
+  totals,
+  periodLabel,
+  selected,
+  comparisonDisabled = false,
+  highlighted,
+  onToggle,
+}: ServiceCardProps) {
   const hasCoords = s.location.latitude != null && s.location.longitude != null
   const meta = STATUS_META[s.status]
 
@@ -40,7 +49,13 @@ export function ServiceCard({ service: s, totals, periodLabel, selected, highlig
           <p className="truncate font-mono text-xs text-ink-subtle">{s.id}</p>
         </div>
         <label className="flex shrink-0 items-center gap-2 text-xs text-zinc-400">
-          <input type="checkbox" className="size-4 accent-lime-400" checked={selected} onChange={() => onToggle(s.id)} />
+          <input
+            type="checkbox"
+            className="size-4 accent-lime-400"
+            checked={selected}
+            disabled={comparisonDisabled}
+            onChange={() => onToggle(s.id)}
+          />
           Comparar
         </label>
       </header>

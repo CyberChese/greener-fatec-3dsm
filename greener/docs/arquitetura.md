@@ -69,13 +69,14 @@ Todas as chaves primárias são UUID. O DER está em [`diagramas/DER_GreenER.png
 
 ### 3.1 Descoberta de serviços
 
-1. Na inicialização do backend, o `ServiceDiscoveryService` chama `AggregatorClientService.fetchDiscoveredServices()`.
+1. Na inicialização do backend, o `ServiceDiscoveryService` inicia `AggregatorClientService.fetchDiscoveredServices()` em segundo plano, sem manter o bootstrap da API aguardando o Agregador.
 2. O cliente faz `GET {AGGREGATOR_API_URL}/services` com timeout de `AGGREGATOR_TIMEOUT` ms.
 3. O `aggregator.mapper` valida cada item: itens sem `id` ou `name` são descartados e a descoberta passa a ser considerada incompleta.
 4. Os serviços válidos são gravados com *upsert* pela coluna `external_id`, preservando valores anteriores quando um campo não vem na resposta.
 5. Se a descoberta estiver completa, serviços ausentes da lista são marcados como `UNAVAILABLE` (o histórico é mantido).
+6. Depois que o ciclo termina, a próxima descoberta é agendada após `SERVICE_DISCOVERY_INTERVAL_SECONDS` (padrão: 300 s). Falhas são registradas em log estruturado e não impedem o ciclo seguinte.
 
-> **Limitação conhecida:** a descoberta roda apenas na inicialização. A execução periódica está prevista para a Sprint 2.
+> Serviços recém-descobertos começam como `NO_METRICS` e passam a `ACTIVE` após uma coleta de métricas válida, preservando a semântica do campo de status. O Agregador não fornece status no contrato de descoberta.
 
 ### 3.2 Coleta periódica de métricas
 
@@ -105,7 +106,7 @@ Todas as chaves primárias são UUID. O DER está em [`diagramas/DER_GreenER.png
 | Decisão | Justificativa |
 |---|---|
 | **TypeORM com migrações versionadas** (`synchronize: false`) | O esquema do banco evolui de forma rastreável e reproduzível em um banco vazio |
-| **Agendamento com `setTimeout` encadeado** em vez de Cron | O próximo ciclo só começa depois que o anterior termina, o que evita ciclos sobrepostos quando o Agregador está lento |
+| **Agendamento com `setTimeout` encadeado** em vez de Cron | Coleta e descoberta só agendam o próximo ciclo depois que o atual termina, evitando sobreposição quando serviços externos estão lentos |
 | **Coleta de todos os serviços, inclusive `UNAVAILABLE` e `NO_METRICS`** | Permite que um serviço volte a `ACTIVE` sozinho quando o Agregador voltar a responder |
 | **Erros tipados no cliente do Agregador** (`AggregatorTimeoutError`, `AggregatorHttpError`...) | O coletor decide o estado do serviço pelo tipo de falha, sem depender de mensagens de texto |
 | **Validação do contrato antes de gravar** | Evita apresentar métricas inválidas como corretas |
