@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { MetricCollection } from '../entities/metric-collection.entity';
+import { MetricCollectionRepository } from '../repositories/metric-collection.repository';
 
 export interface CarbonEmission {
   intensityGco2ePerKwh: string;
@@ -18,8 +17,7 @@ export class CarbonEngineService {
   private readonly MAX_NUMERIC_20_11_EXCLUSIVE = 1_000_000_000;
 
   constructor(
-    @InjectRepository(MetricCollection)
-    private readonly collectionRepository: Repository<MetricCollection>,
+    private readonly collectionRepository: MetricCollectionRepository,
   ) {}
 
   calculateEmission(
@@ -73,9 +71,7 @@ export class CarbonEngineService {
   }
 
   async reprocessCollection(collectionId: string): Promise<MetricCollection> {
-    const collection = await this.collectionRepository.findOneBy({
-      idCollections: collectionId,
-    });
+    const collection = await this.collectionRepository.findById(collectionId);
     if (!collection) {
       throw new NotFoundException(
         `A coleta de métricas "${collectionId}" não foi encontrada.`,

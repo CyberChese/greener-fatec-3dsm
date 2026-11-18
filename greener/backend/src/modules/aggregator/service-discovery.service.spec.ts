@@ -1,7 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { QueryRunner, Repository } from 'typeorm';
-import { Service, ServiceStatus } from '../../entities/service.entity';
+import { QueryRunner } from 'typeorm';
+import { ServiceStatus } from '../../entities/service.entity';
+import { ServiceRepository } from '../../repositories/service.repository';
 import { AddRegionCodeToServices1792082026000 } from '../../migrations/1792082026000-AddRegionCodeToServices';
 import { AggregatorClientService } from './aggregator-client.service';
 import { mapDiscoveryResponse } from './aggregator.mapper';
@@ -9,16 +10,10 @@ import { ServiceDiscoveryService } from './service-discovery.service';
 
 describe('ServiceDiscoveryService', () => {
   let aggregatorClient: { fetchDiscoveredServices: jest.Mock };
-  let updateQuery: {
-    update: jest.Mock;
-    set: jest.Mock;
-    where: jest.Mock;
-    execute: jest.Mock;
-  };
   let serviceRepository: {
-    find: jest.Mock;
-    upsert: jest.Mock;
-    createQueryBuilder: jest.Mock;
+    findAll: jest.Mock;
+    upsertByExternalId: jest.Mock;
+    markUnavailableExcept: jest.Mock;
   };
   let discoveryService: ServiceDiscoveryService;
 
@@ -29,21 +24,15 @@ describe('ServiceDiscoveryService', () => {
         isComplete: false,
       }),
     };
-    updateQuery = {
-      update: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue(undefined),
-    };
     serviceRepository = {
-      find: jest.fn().mockResolvedValue([]),
-      upsert: jest.fn().mockResolvedValue(undefined),
-      createQueryBuilder: jest.fn().mockReturnValue(updateQuery),
+      findAll: jest.fn().mockResolvedValue([]),
+      upsertByExternalId: jest.fn().mockResolvedValue(undefined),
+      markUnavailableExcept: jest.fn().mockResolvedValue(undefined),
     };
     discoveryService = new ServiceDiscoveryService(
       aggregatorClient as unknown as AggregatorClientService,
       { get: jest.fn().mockReturnValue(300) } as unknown as ConfigService,
-      serviceRepository as unknown as Repository<Service>,
+      serviceRepository as unknown as ServiceRepository,
     );
   });
 
@@ -61,17 +50,13 @@ describe('ServiceDiscoveryService', () => {
 
     await discoveryService.synchronize();
 
-    expect(serviceRepository.createQueryBuilder).toHaveBeenCalled();
-    expect(updateQuery.set).toHaveBeenCalledWith({
-      status: ServiceStatus.UNAVAILABLE,
-    });
-    expect(updateQuery.execute).toHaveBeenCalled();
+    expect(serviceRepository.markUnavailableExcept).toHaveBeenCalledWith([]);
   });
 
   it('does not mark omitted services unavailable after an incomplete discovery', async () => {
     await discoveryService.synchronize();
 
-    expect(serviceRepository.createQueryBuilder).not.toHaveBeenCalled();
+    expect(serviceRepository.markUnavailableExcept).not.toHaveBeenCalled();
   });
 
   it('preserves existing metric status and does not activate new services prematurely', async () => {
@@ -92,7 +77,7 @@ describe('ServiceDiscoveryService', () => {
       ],
       isComplete: false,
     });
-    serviceRepository.find.mockResolvedValue([
+    serviceRepository.findAll.mockResolvedValue([
       {
         external_id: 'billing-api',
         status: ServiceStatus.UNAVAILABLE,
@@ -101,7 +86,7 @@ describe('ServiceDiscoveryService', () => {
 
     await discoveryService.synchronize();
 
-    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+    expect(serviceRepository.upsertByExternalId).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           external_id: 'billing-api',
@@ -114,7 +99,6 @@ describe('ServiceDiscoveryService', () => {
           region_code: null,
         }),
       ],
-      ['external_id'],
     );
   });
 
@@ -129,7 +113,7 @@ describe('ServiceDiscoveryService', () => {
       ],
       isComplete: false,
     });
-    serviceRepository.find.mockResolvedValue([
+    serviceRepository.findAll.mockResolvedValue([
       {
         external_id: 'billing-api',
         region_code: 'br-sudeste',
@@ -139,7 +123,7 @@ describe('ServiceDiscoveryService', () => {
 
     await discoveryService.synchronize();
 
-    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+    expect(serviceRepository.upsertByExternalId).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           external_id: 'billing-api',
@@ -147,7 +131,6 @@ describe('ServiceDiscoveryService', () => {
           status: ServiceStatus.ACTIVE,
         }),
       ],
-      ['external_id'],
     );
   });
 
@@ -159,8 +142,8 @@ describe('ServiceDiscoveryService', () => {
     await expect(discoveryService.synchronize()).rejects.toThrow(
       'Aggregator unavailable',
     );
-    expect(serviceRepository.createQueryBuilder).not.toHaveBeenCalled();
-    expect(serviceRepository.upsert).not.toHaveBeenCalled();
+    expect(serviceRepository.markUnavailableExcept).not.toHaveBeenCalled();
+    expect(serviceRepository.upsertByExternalId).not.toHaveBeenCalled();
   });
 
   it('runs discovery in the background and repeats after the configured interval', async () => {
@@ -228,7 +211,7 @@ describe('ServiceDiscoveryService', () => {
         new_services_count: 1,
       }),
     );
-    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+    expect(serviceRepository.upsertByExternalId).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           external_id: 'new-service',
@@ -238,7 +221,6 @@ describe('ServiceDiscoveryService', () => {
           longitude: '-46.6',
         }),
       ],
-      ['external_id'],
     );
   });
 
@@ -270,11 +252,11 @@ describe('ServiceDiscoveryService', () => {
       services: mapped.services,
       isComplete: true,
     });
-    serviceRepository.find.mockResolvedValue([]);
+    serviceRepository.findAll.mockResolvedValue([]);
 
     await discoveryService.synchronize();
 
-    expect(serviceRepository.upsert).toHaveBeenCalledWith(
+    expect(serviceRepository.upsertByExternalId).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           external_id: 'auth-api',
@@ -291,7 +273,6 @@ describe('ServiceDiscoveryService', () => {
           country: 'USA',
         }),
       ],
-      ['external_id'],
     );
   });
 });

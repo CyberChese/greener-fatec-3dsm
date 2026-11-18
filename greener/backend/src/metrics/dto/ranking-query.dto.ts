@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsDateString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export const RANKING_METRICS = ['energy', 'co2e'] as const;

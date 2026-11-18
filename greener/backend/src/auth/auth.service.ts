@@ -1,29 +1,20 @@
 import {Injectable, UnauthorizedException} from '@nestjs/common';
 import { JwtService} from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import{LoginDto} from './dto/login.dto';
 import { PasswordHasherService } from './password-hasher.service';
-import { User } from '../entities/user.entity';
+import { UserRepository } from '../repositories/user.repository';
 
 @Injectable()
 export class AuthService {
     constructor(
-        @InjectRepository(User)
-        private readonly userRepository: Repository<User>,
+        private readonly userRepository: UserRepository,
         private readonly jwtService: JwtService,
         private readonly passwordHasherService: PasswordHasherService,
     ) {}
 
     async login(loginDto:LoginDto){
         const {email, password} = loginDto;
-        const user = await this.userRepository.findOne({where:{email},
-            select:{
-                idUsers: true,
-                email: true,
-                nameUsers: true,
-                password_hash: true
-            }});
+        const user = await this.userRepository.findByEmailWithPassword(email);
 
         if(!user){
             throw new UnauthorizedException('Credenciais inválidas.');
