@@ -30,7 +30,7 @@ export function MapPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">Geolocalização</p>
+        <p className="text-xs font-semibold tracking-[0.14em] text-lime-400 uppercase">Geolocalização</p>
         <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Mapa dos serviços</h1>
         <p className="mt-1 text-sm text-zinc-400 text-pretty">
           Cada marcador fica nas coordenadas do serviço. Clique (ou use Tab e Enter) para ver nome, nuvem, cidade/país e a

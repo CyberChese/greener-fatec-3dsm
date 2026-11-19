@@ -48,7 +48,7 @@ describe('ServicePopupContent (TASK-026)', () => {
     expect(html).toContain('Billing API')
     expect(html).toContain('Provedor de nuvem')
     expect(html).toContain('região br-sudeste')
-    expect(html).toContain('Sao Paulo / Brazil')
+    expect(html).toContain('Sao Paulo / Brasil')
     expect(html).toContain('Emissão de CO₂e (últimos 15 min)')
     expect(html).toContain('1,234 kgCO₂e')
   })

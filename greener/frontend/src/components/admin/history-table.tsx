@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Download, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, Download, Trash2, TriangleAlert } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { CardHeading, GlassCard } from '@/components/dashboard/glass-card'
 import { StatusBadge } from '@/components/dashboard/status-badge'
 import { IS_SIMULATED } from '@/lib/dataSource'
@@ -28,6 +28,7 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
   const [statusFilter, setStatusFilter] = useState<ServiceStatus | ''>('')
   const [limit, setLimit] = useState(LIMIT_OPTIONS[0].value)
   const [page, setPage] = useState(0)
+  const clearDialogRef = useRef<HTMLDialogElement>(null)
 
   const serviceOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -129,10 +130,8 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
           </button>
           <button
             type="button"
-            onClick={() => {
-              onClear()
-              setPage(0)
-            }}
+            onClick={() => clearDialogRef.current?.showModal()}
+            aria-haspopup="dialog"
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-rose-400/30 px-3 text-sm font-medium text-state-down transition-colors hover:bg-rose-400/10"
           >
             <Trash2 className="size-4" aria-hidden="true" />
@@ -226,6 +225,47 @@ export function HistoryTable({ history, onClear, intervalSeconds }: HistoryTable
           </button>
         </div>
       </nav>
+      <dialog
+        ref={clearDialogRef}
+        aria-labelledby="clear-history-title"
+        aria-describedby="clear-history-description"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-edge bg-zinc-900 p-0 text-zinc-100 shadow-2xl backdrop:bg-black/70"
+      >
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-state-down" aria-hidden="true" />
+            <div>
+              <h2 id="clear-history-title" className="font-semibold">
+                Limpar histórico de coletas?
+              </h2>
+              <p id="clear-history-description" className="mt-1 text-sm text-ink-muted">
+                Esta ação remove os registros armazenados neste navegador e não pode ser desfeita.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => clearDialogRef.current?.close()}
+              autoFocus
+              className="min-h-11 rounded-lg border border-edge px-4 text-sm font-medium text-zinc-200 hover:bg-white/5"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearDialogRef.current?.close()
+                onClear()
+                setPage(0)
+              }}
+              className="min-h-11 rounded-lg bg-state-down px-4 text-sm font-semibold text-zinc-950 hover:brightness-110"
+            >
+              Sim, limpar histórico
+            </button>
+          </div>
+        </div>
+      </dialog>
     </GlassCard>
   )
 }

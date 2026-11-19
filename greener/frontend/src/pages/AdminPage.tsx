@@ -17,7 +17,7 @@ export function AdminPage() {
     <div id="view-admin" className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">Acesso restrito</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-lime-400 uppercase">Acesso restrito</p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-50 md:text-4xl">Área do Administrador</h1>
           <p className="mt-1 text-sm text-zinc-400">
             Configuração do monitoramento, histórico temporal das coletas e sessão autenticada.

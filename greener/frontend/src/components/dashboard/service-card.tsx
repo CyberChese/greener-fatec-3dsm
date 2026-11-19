@@ -1,5 +1,14 @@
 import { Cloud, MapPinOff, Zap } from 'lucide-react'
-import { formatGb, formatIntensity, formatKg, formatKwh, formatPercent, formatTime, formatWatts } from '@/lib/format'
+import {
+  formatCountryName,
+  formatGb,
+  formatIntensity,
+  formatKg,
+  formatKwh,
+  formatPercent,
+  formatTime,
+  formatWatts,
+} from '@/lib/format'
 import type { ServiceSnapshot } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { StatusBadge } from './status-badge'
@@ -67,7 +76,7 @@ export function ServiceCard({
       </div>
 
       <div className="text-sm text-zinc-300">
-        <p>{s.location.country || 'País não informado'}</p>
+        <p>{formatCountryName(s.location.country)}</p>
         <p className="text-xs text-ink-subtle">
           {s.location.region || 'Região não informada'}
           {s.location.city ? ` · ${s.location.city}` : ' · cidade não informada'}

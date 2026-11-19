@@ -30,6 +30,29 @@ const largeMeasure = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, 
 const shareFormat = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 })
 const countFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 
+const countryNamesPt = new Intl.DisplayNames(['pt-BR'], { type: 'region' })
+const countryNamesEn = new Intl.DisplayNames(['en'], { type: 'region' })
+const localizedCountryNames = new Map<string, string>()
+for (let first = 65; first <= 90; first++) {
+  for (let second = 65; second <= 90; second++) {
+    const code = String.fromCharCode(first, second)
+    const english = countryNamesEn.of(code)
+    const portuguese = countryNamesPt.of(code)
+    if (english && portuguese && english !== code && portuguese !== code) {
+      localizedCountryNames.set(english.toLocaleLowerCase('en'), portuguese)
+    }
+  }
+}
+localizedCountryNames.set('united states of america', countryNamesPt.of('US') ?? 'United States of America')
+
+/** Localiza nomes de países devolvidos em inglês pelo backend, preservando valores desconhecidos. */
+export function formatCountryName(country: string | null): string {
+  const value = country?.trim()
+  if (!value) return 'País não informado'
+  if (/^[a-z]{2}$/i.test(value)) return countryNamesPt.of(value.toUpperCase()) ?? value
+  return localizedCountryNames.get(value.toLocaleLowerCase('en')) ?? value
+}
+
 export const formatMeasure = (value: number | null) => {
   if (value == null || !Number.isFinite(value)) return '—'
   return Math.abs(value) < 1 ? smallMeasure.format(value) : largeMeasure.format(value)
