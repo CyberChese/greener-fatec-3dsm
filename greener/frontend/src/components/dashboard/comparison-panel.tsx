@@ -2,7 +2,7 @@ import { GitCompareArrows, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { CollectionRecord, ServiceSnapshot } from '@/lib/types'
-import { formatDateTime, formatKg, formatKwh, formatNumber } from '@/lib/format'
+import { formatCountryName, formatDateTime, formatKg, formatKwh, formatNumber } from '@/lib/format'
 import { useServiceComparison } from '@/hooks/use-service-comparison'
 import type { TimeFilters } from '@/lib/dashboard-filters'
 import { CardHeading, GlassCard } from './glass-card'
@@ -38,6 +38,8 @@ interface Row {
 
 type ComparisonMetric = keyof ComparisonValues
 const EMPTY_HIDDEN_IDS = new Set<string>()
+const LINE_DASHES = ['', '6 3', '2 3', '10 3 2 3'] as const
+const LEGEND_LINE_STYLES = ['solid', 'dashed', 'dotted', 'double'] as const
 
 interface ChartTooltipProps {
   active?: boolean
@@ -108,8 +110,11 @@ function ChartLegend({
             }`}
           >
             <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: COMPARISON_COLORS[index % COMPARISON_COLORS.length] }}
+              className="w-5 border-t-2"
+              style={{
+                borderColor: COMPARISON_COLORS[index % COMPARISON_COLORS.length],
+                borderTopStyle: LEGEND_LINE_STYLES[index % LEGEND_LINE_STYLES.length],
+              }}
               aria-hidden="true"
             />
             {service.name}
@@ -143,27 +148,27 @@ function MetricChart({
       <h3 className="mb-2 text-sm font-medium text-zinc-200">{title}</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+          <LineChart accessibilityLayer data={points} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
             <XAxis
               dataKey="timestamp"
               type="number"
               domain={['dataMin', 'dataMax']}
               tickFormatter={formatTick}
-              tick={{ fill: '#a1a1aa', fontSize: 11 }}
+              tick={{ fill: '#a1a1aa', fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               minTickGap={24}
             />
             <YAxis
-              tick={{ fill: '#a1a1aa', fontSize: 11 }}
+              tick={{ fill: '#a1a1aa', fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(value: number) =>
                 metric === 'energyKwh' ? formatKwh(value) : formatKg(value)
               }
               width={56}
-              label={{ value: unit, angle: -90, position: 'insideLeft', fill: '#a1a1aa', fontSize: 11 }}
+              label={{ value: unit, angle: -90, position: 'insideLeft', fill: '#a1a1aa', fontSize: 12 }}
             />
             <Tooltip content={(props) => <ComparisonChartTooltip {...props} services={services} metric={metric} />} />
             {services.map((service, index) => (
@@ -174,6 +179,7 @@ function MetricChart({
                 name={service.name}
                 stroke={COMPARISON_COLORS[index % COMPARISON_COLORS.length]}
                 strokeWidth={2}
+                strokeDasharray={LINE_DASHES[index % LINE_DASHES.length]}
                 dot={false}
                 activeDot={{ r: 4 }}
                 connectNulls={false}
@@ -342,7 +348,7 @@ export function ComparisonPanel({
               <div className="min-w-0">
                 <h3 className="truncate font-semibold text-zinc-100">{s.name}</h3>
                 <p className="truncate text-xs text-ink-subtle">
-                  {[s.location.city, s.location.country].filter(Boolean).join(', ')} · {s.location.region_code}
+                  {[s.location.city, formatCountryName(s.location.country)].filter(Boolean).join(', ')} · {s.location.region_code}
                 </p>
               </div>
               <button

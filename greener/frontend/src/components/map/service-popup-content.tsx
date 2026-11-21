@@ -1,5 +1,5 @@
 import { IS_SIMULATED } from '@/lib/dataSource'
-import { formatKg } from '@/lib/format'
+import { formatCountryName, formatKg } from '@/lib/format'
 import { CLOUD_PROVIDER_UNKNOWN, type LocationGroup } from '@/lib/map-groups'
 import { IMPACT_WINDOW_LABEL } from '@/services/backend-services'
 import { StatusBadge } from '../dashboard/status-badge'
@@ -22,7 +22,9 @@ export function ServicePopupContent({ group, periodLabel = IMPACT_WINDOW_LABEL }
             </div>
             <div>
               <dt>Cidade/País</dt>
-              <dd>{[s.location.city ?? 'cidade não informada', s.location.country].filter(Boolean).join(' / ')}</dd>
+              <dd>
+                {[s.location.city ?? 'cidade não informada', formatCountryName(s.location.country)].filter(Boolean).join(' / ')}
+              </dd>
             </div>
             <div>
               <dt>{IS_SIMULATED ? 'Pegada de carbono atual' : `Emissão de CO₂e (${periodLabel})`}</dt>

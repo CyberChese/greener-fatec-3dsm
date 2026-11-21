@@ -1,4 +1,5 @@
 import type { ServiceSnapshot } from './types'
+import { formatCountryName } from './format'
 
 export const QUICK_PRESETS = ['24h', '7d', '30d'] as const
 
@@ -145,7 +146,15 @@ export function matchesSearch(service: ServiceSnapshot, search: string): boolean
   const query = search.trim().toLowerCase()
   if (!query) return true
   const { location } = service
-  return [service.name, service.id, location.country, location.region, location.city ?? '', location.region_code]
+  return [
+    service.name,
+    service.id,
+    location.country,
+    formatCountryName(location.country),
+    location.region,
+    location.city ?? '',
+    location.region_code,
+  ]
     .join(' ')
     .toLowerCase()
     .includes(query)

@@ -34,7 +34,7 @@ export function AppLayout() {
           {IS_SIMULATED ? (
             <>
               Dados simulados no navegador (modo de demonstração) no formato das APIs UniLaunch. Coleta a cada{' '}
-              {metrics.intervalMs / 1000} s, cada coleta ≙ 15 min. Modelo do projeto: W = CPU%/100 × 100 + 0,375 × RAM(GB) +
+              {metrics.intervalMs / 1000} s, cada ciclo representa 15 minutos simulados. Modelo do projeto: W = CPU%/100 × 100 + 0,375 × RAM(GB) +
               0,01 × Disco(GB) + 0,02 × Rede(GB); kWh = W × horas ÷ 1000; kgCO₂e = kWh × gCO₂e/kWh ÷ 1000.
             </>
           ) : (

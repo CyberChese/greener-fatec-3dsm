@@ -33,8 +33,12 @@ export function FiltersPanel({ filters, onChange, onClear, resultCount, totalCou
         title="Estado e ponto de consulta"
         id="filters-title"
         aside={
-          <span className="rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-xs text-zinc-300">
-            {resultCount}/{totalCount}
+          <span
+            aria-label={`Exibindo ${resultCount} de ${totalCount} serviços após aplicar os filtros`}
+            className="rounded-md bg-zinc-800 px-2 py-0.5 font-mono text-xs text-zinc-300"
+            title="Resultados exibidos em relação ao total de serviços monitorados"
+          >
+            {resultCount} de {totalCount}
           </span>
         }
       />

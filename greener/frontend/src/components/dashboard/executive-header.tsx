@@ -98,7 +98,7 @@ function SummaryCards({ summary }: { summary: PublicSummary }) {
           style={{ background: `conic-gradient(#a3e635 ${degrees}deg, rgba(255,255,255,0.08) 0deg)` }}
           aria-hidden="true"
         >
-          <span className="grid size-9 place-items-center rounded-full bg-zinc-950 font-mono text-[11px] font-semibold text-zinc-100">
+          <span className="grid size-9 place-items-center rounded-full bg-zinc-950 font-mono text-xs font-semibold text-zinc-100">
             {share}
           </span>
         </div>

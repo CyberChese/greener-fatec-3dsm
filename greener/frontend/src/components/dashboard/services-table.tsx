@@ -1,5 +1,5 @@
 import { MapPinOff } from 'lucide-react'
-import { formatGb, formatIntensity, formatKg, formatKwh, formatPercent } from '@/lib/format'
+import { formatCountryName, formatGb, formatIntensity, formatKg, formatKwh, formatPercent } from '@/lib/format'
 import type { ServiceSnapshot } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { MAX_COMPARED_SERVICES } from './comparison-data'
@@ -116,7 +116,7 @@ export function ServicesTable({
                       <span className="block font-mono text-xs font-normal text-ink-subtle">{s.id}</span>
                     </th>
                     <td className="px-3 py-3 text-zinc-300">
-                      <span className="block">{s.location.country}</span>
+                      <span className="block">{formatCountryName(s.location.country)}</span>
                       <span className="block text-xs text-ink-subtle">
                         {s.location.region}
                         {s.location.city ? ` · ${s.location.city}` : ' · cidade não informada'} · {s.location.region_code}

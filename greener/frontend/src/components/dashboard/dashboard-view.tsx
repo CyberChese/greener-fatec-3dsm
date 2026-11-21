@@ -121,7 +121,7 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">
+          <p className="text-xs font-semibold tracking-[0.14em] text-lime-400 uppercase">
             Centro de inteligência ambiental
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-50 text-balance md:text-4xl">

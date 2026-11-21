@@ -153,6 +153,10 @@ describe('busca por nome de serviço (TASK-045)', () => {
     expect(matchesSearch(billing, '')).toBe(true)
   })
 
+  it('encontra países pelo nome localizado', () => {
+    expect(matchesSearch(snapshot({ location: { ...billing.location, country: 'Brazil' } }), 'Brasil')).toBe(true)
+  })
+
   it('o debounce da busca é de 300 ms', () => {
     expect(SEARCH_DEBOUNCE_MS).toBe(300)
   })
