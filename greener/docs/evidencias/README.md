@@ -62,3 +62,7 @@ Verificada por Tab, Enter e Escape:
   informações de atualização e o botão Pausar;
 - `Enter` num item navega para a página, fecha o menu e devolve o foco ao botão Menu;
 - `Escape` fecha o menu e devolve o foco ao botão Menu.
+
+## TASK-050 — testes automatizados e cobertura de código (Sprint 3)
+
+- [`relatorio-cobertura-sprint-3.md`](relatorio-cobertura-sprint-3.md): relatório consolidado com a cobertura do backend (Jest), cobertura do frontend (Vitest + v8) e evidência da execução E2E das rotas `/api/metrics/ranking` e `/api/metrics/compare` contra o PostgreSQL real.
