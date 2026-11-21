@@ -46,6 +46,55 @@ jobs:
       - name: Testes unitários
         run: npm test -- --runInBand
 
+  backend-e2e:
+    name: Backend · testes E2E com PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: greener_test
+          POSTGRES_PASSWORD: greener_test_password
+          POSTGRES_DB: greener_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: greener/backend
+    env:
+      NODE_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: greener_test
+      POSTGRES_PASSWORD: greener_test_password
+      POSTGRES_DB: greener_test_db
+      JWT_SECRET: ci-e2e-jwt-secret-with-at-least-32-characters
+      CARBON_INTENSITY_FALLBACK_G_PER_KWH: '100'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: greener/backend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Aplicar migrações
+        run: npm run migration:run
+
+      - name: Testes E2E
+        run: npm run test:e2e
+
   frontend:
     name: Frontend · lint e build
     runs-on: ubuntu-latest

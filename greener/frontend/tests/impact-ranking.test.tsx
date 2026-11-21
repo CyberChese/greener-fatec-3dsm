@@ -38,7 +38,7 @@ function Harness({ initial = 'co2e' as RankingMetric }) {
 const bodyRows = () => within(screen.getAllByRole('rowgroup')[1]).getAllByRole('row')
 const names = () => bodyRows().map((row) => within(row).getAllByRole('cell')[1].textContent ?? '')
 
-describe('tela de ranking de impacto (TASK-043)', () => {
+describe('tela de ranking de impacto (TASK-043 / TASK-050)', () => {
   it('lista os serviços com posição, nome, status, consumo e emissão', () => {
     render(<Harness />)
     const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
@@ -86,6 +86,54 @@ describe('tela de ranking de impacto (TASK-043)', () => {
     render(<Harness />)
     expect(screen.queryByText('Sem Medicao')).toBeNull()
     expect(screen.getByText('1 serviço(s) sem medição no período não aparecem no ranking.')).toBeTruthy()
+  })
+
+  it('exibe estado vazio quando nenhum serviço passa nos filtros ou possui medições', () => {
+    const { rerender } = render(
+      <ImpactRanking
+        services={[]}
+        periodTotals={totals}
+        metric="co2e"
+        onMetricChange={() => {}}
+        periodLabel="últimos 7 dias"
+      />,
+    )
+    expect(screen.getByText('Nenhum serviço corresponde aos filtros.')).toBeTruthy()
+
+    rerender(
+      <ImpactRanking
+        services={services}
+        periodTotals={new Map()}
+        metric="co2e"
+        onMetricChange={() => {}}
+        periodLabel="últimos 7 dias"
+      />,
+    )
+    expect(screen.getByText('Nenhum serviço tem medição de energia e CO₂e no período.')).toBeTruthy()
+  })
+
+  it('desempata serviços com mesmo valor em ordem alfabética', () => {
+    const tiedServices = [
+      snapshot({ id: 'z', name: 'Zeta API', status: 'active' }),
+      snapshot({ id: 'a', name: 'Alpha API', status: 'active' }),
+    ]
+    const tiedTotals = new Map([
+      ['z', { energyKwh: 0.005, co2eKg: 0.001 }],
+      ['a', { energyKwh: 0.005, co2eKg: 0.001 }],
+    ])
+
+    render(
+      <ImpactRanking
+        services={tiedServices}
+        periodTotals={tiedTotals}
+        metric="co2e"
+        onMetricChange={() => {}}
+        periodLabel="últimas 24h"
+      />,
+    )
+
+    expect(names()[0]).toContain('Alpha API')
+    expect(names()[1]).toContain('Zeta API')
   })
 })
 

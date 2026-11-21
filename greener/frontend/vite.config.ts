@@ -16,5 +16,14 @@ export default defineConfig({
     // Se o consumo de CPU incomodar e o hot reload funcionar sem ele, pode remover.
     watch: { usePolling: true },
   },
-  test: { environment: 'node', include: ['tests/**/*.test.{ts,tsx}'] },
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.test.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/main.tsx', 'src/vite-env.d.ts', 'src/**/*.d.ts'],
+    },
+  },
 })
