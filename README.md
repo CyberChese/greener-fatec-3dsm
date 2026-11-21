@@ -154,10 +154,11 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    cp .env.example .env
    ```
 
-3. **Subir os containers:**
+3. **Subir os containers pela primeira vez:**
    ```bash
-   docker compose up --build -d
+   docker compose up --build
    ```
+   Para iniciar em segundo plano, acrescente `-d`. Nas execuções seguintes, quando as imagens já estiverem construídas, `docker compose up -d` é suficiente.
 
 4. **Criar as tabelas no banco** (necessário na primeira execução e após novas migrações):
    ```bash
@@ -250,7 +251,7 @@ Contrato completo: [`greener/docs/contrato-agregador.md`](greener/docs/contrato-
 
 ## 🔌 Endpoints da API
 
-Rotas implementadas na Sprint 2 (prefixo `/api`):
+Rotas implementadas (prefixo `/api`):
 
 | Método | Endpoint | Acesso | Descrição |
 | :--- | :--- | :--- | :--- |
@@ -261,6 +262,8 @@ Rotas implementadas na Sprint 2 (prefixo `/api`):
 | `GET` | `/api/services/:id/history?from=&to=` | Público | Histórico de coletas do serviço (datas ISO-8601, limites inclusivos) |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta |
 | `GET` | `/api/metrics/summary` | Público | Totais de energia, CO₂e e contagem por estado |
+| `GET` | `/api/metrics/ranking` | Público | Ranking paginado por energia ou CO₂e, com filtros de período |
+| `GET` | `/api/metrics/compare` | Público | Comparação de 2 a 4 serviços com série temporal e resumo de eficiência |
 
 A documentação interativa está disponível em <http://localhost:3001/api/docs>. Ela descreve os parâmetros, schemas, respostas de sucesso e erros. Use o botão **Authorize** para informar um JWT nas rotas protegidas.
 
@@ -316,6 +319,7 @@ cd ../frontend && npm ci && npm test
 | Documento | Conteúdo |
 |---|---|
 | [`greener/docs/README.md`](greener/docs/README.md) | Índice da documentação |
+| [`guia-portfolio.md`](greener/docs/guia-portfolio.md) | Roteiro de apresentação final, links principais e evidências |
 | [`plano-de-entregas.md`](greener/docs/plano-de-entregas.md) | Critérios por sprint, responsáveis, evidências e participação |
 | [`sprints/sprint-1.md`](greener/docs/sprints/sprint-1.md) | Sprint 1: backlog, histórias, DoD, review e retrospectiva |
 | [`arquitetura.md`](greener/docs/arquitetura.md) | Componentes, fluxo de dados e decisões |

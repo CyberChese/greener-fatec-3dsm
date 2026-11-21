@@ -1,6 +1,6 @@
 # API REST do GreenER
 
-Documentação dos endpoints **implementados** no backend NestJS na versão da Sprint 2.
+Documentação dos endpoints **implementados** no backend NestJS na versão atual do projeto.
 Endpoints ainda não implementados aparecem separadamente em [Endpoints planejados](#endpoints-planejados).
 
 - **URL base (Docker):** `http://localhost:3001/api`
@@ -198,6 +198,47 @@ Indicadores consolidados para o Observatório. Rota pública, sem parâmetros.
 | `services_count` | Quantidade de serviços em cada estado (`ACTIVE`, `UNAVAILABLE`, `NO_METRICS`); estados sem serviço vêm como `0` |
 
 A resposta **não** traz o total de serviços (é a soma das três contagens) nem o horário da última coleta (use `GET /api/metrics/collection-config`). Os totais cobrem todo o histórico gravado, não um período.
+
+### `GET /api/metrics/ranking`
+
+Retorna uma página do ranking de serviços por energia ou CO₂e. O filtro de período usa limites inclusivos e pode ser combinado com ordenação e paginação.
+
+| Parâmetro | Local | Tipo | Regras |
+|---|---|---|---|
+| `metric` | query | `energy` ou `co2e` | Opcional, padrão `co2e` |
+| `order` | query | `asc` ou `desc` | Opcional, padrão `desc` |
+| `startDate` | query | data ISO-8601 | Opcional, limite inicial inclusivo |
+| `endDate` | query | data ISO-8601 | Opcional, limite final inclusivo (`startDate <= endDate`) |
+| `page` | query | inteiro | Opcional, mínimo `1`, padrão `1` |
+| `limit` | query | inteiro | Opcional, entre `1` e `100`, padrão `10` |
+
+Exemplo: `GET /api/metrics/ranking?metric=co2e&order=desc&startDate=2026-11-16T12:00:00.000Z&endDate=2026-11-16T13:00:00.000Z&page=1&limit=10`
+
+**Resposta `200`:**
+
+```json
+{
+  "metric": "co2e",
+  "order": "desc",
+  "startDate": "2026-11-16T12:00:00.000Z",
+  "endDate": "2026-11-16T13:00:00.000Z",
+  "items": [
+    {
+      "rank": 1,
+      "service_id": "b9a3f744-1f9b-4e53-8b11-31d112a49c83",
+      "external_id": "billing-api",
+      "name": "Billing API",
+      "status": "ACTIVE",
+      "metric_value": 0.04692212
+    }
+  ],
+  "pagination": { "page": 1, "limit": 10, "total": 24, "totalPages": 3 }
+}
+```
+
+| Código | Situação |
+|---|---|
+| `400` | Métrica, ordenação, paginação ou filtro de datas inválido |
 
 ### `GET /api/metrics/compare`
 

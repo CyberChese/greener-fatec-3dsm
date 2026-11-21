@@ -7,6 +7,7 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 
 | Documento | Conteúdo |
 |---|---|
+| [Guia de portfólio](guia-portfolio.md) | Roteiro de apresentação final, links principais e evidências do projeto |
 | [Plano de entregas](plano-de-entregas.md) | Distribuição dos critérios da rubrica nas três sprints, responsáveis, evidências, pendências e participação dos integrantes |
 | [Processo de contribuição e entrega](processo-contribuicao.md) | Checklist de PR, revisão técnica, fluxo de branches, evidências de proteção/tags e registro de daily/escopo |
 | [Sprint 1](sprints/sprint-1.md) | Objetivo, backlog, histórias e critérios de aceite, DoD, situação das tasks, Sprint Review e retrospectiva |
