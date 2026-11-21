@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+} from 'class-validator';
 
 export const RANKING_METRICS = ['energy', 'co2e'] as const;
 export type RankingMetric = (typeof RANKING_METRICS)[number];
@@ -26,14 +33,14 @@ export class RankingQueryDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @ApiPropertyOptional({ type: Number, minimum: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page = 1;
 
-  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
+  @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 100, default: 10 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

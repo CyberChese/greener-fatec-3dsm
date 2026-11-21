@@ -33,8 +33,12 @@ function parseServiceIds(value: unknown): unknown {
 export class CompareQueryDto {
   @ApiProperty({
     type: [String],
-    description: '2 to 4 service identifiers (UUID or external_id), comma-separated or repeated.',
-    example: ['b9a3f744-1f9b-4e53-8b11-31d112a49c83', '6ea75d35-683d-45ed-8126-0d83bc3a89ca'],
+    description:
+      '2 to 4 service identifiers (UUID or external_id), comma-separated or repeated.',
+    example: [
+      'b9a3f744-1f9b-4e53-8b11-31d112a49c83',
+      '6ea75d35-683d-45ed-8126-0d83bc3a89ca',
+    ],
   })
   @Transform(({ value }) => parseServiceIds(value))
   @IsArray()
@@ -56,10 +60,12 @@ export class CompareQueryDto {
   endDate?: string;
 
   @ApiPropertyOptional({
+    type: Number,
     minimum: 1,
     maximum: 86400,
     default: 30,
-    description: 'Time bucket size in seconds used to align collection timestamps across services.',
+    description:
+      'Time bucket size in seconds used to align collection timestamps across services.',
   })
   @IsOptional()
   @Type(() => Number)
