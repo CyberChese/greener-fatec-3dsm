@@ -237,10 +237,10 @@ export function DashboardView({ metrics }: { metrics: UseMetricsResult }) {
           <EvolutionChart series={simulatedSeries} />
         ) : (
           <GlassCard className="flex flex-col gap-2 self-start" aria-labelledby="pending-title">
-            <CardHeading eyebrow="Evolução temporal" title="Ainda não disponível com dados reais" id="pending-title" />
+            <CardHeading eyebrow="Evolução temporal" title="Compare a evolução no tempo" id="pending-title" />
             <p className="text-sm text-zinc-400">
-              O gráfico de evolução ainda não lê a série histórica do backend. Enquanto isso, o ranking ao lado e os cartões
-              mostram a energia e o CO₂e do período selecionado ({periodLabel}).
+              Marque de 2 a 4 serviços em “Comparar” nos cartões abaixo para ver a evolução da energia e das emissões ao longo
+              do período selecionado ({periodLabel}), com legenda interativa e a economia de emissões entre eles.
             </p>
           </GlassCard>
         )}
