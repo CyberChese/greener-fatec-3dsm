@@ -45,7 +45,8 @@ vem do `compose.yaml`, que lê o `.env` da raiz do repositório (veja o `.env.ex
 | `npm run dev` | Servidor de desenvolvimento com hot reload |
 | `npm run build` | Checa os tipos (`tsc -b`) e gera a versão de produção |
 | `npm run lint` | Executa o ESLint |
-| `npm test` | Executa os testes unitários (Vitest) |
+| `npm test` | Executa os testes unitários e de componentes (Vitest) |
+| `npm run test:cov` | Executa os testes com relatório de cobertura (Vitest + v8) |
 | `npm run preview` | Serve a versão de produção localmente |
 
 Para checar só os tipos use `npx tsc -p tsconfig.app.json --noEmit`.

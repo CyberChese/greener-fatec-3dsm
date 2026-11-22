@@ -114,22 +114,27 @@ O esquema é criado **somente** por migrações (`synchronize: false`). As migra
 ## Testes
 
 ```bash
-npm test          # testes unitários
+npm test          # testes unitários e de integração de módulo
 npm run test:cov  # testes com relatório de cobertura
+npm run test:e2e  # testes E2E integrados ao PostgreSQL (exige banco migrado)
 ```
 
 | Arquivo | O que testa |
 |---|---|
+| `metrics/analytics.service.spec.ts` | Ranking de impacto (energia e CO₂e), paginação, comparação de 2 a 4 serviços, alinhamento por buckets, fallback `co2e_g`, tratamento de `UNAVAILABLE` e validações |
 | `metrics/metrics.service.spec.ts` | Gravação das coletas, estados `ACTIVE`, `NO_METRICS` e `UNAVAILABLE`, continuidade do ciclo após falhas e filtro do histórico |
 | `modules/carbon-intensity/carbon-intensity-client.service.spec.ts` | Contrato da API, timeout, região ausente/inexistente, resposta inválida e fallback |
 | `engine/energy-engine.service.spec.ts` | Cálculo da energia (kWh) a partir de CPU e memória no intervalo de coleta |
 | `engine/carbon-engine.service.spec.ts` | Cálculo, persistência, precisão e reprocessamento de CO₂e |
 | `modules/aggregator/service-discovery.service.spec.ts` | Serviços omitidos marcados como `UNAVAILABLE` só em descoberta completa, preservação do estado existente e nenhuma alteração quando a descoberta falha |
 | `modules/aggregator/aggregator-client.service.spec.ts` | Classificação da resposta de descoberta como completa ou incompleta |
-| `metrics/metrics.controller.spec.ts` | Resumo público, configuração de coleta e respostas do controller de métricas |
+| `metrics/metrics.controller.spec.ts` | Resumo público, configuração de coleta, histórico, ranking, comparação e validação HTTP integrada |
+| `services/services.controller.spec.ts` | Listagem de serviços descobertos no controller e service |
+| `repositories/*.spec.ts` | Consultas encapsuladas nos repositories (`ServiceRepository`, `MetricCollectionRepository`, `UserRepository`) |
 | `auth/auth.service.spec.ts` | Login válido, senha incorreta e usuário inexistente |
 | `auth/login-rate-limit.guard.spec.ts` | Bloqueio `429`, `Retry-After`, recuperação após a janela e limites por IP/e-mail |
 | `config/configuration.spec.ts` | Exigência da chave JWT e validação das opções do limite de login |
+| `test/analytics.e2e-spec.ts` | Integração ponta a ponta (REST + PostgreSQL real) para `/api/metrics/ranking`, `/api/metrics/compare`, `/api/metrics/summary`, `/api/services` e `/api/services/:id/history` |
 
 Os testes usam *doubles* no lugar do banco e do Agregador. Eles exigem **Node.js 24.15 ou superior dentro da linha 24**, porque o NestJS 12 é distribuído como ESM. A imagem Docker do backend usa Node 24, então os testes também rodam dentro do container: `docker compose exec greener-backend npm test`.
 

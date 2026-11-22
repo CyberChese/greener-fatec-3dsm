@@ -25,6 +25,7 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e |
 | [Contrato do Agregador](contrato-agregador.md) | Contrato da API de Métricas da UniLaunch usado pelo backend |
 | [Contrato da API de Intensidade de Carbono](contrato-intensidade-carbono.md) | Contrato oficial da consulta regional, unidade, validação e fallback |
+| [Relatório de Testes e Cobertura — Sprint 3](evidencias/relatorio-cobertura-sprint-3.md) | Cobertura de código (Jest e Vitest), suíte analítica e evidência E2E com PostgreSQL (TASK-050) |
 
 ## 🎨 Design e Usabilidade
 
