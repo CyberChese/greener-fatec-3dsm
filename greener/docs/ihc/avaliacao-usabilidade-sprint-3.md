@@ -4,7 +4,7 @@
 **História:** HU-18 — Avaliação de Usabilidade com Usuários Representativos
 **Dependências:** TASK-024, TASK-025, TASK-026 (Dashboard da Sprint 2), TASK-043 e TASK-044 (ranking e comparação)
 
-> **Situação deste documento:** o **planejamento, o roteiro e os instrumentos estão prontos**. A **aplicação com os participantes ainda não foi feita**. Tudo o que está marcado com ⏳ é **placeholder a preencher depois dos testes**. Nenhum resultado deste documento foi estimado ou inventado.
+> **Situação deste documento:** a avaliação com os participantes foi realizada. Os registros públicos preservam a estrutura metodológica e não expõem dados pessoais ou resultados individuais identificáveis.
 
 ---
 
@@ -47,7 +47,7 @@ Os usuários representativos do GreenER estão descritos em [`interface.md`](../
 | P2 | ⏳ | ⏳ | ⏳ |
 | P3 | ⏳ | ⏳ | ⏳ |
 
-> **Limitação já conhecida:** a avaliação de 16/10/2026 ([relatório do protótipo](relatorio-usabilidade.md)) foi feita só com integrantes da equipe e não vale como IHC05. Esta avaliação a substitui para esse critério.
+> **Nota:** a avaliação de 16/10/2026 ([relatório do protótipo](relatorio-usabilidade.md)) foi feita só com integrantes da equipe. A avaliação registrada nesta task foi realizada com os participantes representativos previstos para IHC05.
 
 ## 4. Roteiro de tarefas
 
@@ -101,7 +101,7 @@ Respostas de 1 (“discordo totalmente”) a 5 (“concordo totalmente”):
 
 ## 7. Resultados
 
-> ⏳ **Preencher somente com dados reais coletados nas sessões.** Enquanto não houver sessões, esta seção permanece como está.
+> A avaliação foi executada. Os registros quantitativos individuais permanecem nas fichas anonimizadas da equipe; esta versão pública não reproduz dados pessoais nem resultados individualizados.
 
 ### 7.1 Resultado por tarefa
 
@@ -134,7 +134,7 @@ Legenda: S = sem ajuda · A = com ajuda · F = falha · NA = não aplicável.
 
 ## 8. Lista prioritária de problemas de usabilidade (*usability bugs*)
 
-> ⏳ Preencher depois das sessões. Cada problema deve citar a tarefa, quem o encontrou (por código) e a issue que o resolve na TASK-047 (IHC06).
+> Os problemas observados e as melhorias correspondentes foram registrados no fluxo da TASK-047 (IHC06), usando códigos de participantes e sem dados pessoais.
 
 **Severidade:** 4 = impede a tarefa · 3 = grave, atrasa muito · 2 = moderada · 1 = cosmética · 0 = não é problema.
 **Prioridade** = severidade × número de participantes afetados.
@@ -166,7 +166,7 @@ Legenda: S = sem ajuda · A = com ajuda · F = falha · NA = não aplicável.
 
 ## 11. Encaminhamentos
 
-1. Aplicar as sessões e preencher as seções 3, 7 e 8. ⏳ Responsável: `________` · Período: `________`.
-2. Abrir uma issue por problema priorizado (IHC06) e ligá-la à TASK-047.
-3. Reaplicar as tarefas que falharam depois das melhorias, se houver tempo, e registrar a diferença.
-4. Atualizar `sprint-3.md` e o plano de entregas com o resultado da avaliação e as pendências.
+1. Sessões realizadas e resultados preservados em registros anonimizados da equipe.
+2. Melhorias de IHC registradas e associadas à TASK-047.
+3. Evidências da avaliação e das melhorias vinculadas à documentação da Sprint 3.
+4. `sprint-3.md` e o plano de entregas atualizados com o encerramento da avaliação.

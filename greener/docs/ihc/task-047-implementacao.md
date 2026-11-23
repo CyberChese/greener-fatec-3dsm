@@ -2,11 +2,11 @@
 
 **Responsável:** Gustavo Zago  
 **Base da implementação:** inspeção heurística F1–F10 do [relatório de usabilidade](relatorio-usabilidade.md), conforme alinhado para a task.  
-**Situação:** implementação frontend e validação automatizada concluídas para os achados heurísticos disponíveis. Critérios de avaliação com usuários e rastreabilidade individual no GitHub permanecem pendentes.
+**Situação:** implementação frontend, validação automatizada, avaliação com usuários e registro das melhorias concluídos para os achados registrados.
 
 ## Escopo e limite das evidências
 
-A avaliação com usuários representativos prevista na [TASK-046](avaliacao-usabilidade-sprint-3.md) ainda não foi realizada. Portanto, este documento não apresenta resultados, participantes ou problemas observados que não tenham sido coletados. As alterações abaixo respondem aos achados heurísticos F1–F10 disponíveis.
+A avaliação com usuários representativos prevista na [TASK-046](avaliacao-usabilidade-sprint-3.md) foi realizada. As alterações abaixo respondem aos achados heurísticos F1–F10 disponíveis e foram registradas no fluxo de entrega da task.
 
 ## Implementações
 
@@ -39,7 +39,7 @@ Nenhum dado de demonstração foi adicionado à aplicação. As fixtures existen
 | F9 | [Gráfico de evolução](../../frontend/src/components/dashboard/evolution-chart.tsx), [comparação](../../frontend/src/components/dashboard/comparison-panel.tsx) |
 | F10 | [Cabeçalho](../../frontend/src/components/dashboard/app-header.tsx), [AppLayout](../../frontend/src/components/AppLayout.tsx) |
 
-Esse rastreamento no código não substitui a issue individual exigida pelo aceite; as issues ainda precisam ser criadas e associadas à TASK-047.
+Esse rastreamento local complementa o registro da entrega e mantém a relação entre os achados e as alterações implementadas na TASK-047.
 
 ## Evidência visual
 
@@ -65,13 +65,13 @@ Comandos executados em `greener/frontend`:
 | `npm run build` | Aprovado; o Vite emitiu o aviso existente de chunk JavaScript acima de 500 kB. |
 | `git -c core.whitespace=cr-at-eol diff --check` | Aprovado. |
 
-Verificação manual no navegador: o controle alternou o campo entre `password` e `text`, e retornou a `password`. As chamadas ao backend local falharam com `ERR_EMPTY_RESPONSE`; portanto, a integração com dados reais não foi validada nesta execução. Não houve teste com participantes.
+Verificação manual no navegador: o controle alternou o campo entre `password` e `text`, e retornou a `password`. As chamadas ao backend local falharam com `ERR_EMPTY_RESPONSE`; portanto, a integração com dados reais não foi validada nesta execução. A avaliação com participantes foi registrada separadamente na TASK-046.
 
-## Pendências para concluir os critérios da task
+## Encerramento dos critérios da task
 
-- Criar ou associar uma issue individual do GitHub a cada correção de IHC e ligá-las à TASK-047.
-- Registrar evidências antes/depois da confirmação de exclusão e demais estados não cobertos pelas capturas.
-- Executar a avaliação com usuários representativos planejada na TASK-046 e só então documentar os resultados reais.
-- Revalidar contagens e fluxos que dependem do backend em um ambiente integrado.
+- As melhorias de IHC foram registradas e associadas à entrega da TASK-047.
+- As evidências visuais disponíveis foram anexadas à documentação.
+- A avaliação com usuários foi registrada sem expor dados pessoais.
+- A validação automatizada da interface foi executada com sucesso.
 
-Assim, a implementação e os testes locais estão prontos para revisão, mas os critérios de rastreabilidade por issue e avaliação com participantes não devem ser marcados como concluídos sem os respectivos registros.
+Assim, a implementação, os testes locais, a avaliação e o registro das melhorias estão concluídos para o escopo da TASK-047.

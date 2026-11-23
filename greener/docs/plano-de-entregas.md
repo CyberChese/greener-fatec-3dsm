@@ -8,7 +8,7 @@ Os critérios e suas pontuações não foram alterados.
 - Quando um critério aparece em mais de uma sprint, a coluna **Entrega concreta** descreve a evolução prevista em cada uma.
 - Alterações neste plano ficam registradas na seção [Histórico de alterações](#histórico-de-alterações).
 
-> **Situação da validação:** Sprint 1 encerrada e Sprint 2 concluída no código; validação docente e registro das evidências finais ainda pendentes.
+> **Situação da validação:** Sprints 1, 2 e 3 encerradas. A demonstração final foi publicada e as melhorias de usabilidade foram registradas.
 
 ---
 
@@ -18,13 +18,13 @@ Os critérios e suas pontuações não foram alterados.
 |---|:---:|:---:|:---:|
 | GA01 a GA09 — Gestão ágil | ✔ | ✔ | ✔ |
 | DW01 — Tecnologias obrigatórias | ✔ | ✔ | ✔ |
-| DW02 — Integração com APIs auxiliares | ✔ descoberta e métricas | ✔ intensidade de carbono | |
+| DW02 — Integração com APIs auxiliares | ✔ descoberta e métricas | ✔ intensidade de carbono | ✔ descoberta periódica |
 | DW03 — Estrutura do backend e API REST | ✔ módulos iniciais | ✔ repositories e novos recursos | ✔ revisão final |
 | DW04 — Persistência com PostgreSQL e ORM | ✔ | ✔ novas tabelas | |
 | DW05 — Organização e integração do frontend | ✔ | ✔ dashboard | |
-| DW06 — Autenticação e proteção | ✔ RF16 | Parcial — RF17 (rotas administrativas) ainda não implementado | |
+| DW06 — Autenticação e proteção | ✔ RF16 | Parcial — RF17 permanece como limitação documentada | |
 | DW07 — Execução e documentação da API | ✔ | ✔ | ✔ |
-| TP01 — Responsabilidades e SOLID | | ✔ | |
+| TP01 — Responsabilidades e SOLID | | ✔ | ✔ repositories e separação de responsabilidades |
 | TP02 — Injeção de dependências | ✔ | | |
 | TP03 — Tipagem e legibilidade | | ✔ | |
 | TP04 — Testes unitários | ✔ coletor e autenticação | ✔ cálculos | |
@@ -60,7 +60,7 @@ Quadro do projeto: [GitHub Projects](https://github.com/orgs/CyberChese/projects
 | GA09 | Gestão ágil | Participação de todos os integrantes | Conferir a tabela de integrantes abaixo | Toda a equipe | [Tabela de integrantes](#integrantes-e-contribuições--sprint-1) | Concluído |
 | DW01 | RP01, RP02 | React + TypeScript no frontend e NestJS + TypeScript no backend | Conferir `package.json` e código de cada aplicação | Lucas Cobra, Luka Gomes | [`backend/package.json`](../backend/package.json), [`frontend/package.json`](../frontend/package.json) | Concluído |
 | DW02 | RF01, RF02, RF03, RF12 | Descoberta periódica de serviços no Agregador e coleta periódica de métricas | Subir o ambiente e consultar `GET /api/services` e `GET /api/services/:id/history` | Ronaldo, Gabriel Moura, Gustavo Zago | [`modules/aggregator`](../backend/src/modules/aggregator), [`metrics.service.ts`](../backend/src/metrics/metrics.service.ts) | Concluído no código — descoberta periódica configurável por `SERVICE_DISCOVERY_INTERVAL_SECONDS` |
-| DW03 | RP02 | Módulos `auth`, `services`, `metrics` e `aggregator` com controllers e services | Conferir a organização dos módulos e as rotas em [`api.md`](api.md) | Lucas Cobra, Gustavo Zago | [`backend/src`](../backend/src) | Parcial — camada completa de repositories ainda pendente |
+| DW03 | RP02 | Módulos `auth`, `services`, `metrics` e `aggregator` com controllers e services | Conferir a organização dos módulos e as rotas em [`api.md`](api.md) | Lucas Cobra, Gustavo Zago | [`backend/src`](../backend/src) | Concluído — camada de repositories e separação de responsabilidades entregues |
 | DW04 | RF04, RF10, RP03 | Esquema `users`, `services` e `metric_collections` por migrações TypeORM | Aplicar as migrações em banco vazio e verificar gravação e leitura das coletas | Isabelly Marinho, Lucas Cobra | [`migrations`](../backend/src/migrations), [`entities`](../backend/src/entities) | Concluído |
 | DW05 | RP01 | Estrutura com pages, components, services, hooks, contexts e providers consumindo a API | Conferir `frontend/src` e o login e a tela inicial em execução | Luka Gomes | [`frontend/src`](../frontend/src) | Concluído |
 | DW06 | RF16, RNF07 | Login com JWT, senha com bcrypt e guard nas rotas protegidas | `POST /api/auth/login` e `GET /api/auth/profile` com e sem token | Lucas Cobra, Luka Gomes | [`backend/src/auth`](../backend/src/auth) | Concluído |
@@ -107,28 +107,28 @@ Detalhamento das tasks, histórias e critérios de aceite: [`sprints/sprint-2.md
 |---|---|---|---|---|
 | GA01 a GA09 | Gestão ágil | Planejamento, acompanhamento, review e retrospectiva da Sprint 2 | [`sprint-2.md`](sprints/sprint-2.md) | Concluído |
 | DW01 | RP01, RP02 | Manter React + TS e NestJS + TS | Conferir dependências e código | Concluído |
-| DW02 | Intensidade de carbono | Consultar o serviço de intensidade de carbono por região e persistir os dados necessários | Executar a consulta e conferir o tratamento das respostas | Parcial — intensidade de carbono e descoberta/upsert concluídos; descoberta periódica ainda pendente |
-| DW03 | RP02 | Novos endpoints de consulta e organização dos módulos | Conferir módulos e [`api.md`](api.md) | Parcial — endpoints concluídos; camada completa de repositories ainda pendente |
+| DW02 | Intensidade de carbono | Consultar o serviço de intensidade de carbono por região e persistir os dados necessários | Executar a consulta e conferir o tratamento das respostas | Concluído — intensidade de carbono, descoberta/upsert e descoberta periódica entregues |
+| DW03 | RP02 | Novos endpoints de consulta e organização dos módulos | Conferir módulos e [`api.md`](api.md) | Concluído — endpoints e camada de repositories entregues |
 | DW04 | RP03 | Migrações para os dados de estimativa | Aplicar as migrações em banco vazio | Concluído |
 | DW05 | Dashboard | Dashboard com serviços, estados e indicadores consumindo a API | Executar o frontend | Concluído |
 | DW06 | RF16, RF17 | Rotas administrativas protegidas por JWT | Chamar as rotas com e sem token | Parcial — login com JWT, `GET /api/auth/profile` protegido, limite de tentativas e exigência de segredo forte concluídos; as rotas administrativas previstas (`PUT /api/config/interval`, `POST /api/services/refresh`) ainda não existem e o RF17 ainda não está detalhado em documento próprio |
 | DW07 | RNF08 | Swagger e documentação atualizada | Abrir `/api/docs` | Concluído |
-| TP01 | RP02 | Separar agendamento, validação de contrato e persistência do coletor | Conferir as classes | Parcial — a separação completa em repositories ainda está pendente |
+| TP01 | RP02 | Separar agendamento, validação de contrato e persistência do coletor | Conferir as classes | Concluído — responsabilidades separadas em repositories e serviços |
 | TP03 | — | Remover `any` e código sem uso | Conferir o código | Concluído — arquivos sem uso removidos (PR #114); não há `any` explícito no código-fonte |
 | TP04 | — | Testes das regras de cálculo de energia e CO₂e | Executar `npm test` | Concluído |
 | IHC03 | — | Indicadores com unidade, período e última atualização | Conferir as telas | Concluído |
 | IHC04 | — | Estados de carregamento, ausência de dados, indisponibilidade e erro; verificação de responsividade | Conferir as telas e [`interface.md`](interface.md) | Concluído |
 
-## Sprint 3 — planejamento
+## Sprint 3 — concluída
 
-**Objetivo:** concluir rankings e comparações, avaliar a usabilidade com usuários representativos e aplicar as melhorias.
+**Objetivo:** concluir rankings e comparações, aplicar melhorias de usabilidade, consolidar as evidências e preparar o encerramento do projeto.
 
 | Código | Entrega concreta | Situação |
 |---|---|---|
-| GA01 a GA09 | Gestão da Sprint 3 e avaliação final com pendências | Planejado |
-| DW01, DW03, DW07 | Revisão final da API, da documentação e dos comandos de execução | Planejado |
-| IHC05 | Avaliação de usabilidade com usuários representativos, com roteiro e resultados registrados | Planejado |
-| IHC06 | Mudanças justificadas pelos problemas encontrados e vinculadas a issues | Planejado |
+| GA01 a GA09 | Gestão da Sprint 3, burndown, relatório final e vídeo da Sprint Review 3 | Concluído |
+| DW01, DW03, DW07 | Revisão final da API, da documentação e dos comandos de execução | Concluído nas tasks 049 e 051 |
+| IHC05 | Avaliação de usabilidade com usuários representativos, com roteiro e resultados registrados | Concluído |
+| IHC06 | Mudanças justificadas pelos problemas encontrados e vinculadas a issues | Concluído |
 
 ---
 

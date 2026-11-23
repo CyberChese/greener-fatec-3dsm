@@ -59,6 +59,7 @@ Fluxo completo: [arquitetura e fluxo de dados](arquitetura.md).
 - [Planejamento da Sprint 3](sprints/sprint-3.md)
 - [Kanban, User Stories e Tasks](https://github.com/orgs/CyberChese/projects/2/views/3)
 - [Vídeo da Sprint 2](https://youtu.be/1soOS-lRddQ)
+- [Vídeo da Sprint 3](https://youtu.be/2h2wEK6j1RE)
 
 ## 6. Evidências visuais
 

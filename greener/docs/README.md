@@ -12,7 +12,8 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | [Processo de contribuição e entrega](processo-contribuicao.md) | Checklist de PR, revisão técnica, fluxo de branches, evidências de proteção/tags e registro de daily/escopo |
 | [Sprint 1](sprints/sprint-1.md) | Objetivo, backlog, histórias e critérios de aceite, DoD, situação das tasks, Sprint Review e retrospectiva |
 | [Sprint 2](sprints/sprint-2.md) | Objetivo, entregas realizadas, pendências herdadas e situação da sprint |
-| [Sprint 3](sprints/sprint-3.md) | Planejamento da Sprint 3 |
+| [Sprint 3](sprints/sprint-3.md) | Entregas, burndown, retrospectiva e fechamento da sprint |
+| [Relatório final de encerramento](relatorio-final.md) | Resumo do projeto, matriz de requisitos, evidências, testes e limitações técnicas conhecidas |
 | [Registros de decisões da Sprint 2](atas/decisoes-sprint-2.md) | Decisões de escopo já registradas, com fonte e contexto |
 | [Kanban, User Stories e Tasks](https://github.com/orgs/CyberChese/projects/2/views/3) | Quadro do GitHub Projects com o acompanhamento das atividades |
 
