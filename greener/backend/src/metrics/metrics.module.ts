@@ -1,22 +1,21 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MetricCollection } from '../entities/metric-collection.entity';
-import { Service } from '../entities/service.entity';
 import { AggregatorModule } from '../modules/aggregator/aggregator.module';
 import { MetricsController, ServiceMetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
 import { EngineModule } from '../engine/engine.module';
 import { CarbonIntensityModule } from '../modules/carbon-intensity/carbon-intensity.module';
+import { AnalyticsService } from './analytics.service';
+import { RepositoriesModule } from '../repositories/repositories.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Service, MetricCollection]),
+    RepositoriesModule,
     AggregatorModule,
     EngineModule,
     CarbonIntensityModule,
   ],
   controllers: [MetricsController, ServiceMetricsController],
-  providers: [MetricsService],
-  exports: [MetricsService],
+  providers: [MetricsService, AnalyticsService],
+  exports: [MetricsService, AnalyticsService],
 })
 export class MetricsModule {}

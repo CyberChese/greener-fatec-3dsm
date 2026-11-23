@@ -104,14 +104,14 @@ describe('ranking de impacto sem zeros falsos (TASK-040)', () => {
 
   it('serviço sem medição fica fora do ranking e a omissão é informada', () => {
     const html = renderRanking(new Map([['a', { energyKwh: 0.01, co2eKg: 0.004, samples: 0 }]]))
-    expect(html).not.toContain('Sem medição</span>')
+    expect(html).not.toContain('>Sem medição<')
     expect(html).toContain('2 serviço(s) sem medição no período não aparecem no ranking.')
   })
 
   it('sem nenhuma medição avisa em vez de listar zeros', () => {
     const html = renderRanking(new Map())
     expect(html).toContain('Nenhum serviço tem medição de energia e CO₂e no período.')
-    expect(html).not.toContain('<ol')
+    expect(html).not.toContain('<table')
   })
 
   it('sem serviços após os filtros mantém a mensagem dos filtros', () => {

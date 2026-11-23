@@ -98,7 +98,7 @@ function SummaryCards({ summary }: { summary: PublicSummary }) {
           style={{ background: `conic-gradient(#a3e635 ${degrees}deg, rgba(255,255,255,0.08) 0deg)` }}
           aria-hidden="true"
         >
-          <span className="grid size-9 place-items-center rounded-full bg-zinc-950 font-mono text-[11px] font-semibold text-zinc-100">
+          <span className="grid size-9 place-items-center rounded-full bg-zinc-950 font-mono text-xs font-semibold text-zinc-100">
             {share}
           </span>
         </div>
@@ -231,8 +231,45 @@ function RetryButton({ onRetry, busy }: { onRetry: () => void; busy: boolean }) 
 
 /* ---------- versão conectada à API ---------- */
 
+export interface PeriodSummary {
+  energyKwh: number
+  co2eKg: number
+  from: string
+  to: string
+}
+
+interface ExecutiveHeaderProps {
+  intervalMs: number
+  period?: PeriodSummary | null
+  periodError?: string | null
+}
+
 /** Header executivo ligado ao resumo público (GET /api/metrics/summary). */
-export function ExecutiveHeader({ intervalMs }: { intervalMs: number }) {
+export function ExecutiveHeader({ intervalMs, period, periodError = null }: ExecutiveHeaderProps) {
   const { retry, ...state } = usePublicSummary({ intervalMs })
-  return <ExecutiveHeaderView {...state} onRetry={retry} />
+  if (period === undefined) return <ExecutiveHeaderView {...state} onRetry={retry} />
+
+  const data: SummaryResult | null =
+    state.data && period
+      ? {
+          source: 'api',
+          summary: {
+            ...state.data.summary,
+            energy_kwh: period.energyKwh,
+            co2e_kg: period.co2eKg,
+            period: { from: period.from, to: period.to },
+          },
+        }
+      : null
+  const error = state.error ?? periodError
+
+  return (
+    <ExecutiveHeaderView
+      {...state}
+      data={data}
+      error={error}
+      initialLoading={state.initialLoading || (!period && !error)}
+      onRetry={retry}
+    />
+  )
 }

@@ -12,8 +12,10 @@ O Observatório e a Área do Administrador foram portados do protótipo visual d
   O horário exibido é o horário real. O backend persiste energia, CO₂e, intensidade de carbono e o uso de fallback em cada
   coleta; o frontend soma energia e CO₂e das coletas dos últimos 15 min de cada serviço (a mesma resposta do histórico, sem
   requisição extra) e mostra a intensidade da coleta mais recente. Coleta sem o valor (por exemplo, anterior ao cálculo) não
-  entra na soma, e serviço sem nenhum valor continua aparecendo como "—", nunca como zero. Potência, gráfico de evolução e
-  ranking ainda não são apresentados no modo `api`.
+  entra na soma, e serviço sem nenhum valor continua aparecendo como "—", nunca como zero. O ranking e a comparação usam as
+  rotas públicas `GET /api/metrics/ranking` e `GET /api/metrics/compare`; o gráfico de evolução ainda não lê uma série
+  histórica própria do backend; a potência estimada não faz parte do contrato persistido e permanece disponível apenas no modo
+  de simulação ou em representações que forneçam esse valor explicitamente.
 - **`simulated`**: simulação no navegador para demonstração (coleta acelerada, cada coleta ≙ 15 min simulados, e por isso
   o horário da tabela avança de 15 em 15 min enquanto o relógio do topo mostra a hora real).
 
@@ -36,7 +38,8 @@ ficar no backend.
 | Energia, CO2e e intensidade (gCO2e/kWh) por serviço | **Real** (soma dos últimos 15 min de `GET /api/services/:id/history`; intensidade da coleta mais recente) | já existe |
 | % renovável por serviço e período | falta | API atual não persiste esse dado |
 | Resumo agregado por período | falta | `GET /api/dashboard/summary?period=` (proposta) |
-| Série temporal para o gráfico e o ranking | falta | `GET /api/dashboard/series?period=` |
+| Ranking e comparação por período | **Real** (`GET /api/metrics/ranking` e `GET /api/metrics/compare`) | já existe; o ranking pagina os serviços e a comparação alinha as séries por `bucketSeconds` |
+| Série temporal própria para o gráfico de evolução | falta | endpoint específico de série temporal ainda não definido |
 | Eventos do ambiente (serviço descoberto, removido, indisponível) | derivados no front a partir da diferença entre consultas | `GET /api/events` (opcional) |
 | Histórico de coletas e CSV (RF10) | **Real** por serviço (`GET /api/services/:id/history?from=&to=`) | já existe; paginação e filtro por estado seriam úteis, e a rota pública poderia exigir JWT na área admin |
 | Configurações de monitoramento (RF16) | salvas no `localStorage` do navegador | `GET` e `PUT /api/settings` (JWT) |

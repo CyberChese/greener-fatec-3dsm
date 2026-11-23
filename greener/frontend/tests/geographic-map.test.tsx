@@ -49,7 +49,7 @@ describe('GeographicMapComponent com mapa mockado (TASK-026)', () => {
     expect(count(html, 'data-testid="popup"')).toBe(2)
     expect(html).toContain('data-position="-23.55,-46.63"')
     expect(html).toContain('data-title="Auth API: Serviço Indisponível"')
-    expect(html).toContain('Sao Paulo / Brazil')
+    expect(html).toContain('Sao Paulo / Brasil')
     expect(html).toContain('1,234 kgCO₂e')
   })
 

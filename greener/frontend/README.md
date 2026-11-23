@@ -45,7 +45,8 @@ vem do `compose.yaml`, que lê o `.env` da raiz do repositório (veja o `.env.ex
 | `npm run dev` | Servidor de desenvolvimento com hot reload |
 | `npm run build` | Checa os tipos (`tsc -b`) e gera a versão de produção |
 | `npm run lint` | Executa o ESLint |
-| `npm test` | Executa os testes unitários (Vitest) |
+| `npm test` | Executa os testes unitários e de componentes (Vitest) |
+| `npm run test:cov` | Executa os testes com relatório de cobertura (Vitest + v8) |
 | `npm run preview` | Serve a versão de produção localmente |
 
 Para checar só os tipos use `npx tsc -p tsconfig.app.json --noEmit`.
@@ -187,7 +188,11 @@ energia, CO₂e e intensidade de carbono quando esses dados estão disponíveis.
 popups do mapa usam os valores reais recebidos do backend; o marcador `—` indica ausência de uma medição,
 e não um valor fictício.
 
-Com dados reais, energia e CO₂e por serviço somam as coletas dos **últimos 15 minutos** (período exibido nos cards, no mapa e no ranking). Os indicadores consolidados do topo somam todas as coletas registradas. O seletor de período e o gráfico de evolução temporal só funcionam no modo `simulated`; com dados reais o gráfico aparece como "ainda não disponível".
+Com dados reais, energia e CO₂e por serviço somam as coletas dos **últimos 15 minutos** (período exibido nos cards, no mapa e no ranking). Os indicadores consolidados do topo somam todas as coletas registradas. O seletor de período e o gráfico agregado de evolução temporal só funcionam no modo `simulated`; com dados reais esse gráfico agregado aparece como "ainda não disponível". A comparação por serviço funciona nos dois modos: consulta o histórico de cada serviço pela API no modo real e usa as coletas existentes no modo simulado.
+
+O **comparador de serviços** permite selecionar de dois a quatro serviços. Exibe linhas de consumo energético e de emissões ao longo do tempo, legenda para alternar cada serviço e tooltip com os valores disponíveis no instante. No modo real, usa `GET /api/metrics/compare`, que alinha as séries em intervalos de 30 segundos e fornece o resumo percentual de emissões; no modo simulado, o resumo é calculado com as coletas disponíveis. Ausência de medição não é convertida em zero.
+
+O **ranking de impacto** é uma tabela com posição, serviço, status, consumo (kWh) e emissão (kgCO₂e). O 1º lugar recebe o selo "1º · Maior impacto" (número e texto, não só cor), e os botões "Maior consumo (kWh)" e "Maior emissão (CO₂e)" reordenam a lista sem recarregar a página. Serviços sem medição no período ficam fora do ranking, e a quantidade omitida é informada. O ranking usa os totais por serviço que o frontend já recebe; a troca por um endpoint dedicado depende da TASK-041.
 
 O modo `simulated` permanece disponível para demonstrações locais e testes visuais, sem substituir o login real.
 

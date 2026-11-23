@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { useMetricsContext } from '@/hooks/useMetricsContext'
-import { IMPACT_WINDOW_LABEL } from '@/services/backend-services'
 import { AppHeader } from './dashboard/app-header.tsx'
 
 export function AppLayout() {
@@ -35,14 +34,14 @@ export function AppLayout() {
           {IS_SIMULATED ? (
             <>
               Dados simulados no navegador (modo de demonstração) no formato das APIs UniLaunch. Coleta a cada{' '}
-              {metrics.intervalMs / 1000} s, cada coleta ≙ 15 min. Modelo do projeto: W = CPU%/100 × 100 + 0,375 × RAM(GB) +
+              {metrics.intervalMs / 1000} s, cada ciclo representa 15 minutos simulados. Modelo do projeto: W = CPU%/100 × 100 + 0,375 × RAM(GB) +
               0,01 × Disco(GB) + 0,02 × Rede(GB); kWh = W × horas ÷ 1000; kgCO₂e = kWh × gCO₂e/kWh ÷ 1000.
             </>
           ) : (
             <>
               Serviços, estados e métricas vindos do backend do GreenER, consultados a cada {metrics.intervalMs / 1000} s (o
-              worker coleta em intervalo próprio). A energia e o CO₂e de cada serviço somam as coletas dos {IMPACT_WINDOW_LABEL};
-              os indicadores consolidados do topo somam todas as coletas registradas. “—” indica ausência de medição.
+              worker coleta em intervalo próprio). A energia e o CO₂e de cada serviço e os indicadores consolidados do topo
+              somam as coletas do período selecionado na barra de filtros. “—” indica ausência de medição.
             </>
           )}
         </footer>

@@ -28,7 +28,7 @@ export function CardHeading({
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
         {eyebrow ? (
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-lime-400 uppercase">{eyebrow}</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-lime-400 uppercase">{eyebrow}</p>
         ) : null}
         <h2 id={id} className="text-base font-semibold text-zinc-100 text-balance">
           {title}

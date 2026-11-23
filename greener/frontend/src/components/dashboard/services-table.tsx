@@ -1,7 +1,8 @@
 import { MapPinOff } from 'lucide-react'
-import { formatGb, formatIntensity, formatKg, formatKwh, formatPercent } from '@/lib/format'
+import { formatCountryName, formatGb, formatIntensity, formatKg, formatKwh, formatPercent } from '@/lib/format'
 import type { ServiceSnapshot } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { MAX_COMPARED_SERVICES } from './comparison-data'
 import { CardHeading, GlassCard } from './glass-card'
 import { StatusBadge } from './status-badge'
 
@@ -28,7 +29,9 @@ export function ServicesTable({
   embedded = false,
 }: ServicesTableProps) {
   const visibleIds = services.map((s) => s.id)
-  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id))
+  const selectableIds = visibleIds.slice(0, MAX_COMPARED_SERVICES)
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.includes(id))
+  const selectionLimitReached = selectedIds.length >= MAX_COMPARED_SERVICES
 
   return (
     <GlassCard
@@ -60,8 +63,9 @@ export function ServicesTable({
                   type="checkbox"
                   className="size-4 accent-lime-400"
                   checked={allSelected}
-                  onChange={() => onToggleAll(allSelected ? [] : visibleIds)}
-                  aria-label="Selecionar todos os serviços visíveis para comparação"
+                  disabled={selectionLimitReached && !allSelected}
+                  onChange={() => onToggleAll(allSelected ? [] : selectableIds)}
+                  aria-label={`Selecionar os ${selectableIds.length} primeiros serviços visíveis para comparação`}
                 />
               </th>
               <th scope="col" className="px-3 py-3 font-medium">Serviço</th>
@@ -102,6 +106,7 @@ export function ServicesTable({
                         type="checkbox"
                         className="size-4 accent-lime-400"
                         checked={checked}
+                        disabled={selectionLimitReached && !checked}
                         onChange={() => onToggle(s.id)}
                         aria-label={`Comparar ${s.name}`}
                       />
@@ -111,7 +116,7 @@ export function ServicesTable({
                       <span className="block font-mono text-xs font-normal text-ink-subtle">{s.id}</span>
                     </th>
                     <td className="px-3 py-3 text-zinc-300">
-                      <span className="block">{s.location.country}</span>
+                      <span className="block">{formatCountryName(s.location.country)}</span>
                       <span className="block text-xs text-ink-subtle">
                         {s.location.region}
                         {s.location.city ? ` · ${s.location.city}` : ' · cidade não informada'} · {s.location.region_code}

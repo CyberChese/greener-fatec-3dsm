@@ -7,11 +7,13 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 
 | Documento | Conteúdo |
 |---|---|
+| [Guia de portfólio](guia-portfolio.md) | Roteiro de apresentação final, links principais e evidências do projeto |
 | [Plano de entregas](plano-de-entregas.md) | Distribuição dos critérios da rubrica nas três sprints, responsáveis, evidências, pendências e participação dos integrantes |
 | [Processo de contribuição e entrega](processo-contribuicao.md) | Checklist de PR, revisão técnica, fluxo de branches, evidências de proteção/tags e registro de daily/escopo |
 | [Sprint 1](sprints/sprint-1.md) | Objetivo, backlog, histórias e critérios de aceite, DoD, situação das tasks, Sprint Review e retrospectiva |
 | [Sprint 2](sprints/sprint-2.md) | Objetivo, entregas realizadas, pendências herdadas e situação da sprint |
-| [Sprint 3](sprints/sprint-3.md) | Planejamento da Sprint 3 |
+| [Sprint 3](sprints/sprint-3.md) | Entregas, burndown, retrospectiva e fechamento da sprint |
+| [Relatório final de encerramento](relatorio-final.md) | Resumo do projeto, matriz de requisitos, evidências, testes e limitações técnicas conhecidas |
 | [Registros de decisões da Sprint 2](atas/decisoes-sprint-2.md) | Decisões de escopo já registradas, com fonte e contexto |
 | [Kanban, User Stories e Tasks](https://github.com/orgs/CyberChese/projects/2/views/3) | Quadro do GitHub Projects com o acompanhamento das atividades |
 
@@ -22,9 +24,9 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 | [Arquitetura](arquitetura.md) | Componentes, responsabilidades, fluxo de dados e decisões arquiteturais |
 | [API](api.md) | Endpoints implementados, parâmetros, respostas e códigos de erro |
 | [Cálculos](calculos.md) | Dados de entrada coletados e estrutura dos cálculos de energia e CO₂e |
-| [Índices e persistência (TASK-028)](../../docs/database/TASK-028-indices.md) | Decisão de índices do PostgreSQL para as consultas de coleta e resumo |
 | [Contrato do Agregador](contrato-agregador.md) | Contrato da API de Métricas da UniLaunch usado pelo backend |
 | [Contrato da API de Intensidade de Carbono](contrato-intensidade-carbono.md) | Contrato oficial da consulta regional, unidade, validação e fallback |
+| [Relatório de Testes e Cobertura — Sprint 3](evidencias/relatorio-cobertura-sprint-3.md) | Cobertura de código (Jest e Vitest), suíte analítica e evidência E2E com PostgreSQL (TASK-050) |
 
 ## 🎨 Design e Usabilidade
 
@@ -32,6 +34,9 @@ Para executar a aplicação, veja o [README principal](../../README.md).
 |---|---|
 | [Interface](interface.md) | Usuários e tarefas, protótipos, fluxo de navegação e decisões de interface |
 | [Relatório de Usabilidade (IHC)](ihc/relatorio-usabilidade.md) | Metodologia, feedbacks, pontos de fricção e ajustes propostos para o protótipo navegável |
+| [Avaliação de usabilidade da Sprint 3 (IHC05)](ihc/avaliacao-usabilidade-sprint-3.md) | Plano, roteiro de tarefas, instrumentos, modelo de resultados e lista de problemas da avaliação com usuários |
+| [TCLE (modelo)](ihc/tcle-modelo.md) | Termo de consentimento em branco, com cláusulas de proteção de dados (LGPD) |
+| [Ficha de observação (modelo)](ihc/ficha-observacao-modelo.md) | Ficha por participante: tarefas, tempos, SEQ, SUS e problemas observados |
 
 ## 📐 Diagramas Técnicos
 

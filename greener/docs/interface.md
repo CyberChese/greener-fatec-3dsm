@@ -75,13 +75,16 @@ Login · modal
 | Indicador "Entrando…" e botão desabilitado durante o envio | `LoginModal.tsx` | Feedback de carregamento e prevenção de envio duplo |
 | Intervalo de coleta e última coleta exibidos no Observatório, com estados de carregamento e erro | [`HomePage.tsx`](../frontend/src/pages/HomePage.tsx) | O usuário sabe se os dados estão atualizados |
 | O token JWT nunca é exibido na tela; a Área do Administrador mostra só e-mail e expiração | [`SessionCard.tsx`](../frontend/src/components/SessionCard.tsx) | Segurança (ponto F4 do relatório de usabilidade) |
+| Barra de filtros no topo do Observatório e do Mapa, com atalhos de período (24h, 7 dias, 30 dias), intervalo personalizado confirmado por botão e busca por nome com debounce de 300 ms | [`filters-bar.tsx`](../frontend/src/components/dashboard/filters-bar.tsx) | O usuário escolhe a janela de análise sem disparar uma consulta a cada tecla (HU-17, RF12) |
+| Período e busca ficam nos parâmetros da URL (`period`, `from`, `to`, `q`); o padrão (7 dias, sem busca) não é gravado | [`dashboard-filters.ts`](../frontend/src/lib/dashboard-filters.ts) | O link copiado abre a tela com os mesmos filtros, e a navegação entre Observatório e Mapa os mantém |
+| Energia e CO₂e dos indicadores, mapa, ranking, cartões e comparação somam a janela selecionada, lida de `GET /api/metrics/ranking` com `startDate` e `endDate` | [`ranking.ts`](../frontend/src/services/ranking.ts) | Todas as visões mostram o mesmo período; CPU, memória, disco e rede continuam sendo a leitura mais recente |
 
 ## 4. Avaliação de usabilidade
 
 Na Sprint 1 foi realizada uma avaliação inicial do protótipo navegável, com roteiro de tarefas e inspeção heurística (Nielsen e WCAG 2.1).
 Relatório completo: [`ihc/relatorio-usabilidade.md`](ihc/relatorio-usabilidade.md).
 
-A avaliação com **usuários representativos** (critério IHC05) está prevista para a Sprint 3.
+A avaliação com **usuários representativos** (critério IHC05) foi realizada na Sprint 3.
 
 ## 5. Melhorias decorrentes da avaliação
 
@@ -93,7 +96,7 @@ Já refletido na implementação da Sprint 1:
 | F2 — estados do login | O modal implementado tem erro de credenciais, erro de servidor e estado de carregamento |
 | F4 — token exibido por inteiro | O token não é exibido; apenas e-mail e expiração |
 
-Os demais ajustes serão vinculados a issues e acompanhados nas Sprints 2 e 3 (critério IHC06).
+Os demais ajustes foram aplicados e registrados na Sprint 3, conforme o critério IHC06.
 
 ## 6. Responsividade
 

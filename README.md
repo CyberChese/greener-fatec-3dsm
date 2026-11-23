@@ -59,7 +59,7 @@ Avaliação inicial do protótipo com 2 participantes, com roteiro de tarefas, o
 
 - **Resultado:** os participantes aprovaram a navegação, as cores e o design.
 - **Pontos de fricção e ajustes:** contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma.
-- **Próximo passo:** avaliação com usuários representativos na Sprint 3.
+- **Avaliação final:** realizada na Sprint 3; os resultados detalhados estão sendo consolidados na documentação de IHC.
 
 📄 **Relatório completo:** [`greener/docs/ihc/relatorio-usabilidade.md`](greener/docs/ihc/relatorio-usabilidade.md)
 
@@ -154,10 +154,11 @@ Componentes, fluxos e decisões arquiteturais: [`greener/docs/arquitetura.md`](g
    cp .env.example .env
    ```
 
-3. **Subir os containers:**
+3. **Subir os containers pela primeira vez:**
    ```bash
-   docker compose up --build -d
+   docker compose up --build
    ```
+   Para iniciar em segundo plano, acrescente `-d`. Nas execuções seguintes, quando as imagens já estiverem construídas, `docker compose up -d` é suficiente.
 
 4. **Criar as tabelas no banco** (necessário na primeira execução e após novas migrações):
    ```bash
@@ -218,6 +219,7 @@ Definidas no arquivo `.env` na raiz (modelo em [`.env.example`](.env.example)):
 | `AGGREGATOR_API_URL` | URL base do Agregador de Métricas | `https://metrics.unilaunch.org` |
 | `AGGREGATOR_SERVICES_PATH` | Rota de descoberta | `/services` |
 | `AGGREGATOR_TIMEOUT` | Timeout das chamadas ao Agregador (ms) | `5000` |
+| `SERVICE_DISCOVERY_INTERVAL_SECONDS` | Intervalo entre sincronizações da descoberta (s) | `300` |
 | `METRICS_COLLECTION_INTERVAL_SECONDS` | Intervalo entre ciclos de coleta (s) | `30` |
 | `CARBON_INTENSITY_API_URL` | URL base da API de intensidade de carbono | `https://carbon.unilaunch.org` |
 | `CARBON_INTENSITY_TIMEOUT_MS` | Timeout da API de intensidade de carbono (ms) | `5000` |
@@ -232,7 +234,7 @@ O arquivo `.env` não é versionado (está no `.gitignore`).
 * O primeiro ciclo começa `METRICS_COLLECTION_INTERVAL_SECONDS` após a inicialização do backend, e cada ciclo seguinte começa esse mesmo tempo depois do término do anterior, sem sobreposição.
 * Para cada serviço com endpoint de métricas, o coletor chama `GET {AGGREGATOR_API_URL}{metrics_path}`.
 * Resposta válida grava a coleta e define `ACTIVE`; resposta sem métricas válidas define `NO_METRICS`; timeout, falha de conexão, HTTP 404 ou HTTP 500 define `UNAVAILABLE`. As transições não apagam o histórico.
-* A descoberta de serviços é executada na inicialização do backend.
+* A descoberta é executada em segundo plano na inicialização e repetida a cada `SERVICE_DISCOVERY_INTERVAL_SECONDS` (padrão 300 s). Cada ciclo começa após o anterior terminar, sem sobreposição.
 
 Mapeamento dos campos do Agregador:
 
@@ -249,7 +251,7 @@ Contrato completo: [`greener/docs/contrato-agregador.md`](greener/docs/contrato-
 
 ## 🔌 Endpoints da API
 
-Rotas implementadas na Sprint 2 (prefixo `/api`):
+Rotas implementadas (prefixo `/api`):
 
 | Método | Endpoint | Acesso | Descrição |
 | :--- | :--- | :--- | :--- |
@@ -260,6 +262,8 @@ Rotas implementadas na Sprint 2 (prefixo `/api`):
 | `GET` | `/api/services/:id/history?from=&to=` | Público | Histórico de coletas do serviço (datas ISO-8601, limites inclusivos) |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta |
 | `GET` | `/api/metrics/summary` | Público | Totais de energia, CO₂e e contagem por estado |
+| `GET` | `/api/metrics/ranking` | Público | Ranking paginado por energia ou CO₂e, com filtros de período |
+| `GET` | `/api/metrics/compare` | Público | Comparação de 2 a 4 serviços com série temporal e resumo de eficiência |
 
 A documentação interativa está disponível em <http://localhost:3001/api/docs>. Ela descreve os parâmetros, schemas, respostas de sucesso e erros. Use o botão **Authorize** para informar um JWT nas rotas protegidas.
 
@@ -315,6 +319,8 @@ cd ../frontend && npm ci && npm test
 | Documento | Conteúdo |
 |---|---|
 | [`greener/docs/README.md`](greener/docs/README.md) | Índice da documentação |
+| [`guia-portfolio.md`](greener/docs/guia-portfolio.md) | Roteiro de apresentação final, links principais e evidências |
+| [`relatorio-final.md`](greener/docs/relatorio-final.md) | Relatório de encerramento, matriz de requisitos, testes e pendências |
 | [`plano-de-entregas.md`](greener/docs/plano-de-entregas.md) | Critérios por sprint, responsáveis, evidências e participação |
 | [`sprints/sprint-1.md`](greener/docs/sprints/sprint-1.md) | Sprint 1: backlog, histórias, DoD, review e retrospectiva |
 | [`arquitetura.md`](greener/docs/arquitetura.md) | Componentes, fluxo de dados e decisões |

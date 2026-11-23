@@ -2,6 +2,7 @@ import { LayoutGrid, Table2 } from 'lucide-react'
 import { useState } from 'react'
 import type { ServiceStatus } from '@/lib/types'
 import { CardHeading, GlassCard } from './glass-card'
+import { MAX_COMPARED_SERVICES } from './comparison-data'
 import { ServicesGrid } from './services-grid'
 import { ServicesTable, type ServicesTableProps } from './services-table'
 import { StatusBadge } from './status-badge'
@@ -42,7 +43,7 @@ export function ServicesSection(props: ServicesTableProps) {
           aside={
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-xs text-ink-subtle">
-                {props.selectedIds.length} selecionado(s) para comparação · totais: {props.periodLabel}
+                {props.selectedIds.length}/{MAX_COMPARED_SERVICES} selecionado(s) para comparação · totais: {props.periodLabel}
               </span>
               <div className="flex rounded-lg border border-edge p-0.5 text-xs" role="group" aria-label="Modo de exibição">
                 {MODES.map(({ id, label, icon: Icon }) => (
@@ -63,6 +64,11 @@ export function ServicesSection(props: ServicesTableProps) {
           }
         />
         <StatusLegend />
+        {props.selectedIds.length >= MAX_COMPARED_SERVICES ? (
+          <p role="status" className="mt-3 text-xs text-ink-subtle">
+            Limite de {MAX_COMPARED_SERVICES} serviços atingido. Desmarque um serviço para selecionar outro.
+          </p>
+        ) : null}
       </GlassCard>
 
       {mode === 'cards' ? <ServicesGrid {...props} /> : <ServicesTable {...props} embedded />}

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -7,17 +6,11 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  In,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Repository,
-  type FindOptionsWhere,
-} from 'typeorm';
+import { parseDateRange } from '../common/date-range';
 import { MetricCollection } from '../entities/metric-collection.entity';
 import { Service, ServiceStatus } from '../entities/service.entity';
+import { MetricCollectionRepository } from '../repositories/metric-collection.repository';
+import { ServiceRepository } from '../repositories/service.repository';
 import { AggregatorClientService } from '../modules/aggregator/aggregator-client.service';
 import {
   AggregatorHttpError,
@@ -133,18 +126,6 @@ function statusForFetchError(error: unknown): ServiceStatus | undefined {
   return undefined;
 }
 
-function parseDateParameter(value: string | undefined, name: string): Date | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException(`Query parameter "${name}" must be a valid date.`);
-  }
-  return date;
-}
-
 @Injectable()
 export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MetricsService.name);
@@ -153,10 +134,8 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
   private stopped = false;
 
   constructor(
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
-    @InjectRepository(MetricCollection)
-    private readonly collectionRepository: Repository<MetricCollection>,
+    private readonly serviceRepository: ServiceRepository,
+    private readonly collectionRepository: MetricCollectionRepository,
     private readonly energyEngineService: EnergyEngineService,
     private readonly carbonEngineService: CarbonEngineService,
     configService: ConfigService,
@@ -188,70 +167,33 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     interval_seconds: number;
     last_collection_at: Date | null;
   }> {
-    const [latestCollection] = await this.collectionRepository.find({
-      select: { timestamp: true },
-      order: { timestamp: 'DESC' },
-      take: 1,
-    });
-
     return {
       interval_seconds: this.collectionIntervalSeconds,
-      last_collection_at: latestCollection?.timestamp ?? null,
+      last_collection_at: await this.collectionRepository.findLatestTimestamp(),
     };
   }
 
   async getSummary(): Promise<MetricsSummary> {
-    const [totals, statusRows] = await Promise.all([
-      this.collectionRepository
-        .createQueryBuilder('collection')
-        .select(
-          'COALESCE(SUM(collection.energy_kwh), 0)',
-          'total_energy_kwh',
-        )
-        .addSelect('COALESCE(SUM(collection.co2e_kg), 0)', 'total_co2e_kg')
-        .getRawOne<{
-          total_energy_kwh: string | number | null;
-          total_co2e_kg: string | number | null;
-        }>(),
-      this.serviceRepository
-        .createQueryBuilder('service')
-        .select('service.status', 'status')
-        .addSelect('COUNT(service.idServices)', 'count')
-        .groupBy('service.status')
-        .getRawMany<{ status: ServiceStatus; count: string | number }>(),
+    const [totals, statusCount] = await Promise.all([
+      this.collectionRepository.sumImpact(),
+      this.serviceRepository.countByStatus(),
     ]);
 
-    const servicesCount = {
-      active: 0,
-      unavailable: 0,
-      no_metrics: 0,
-    };
-
-    for (const row of statusRows) {
-      const count = Number(row.count);
-
-      if (row.status === ServiceStatus.ACTIVE) {
-        servicesCount.active = count;
-      } else if (row.status === ServiceStatus.UNAVAILABLE) {
-        servicesCount.unavailable = count;
-      } else if (row.status === ServiceStatus.NO_METRICS) {
-        servicesCount.no_metrics = count;
-      }
-    }
-
     return {
-      total_energy_kwh: Number(totals?.total_energy_kwh ?? 0),
-      total_co2e_kg: Number(totals?.total_co2e_kg ?? 0),
-      services_count: servicesCount,
+      total_energy_kwh: totals.energyKwh,
+      total_co2e_kg: totals.co2eKg,
+      services_count: {
+        active: statusCount[ServiceStatus.ACTIVE],
+        unavailable: statusCount[ServiceStatus.UNAVAILABLE],
+        no_metrics: statusCount[ServiceStatus.NO_METRICS],
+      },
     };
   }
 
   async collectCycle(): Promise<void> {
-    const activeServices = await this.serviceRepository.find({
-      where: { status: In(Object.values(ServiceStatus)) },
-    });
+    const services = await this.serviceRepository.findAll();
 
-    for (const service of activeServices) {
+    for (const service of services) {
       if (!service.endpoint) {
         await this.updateServiceStatus(service, ServiceStatus.NO_METRICS);
         this.logger.warn(
@@ -287,30 +229,13 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
     fromValue?: string,
     toValue?: string,
   ): Promise<MetricCollection[]> {
-    const service = await this.serviceRepository.findOneBy({ idServices: serviceId });
+    const service = await this.serviceRepository.findById(serviceId);
     if (!service) {
       throw new NotFoundException(`Service "${serviceId}" was not found.`);
     }
 
-    const from = parseDateParameter(fromValue, 'from');
-    const to = parseDateParameter(toValue, 'to');
-    if (from && to && from > to) {
-      throw new BadRequestException('"from" must be earlier than or equal to "to".');
-    }
-
-    const where: FindOptionsWhere<MetricCollection> = { service_id: serviceId };
-    if (from && to) {
-      where.timestamp = Between(from, to);
-    } else if (from) {
-      where.timestamp = MoreThanOrEqual(from);
-    } else if (to) {
-      where.timestamp = LessThanOrEqual(to);
-    }
-
-    return this.collectionRepository.find({
-      where,
-      order: { timestamp: 'ASC' },
-    });
+    const range = parseDateRange(fromValue, toValue, 'from', 'to');
+    return this.collectionRepository.findByService(serviceId, range);
   }
 
   private parseInterval(value: string): number {
@@ -385,23 +310,20 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       carbonIntensity.intensityGco2ePerKwh,
     );
 
-    await this.collectionRepository.save(
-      this.collectionRepository.create({
-        service_id: service.idServices,
-        service,
-        cpu_usage: String(metrics.cpu_percent),
-        memory_usage: String(metrics.memory_gb),
-        storage_usage: String(metrics.disk_gb),
-        network_io: String(metrics.network_gb),
-        energy_kwh: Number(energyKwh),
-        carbon_intensity_gco2e_per_kwh:
-          carbonEmission.intensityGco2ePerKwh,
-        co2e_g: carbonEmission.emissionGrams,
-        co2e_kg: carbonEmission.emissionKilograms,
-        carbon_intensity_fallback: carbonIntensity.usedFallback,
-        timestamp,
-      }),
-    );
+    await this.collectionRepository.createAndSave({
+      service_id: service.idServices,
+      service,
+      cpu_usage: String(metrics.cpu_percent),
+      memory_usage: String(metrics.memory_gb),
+      storage_usage: String(metrics.disk_gb),
+      network_io: String(metrics.network_gb),
+      energy_kwh: Number(energyKwh),
+      carbon_intensity_gco2e_per_kwh: carbonEmission.intensityGco2ePerKwh,
+      co2e_g: carbonEmission.emissionGrams,
+      co2e_kg: carbonEmission.emissionKilograms,
+      carbon_intensity_fallback: carbonIntensity.usedFallback,
+      timestamp,
+    });
     await this.updateServiceStatus(service, ServiceStatus.ACTIVE);
   }
 
@@ -413,10 +335,7 @@ export class MetricsService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    await this.serviceRepository.update(
-      { idServices: service.idServices },
-      { status },
-    );
+    await this.serviceRepository.updateStatus(service.idServices, status);
     service.status = status;
   }
 }

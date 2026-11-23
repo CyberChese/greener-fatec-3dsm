@@ -1,7 +1,8 @@
 import { Clock, LayoutDashboard, Leaf, LoaderCircle, Map as MapIcon, Menu, Pause, Play, ShieldCheck, Timer, TriangleAlert, X } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { NavLink } from 'react-router'
+import { NavLink, useSearchParams } from 'react-router'
+import { parseTimeFilters, writeTimeFilters } from '@/lib/dashboard-filters'
 import { IS_SIMULATED } from '@/lib/dataSource'
 import { formatDateTime, formatSimulatedClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -17,9 +18,9 @@ interface AppHeaderProps {
   reconnecting?: boolean
 }
 
-const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean }[] = [
-  { to: '/', label: 'Observatório', icon: LayoutDashboard, end: true },
-  { to: '/mapa', label: 'Mapa', icon: MapIcon },
+const TABS: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; keepFilters?: boolean }[] = [
+  { to: '/', label: 'Observatório', icon: LayoutDashboard, end: true, keepFilters: true },
+  { to: '/mapa', label: 'Mapa', icon: MapIcon, keepFilters: true },
   { to: '/admin', label: 'Área do Administrador', icon: ShieldCheck },
 ]
 
@@ -27,6 +28,10 @@ const chipClass =
   'inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 px-3 py-1.5 text-zinc-300 ring-1 ring-inset ring-white/10'
 
 function NavTabs({ vertical, onNavigate }: { vertical?: boolean; onNavigate?: () => void }) {
+  const [params] = useSearchParams()
+  const query = writeTimeFilters(new URLSearchParams(), parseTimeFilters(params)).toString()
+  const filtersSearch = query ? `?${query}` : ''
+
   return (
     <nav aria-label="Seções">
       <div
@@ -35,10 +40,10 @@ function NavTabs({ vertical, onNavigate }: { vertical?: boolean; onNavigate?: ()
           vertical ? 'flex flex-col' : 'flex',
         )}
       >
-        {TABS.map(({ to, label, icon: Icon, end }) => (
+        {TABS.map(({ to, label, icon: Icon, end, keepFilters }) => (
           <NavLink
             key={to}
-            to={to}
+            to={keepFilters ? { pathname: to, search: filtersSearch } : to}
             end={end}
             onClick={onNavigate}
             className={({ isActive }) =>
@@ -97,13 +102,23 @@ export function AppHeader({
   const intervalChip = (
     <span
       className={chipClass}
-      title={IS_SIMULATED ? 'Cada coleta real representa 15 minutos de operação simulada' : 'Intervalo entre consultas ao backend'}
+      title={
+        IS_SIMULATED
+          ? 'A interface consulta a cada intervalo indicado; cada ciclo representa 15 minutos de operação simulada.'
+          : 'Frequência com que o painel consulta o backend. O worker coleta em um intervalo próprio.'
+      }
+      aria-label={
+        IS_SIMULATED
+          ? `Atualização a cada ${intervalMs / 1000} segundos; cada ciclo representa 15 minutos simulados`
+          : `Consulta ao backend a cada ${intervalMs / 1000} segundos`
+      }
     >
       <Timer className="size-3.5 text-ink-subtle" aria-hidden="true" />
-      <span className="text-ink-subtle">Intervalo</span>
+      <span className="text-ink-subtle">Atualiza a cada</span>
       <span className="font-mono tabular-nums text-zinc-100">
-        {intervalMs / 1000}s{IS_SIMULATED ? ' ≙ 15 min' : ''}
+        {intervalMs / 1000} s
       </span>
+      {IS_SIMULATED ? <span className="text-ink-subtle">· 15 min simulados por ciclo</span> : null}
     </span>
   )
 
@@ -111,6 +126,8 @@ export function AppHeader({
     <button
       type="button"
       onClick={onTogglePause}
+      aria-label={paused ? 'Retomar atualização automática' : 'Pausar atualização automática'}
+      title={paused ? 'Retomar as consultas automáticas' : 'Pausar as consultas automáticas'}
       className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-200 ring-1 ring-edge ring-inset transition-colors hover:bg-zinc-800 hover:ring-lime-400/40"
     >
       {paused ? <Play className="size-3.5" aria-hidden="true" /> : <Pause className="size-3.5" aria-hidden="true" />}
@@ -142,7 +159,7 @@ export function AppHeader({
                 ? 'bg-zinc-800 text-zinc-300 ring-white/10'
                 : reconnecting
                   ? 'bg-orange-400/10 text-orange-300 ring-orange-400/30'
-                  : 'bg-lime-400/10 text-lime-300 ring-lime-400/30',
+                      : 'bg-lime-400/10 text-lime-300 ring-lime-400/30',
             )}
             role="status"
             aria-live="polite"

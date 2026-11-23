@@ -1,6 +1,6 @@
 # API REST do GreenER
 
-Documentação dos endpoints **implementados** no backend NestJS na versão da Sprint 2.
+Documentação dos endpoints **implementados** no backend NestJS na versão atual do projeto.
 Endpoints ainda não implementados aparecem separadamente em [Endpoints planejados](#endpoints-planejados).
 
 - **URL base (Docker):** `http://localhost:3001/api`
@@ -22,6 +22,8 @@ Endpoints ainda não implementados aparecem separadamente em [Endpoints planejad
 | `GET` | `/api/services/:id/history` | Público | Histórico de coletas de métricas de um serviço |
 | `GET` | `/api/metrics/collection-config` | Público | Intervalo de coleta e horário da última coleta registrada |
 | `GET` | `/api/metrics/summary` | Público | Indicadores consolidados: energia (kWh), CO₂e (kg) e serviços por estado |
+| `GET` | `/api/metrics/ranking` | Público | Ranking paginado de serviços por consumo energético ou emissão de CO₂e |
+| `GET` | `/api/metrics/compare` | Público | Comparação entre 2 a 4 serviços com série temporal pareada e resumo de eficiência |
 
 ---
 
@@ -197,6 +199,120 @@ Indicadores consolidados para o Observatório. Rota pública, sem parâmetros.
 
 A resposta **não** traz o total de serviços (é a soma das três contagens) nem o horário da última coleta (use `GET /api/metrics/collection-config`). Os totais cobrem todo o histórico gravado, não um período.
 
+### `GET /api/metrics/ranking`
+
+Retorna uma página do ranking de serviços por energia ou CO₂e. O filtro de período usa limites inclusivos e pode ser combinado com ordenação e paginação.
+
+| Parâmetro | Local | Tipo | Regras |
+|---|---|---|---|
+| `metric` | query | `energy` ou `co2e` | Opcional, padrão `co2e` |
+| `order` | query | `asc` ou `desc` | Opcional, padrão `desc` |
+| `startDate` | query | data ISO-8601 | Opcional, limite inicial inclusivo |
+| `endDate` | query | data ISO-8601 | Opcional, limite final inclusivo (`startDate <= endDate`) |
+| `page` | query | inteiro | Opcional, mínimo `1`, padrão `1` |
+| `limit` | query | inteiro | Opcional, entre `1` e `100`, padrão `10` |
+
+Exemplo: `GET /api/metrics/ranking?metric=co2e&order=desc&startDate=2026-11-16T12:00:00.000Z&endDate=2026-11-16T13:00:00.000Z&page=1&limit=10`
+
+**Resposta `200`:**
+
+```json
+{
+  "metric": "co2e",
+  "order": "desc",
+  "startDate": "2026-11-16T12:00:00.000Z",
+  "endDate": "2026-11-16T13:00:00.000Z",
+  "items": [
+    {
+      "rank": 1,
+      "service_id": "b9a3f744-1f9b-4e53-8b11-31d112a49c83",
+      "external_id": "billing-api",
+      "name": "Billing API",
+      "status": "ACTIVE",
+      "metric_value": 0.04692212
+    }
+  ],
+  "pagination": { "page": 1, "limit": 10, "total": 24, "totalPages": 3 }
+}
+```
+
+| Código | Situação |
+|---|---|
+| `400` | Métrica, ordenação, paginação ou filtro de datas inválido |
+
+### `GET /api/metrics/compare`
+
+Compara de **2 a 4** serviços em um período de amostragem, alinhando temporalmente os registros de cada serviço em janelas (`bucketSeconds`, padrão `30` s) para plotagem sobreposta e calculando o resumo estatístico com a diferença percentual de eficiência entre a aplicação mais e a menos poluidora.
+
+| Parâmetro | Local | Tipo | Regras |
+|---|---|---|---|
+| `serviceIds` | query | lista de strings | Obrigatório, de 2 a 4 identificadores únicos (`idServices` ou `external_id`), separados por vírgula ou repetidos na query |
+| `startDate` | query | data ISO-8601 | Opcional, limite inicial inclusivo |
+| `endDate` | query | data ISO-8601 | Opcional, limite final inclusivo (`startDate <= endDate`) |
+| `bucketSeconds` | query | inteiro | Opcional (padrão `30`, entre `1` e `86400`), janela em segundos para alinhar os timestamps das coletas |
+
+**Resposta `200`:**
+
+```json
+{
+  "startDate": "2026-11-16T12:00:00.000Z",
+  "endDate": "2026-11-16T12:01:00.000Z",
+  "bucketSeconds": 30,
+  "services": [
+    {
+      "service_id": "11111111-1111-4111-8111-111111111111",
+      "external_id": "billing-api",
+      "name": "Billing API",
+      "status": "ACTIVE",
+      "samples_count": 2,
+      "avg_cpu_usage": 70,
+      "total_energy_kwh": 0.0014,
+      "total_co2e_kg": 0.0007
+    },
+    {
+      "service_id": "22222222-2222-4222-8222-222222222222",
+      "external_id": "auth-api",
+      "name": "Auth API",
+      "status": "ACTIVE",
+      "samples_count": 2,
+      "avg_cpu_usage": 25,
+      "total_energy_kwh": 0.0005,
+      "total_co2e_kg": 0.00028
+    }
+  ],
+  "series": [
+    {
+      "timestamp": "2026-11-16T12:00:00.000Z",
+      "values": {
+        "11111111-1111-4111-8111-111111111111": {
+          "cpu_usage": 80,
+          "energy_kwh": 0.0008,
+          "co2e_kg": 0.0004
+        },
+        "22222222-2222-4222-8222-222222222222": {
+          "cpu_usage": 20,
+          "energy_kwh": 0.0002,
+          "co2e_kg": 0.0001
+        }
+      }
+    }
+  ],
+  "summary": {
+    "most_polluting_service_id": "11111111-1111-4111-8111-111111111111",
+    "least_polluting_service_id": "22222222-2222-4222-8222-222222222222",
+    "most_polluting_co2e_kg": 0.0007,
+    "least_polluting_co2e_kg": 0.00028,
+    "co2e_difference_kg": 0.00042,
+    "efficiency_difference_percent": 60
+  }
+}
+```
+
+| Código | Situação |
+|---|---|
+| `400` | Menos de 2 ou mais de 4 `serviceIds`, IDs duplicados, `bucketSeconds` inválido ou datas inválidas |
+| `404` | Um ou mais serviços informados em `serviceIds` não foram encontrados |
+
 ---
 
 ## Endpoints planejados
@@ -207,5 +323,3 @@ Os endpoints abaixo **ainda não existem** no backend. Eles permanecem como pend
 |---|---|---|---|
 | `PUT` | `/api/config/interval` | Alterar o intervalo de coleta (protegida por JWT) | Pendente |
 | `POST` | `/api/services/refresh` | Forçar a redescoberta dos serviços (protegida por JWT) | Pendente |
-| `GET` | `/api/metrics/ranking` | Ranking de serviços por consumo ou emissão | Sprint 3 |
-| `GET` | `/api/metrics/compare` | Comparação entre serviços em um período | Sprint 3 |

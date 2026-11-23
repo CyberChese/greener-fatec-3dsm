@@ -128,7 +128,6 @@ export interface QueryPoint {
 }
 
 export interface DashboardFilters {
-  search: string
   status: ServiceStatus | 'all'
   point: QueryPoint
 }

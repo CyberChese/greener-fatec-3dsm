@@ -34,6 +34,8 @@ describe('contraste dos tokens (TASK-035)', () => {
     for (const bg of backgrounds) {
       expect(contrastRatio(token('edge'), token(bg))).toBeGreaterThanOrEqual(MIN_CONTROL_CONTRAST)
     }
+    expect(contrastRatio('#3f3f46', '#09090b')).toBeLessThan(MIN_CONTROL_CONTRAST)
+    expect(contrastRatio(token('edge'), '#09090b')).toBeGreaterThanOrEqual(MIN_CONTROL_CONTRAST)
   })
 
   it('a cor de marca e as cores de estado identificam componentes com pelo menos 3:1', () => {
@@ -50,6 +52,12 @@ describe('contraste dos tokens (TASK-035)', () => {
     const page = '#09090b'
     for (const hex of ['#a1a1aa', '#d4d4d8', '#e4e4e7', '#f4f4f5']) {
       expect(contrastRatio(hex, page)).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST)
+    }
+  })
+
+  it('cores dos gráficos mantêm contraste WCAG AA mesmo sem depender da forma da linha', () => {
+    for (const color of ['#fbbf24', '#a78bfa', '#a1a1aa']) {
+      expect(contrastRatio(color, '#09090b')).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST)
     }
   })
 })

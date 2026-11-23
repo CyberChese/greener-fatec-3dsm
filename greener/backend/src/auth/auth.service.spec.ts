@@ -1,14 +1,14 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
+import { UserRepository } from '../repositories/user.repository';
 import { PasswordHasherService } from './password-hasher.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let userRepository: {
-    findOne: jest.Mock;
+    findByEmailWithPassword: jest.Mock;
   };
   let jwtService: {
     sign: jest.Mock;
@@ -26,7 +26,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     userRepository = {
-      findOne: jest.fn(),
+      findByEmailWithPassword: jest.fn(),
     };
     jwtService = {
       sign: jest.fn().mockReturnValue('jwt-token'),
@@ -36,14 +36,14 @@ describe('AuthService', () => {
     };
 
     authService = new AuthService(
-      userRepository as unknown as Repository<User>,
+      userRepository as unknown as UserRepository,
       jwtService as unknown as JwtService,
       passwordHasherService as unknown as PasswordHasherService,
     );
   });
 
   it('faz login com sucesso e emite um JWT', async () => {
-    userRepository.findOne.mockResolvedValue(user);
+    userRepository.findByEmailWithPassword.mockResolvedValue(user);
     passwordHasherService.comparePassword.mockResolvedValue(true);
 
     await expect(
@@ -60,15 +60,7 @@ describe('AuthService', () => {
       },
     });
 
-    expect(userRepository.findOne).toHaveBeenCalledWith({
-      where: { email: user.email },
-      select: {
-        idUsers: true,
-        email: true,
-        nameUsers: true,
-        password_hash: true,
-      },
-    });
+    expect(userRepository.findByEmailWithPassword).toHaveBeenCalledWith(user.email);
     expect(passwordHasherService.comparePassword).toHaveBeenCalledWith(
       'correct-password',
       user.password_hash,
@@ -81,7 +73,7 @@ describe('AuthService', () => {
   });
 
   it('rejeita o login quando a senha está errada', async () => {
-    userRepository.findOne.mockResolvedValue(user);
+    userRepository.findByEmailWithPassword.mockResolvedValue(user);
     passwordHasherService.comparePassword.mockResolvedValue(false);
 
     await expect(
@@ -95,7 +87,7 @@ describe('AuthService', () => {
   });
 
   it('rejeita o login quando o usuário não existe', async () => {
-    userRepository.findOne.mockResolvedValue(null);
+    userRepository.findByEmailWithPassword.mockResolvedValue(null);
 
     await expect(
       authService.login({
