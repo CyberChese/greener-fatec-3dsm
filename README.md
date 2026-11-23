@@ -25,7 +25,7 @@ O projeto foi concebido no âmbito da disciplina de **Aprendizagem Baseada em Pr
 
 ## ✅ Funcionalidades
 
-### Implementadas (Sprint 2)
+### Implementadas
 
 - Ambiente completo com Docker Compose: frontend, backend e PostgreSQL.
 - Esquema do banco (`users`, `services`, `metric_collections`) criado por migrações TypeORM.
@@ -340,7 +340,7 @@ cd ../frontend && npm ci && npm test
 | **Lucas Fernando Cobra** | Product Owner (PO) | [@LucasCobraFatec](https://github.com/LucasCobraFatec) |
 | **Luka Gomes** | Developer | [@LukaGomes](https://github.com/LukaGomes) |
 | **Gustavo Zago de Lima** | Developer | [@Gustavo-Zago](https://github.com/Gustavo-Zago) |
-| **Isabelly Marinho** | Oracle Developer | [@isabellymarinho20](https://github.com/isabellymarinho20) |
+| **Isabelly Marinho** | Developer | [@isabellymarinho20](https://github.com/isabellymarinho20) |
 | **Ronaldo** | Developer | [@RonaldoAvilaa](https://github.com/RonaldoAvilaa) |
 
 ---
