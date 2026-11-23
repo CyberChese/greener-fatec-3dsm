@@ -59,7 +59,7 @@ Avaliação inicial do protótipo com 2 participantes, com roteiro de tarefas, o
 
 - **Resultado:** os participantes aprovaram a navegação, as cores e o design.
 - **Pontos de fricção e ajustes:** contraste das bordas, estados do login, confirmação de ação destrutiva, consistência de contagens e idioma.
-- **Próximo passo:** avaliação com usuários representativos na Sprint 3.
+- **Avaliação final:** realizada na Sprint 3; os resultados detalhados estão sendo consolidados na documentação de IHC.
 
 📄 **Relatório completo:** [`greener/docs/ihc/relatorio-usabilidade.md`](greener/docs/ihc/relatorio-usabilidade.md)
 
@@ -320,6 +320,7 @@ cd ../frontend && npm ci && npm test
 |---|---|
 | [`greener/docs/README.md`](greener/docs/README.md) | Índice da documentação |
 | [`guia-portfolio.md`](greener/docs/guia-portfolio.md) | Roteiro de apresentação final, links principais e evidências |
+| [`relatorio-final.md`](greener/docs/relatorio-final.md) | Relatório de encerramento, matriz de requisitos, testes e pendências |
 | [`plano-de-entregas.md`](greener/docs/plano-de-entregas.md) | Critérios por sprint, responsáveis, evidências e participação |
 | [`sprints/sprint-1.md`](greener/docs/sprints/sprint-1.md) | Sprint 1: backlog, histórias, DoD, review e retrospectiva |
 | [`arquitetura.md`](greener/docs/arquitetura.md) | Componentes, fluxo de dados e decisões |

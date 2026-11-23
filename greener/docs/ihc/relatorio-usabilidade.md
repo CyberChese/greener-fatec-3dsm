@@ -35,7 +35,7 @@ Verificar se o protótipo navegável do GreenER permite percorrer o fluxo **Dash
 
 Os participantes são identificados apenas por código, para preservar seus dados pessoais.
 
-> **Limitação:** os dois participantes fazem parte da equipe de desenvolvimento e, portanto, não são usuários representativos do GreenER (ver perfis em [`interface.md`](../interface.md#11-perfis-de-usuários)). Esta avaliação serviu como validação inicial do fluxo do protótipo. A avaliação com usuários representativos está prevista para a Sprint 3 (critério IHC05).
+> **Limitação:** os dois participantes fazem parte da equipe de desenvolvimento e, portanto, não são usuários representativos do GreenER (ver perfis em [`interface.md`](../interface.md#11-perfis-de-usuários)). Esta avaliação serviu como validação inicial do fluxo do protótipo. A avaliação complementar com usuários representativos foi realizada na Sprint 3, conforme o critério IHC05.
 
 ## 4. Feedbacks recebidos
 

@@ -84,7 +84,7 @@ Login · modal
 Na Sprint 1 foi realizada uma avaliação inicial do protótipo navegável, com roteiro de tarefas e inspeção heurística (Nielsen e WCAG 2.1).
 Relatório completo: [`ihc/relatorio-usabilidade.md`](ihc/relatorio-usabilidade.md).
 
-A avaliação com **usuários representativos** (critério IHC05) está prevista para a Sprint 3.
+A avaliação com **usuários representativos** (critério IHC05) foi realizada na Sprint 3.
 
 ## 5. Melhorias decorrentes da avaliação
 
@@ -96,7 +96,7 @@ Já refletido na implementação da Sprint 1:
 | F2 — estados do login | O modal implementado tem erro de credenciais, erro de servidor e estado de carregamento |
 | F4 — token exibido por inteiro | O token não é exibido; apenas e-mail e expiração |
 
-Os demais ajustes serão vinculados a issues e acompanhados nas Sprints 2 e 3 (critério IHC06).
+Os demais ajustes foram aplicados e registrados na Sprint 3, conforme o critério IHC06.
 
 ## 6. Responsividade
 
